@@ -5,12 +5,9 @@ defmodule CLI do
   """
   require Logger
 
-  alias Blockchain.{Blocktree, Chain}
-  alias Blockchain.Blocktree.State
+  alias Blockchain.{Block, Chain, Genesis}
   alias CLI.{Config, Sync}
-  alias MerklePatriciaTree.CachingTrie
-  alias MerklePatriciaTree.DB.RocksDB
-  alias MerklePatriciaTree.Trie
+  alias MerklePatriciaTree.{CachingTrie, DB.Antidote, Trie}
 
   @doc """
   Initiates a sync with a given provider (e.g. a JSON-RPC client, such
@@ -18,7 +15,7 @@ defmodule CLI do
   """
   @spec sync(atom(), module(), [any()]) :: {:ok, Blocktree.t()} | {:error, any()}
   def sync(chain_id, block_provider, block_provider_args \\ []) do
-    db = RocksDB.init(Config.db_name(chain_id))
+    db = Antidote.init(Config.db_name(chain_id))
 
     trie = db |> Trie.new() |> CachingTrie.new()
     chain = Chain.load_chain(chain_id)
