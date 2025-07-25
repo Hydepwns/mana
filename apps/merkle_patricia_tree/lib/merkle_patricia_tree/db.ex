@@ -1,8 +1,8 @@
 defmodule MerklePatriciaTree.DB do
   @moduledoc """
   Defines a general key-value storage to back and persist
-  out Merkle Patricia Trie. This is generally LevelDB or RocksDB in the
-  community, but for testing, we'll generally use `:ets`.
+  out Merkle Patricia Trie. This is generally AntidoteDB in the
+  community for distributed applications, but for testing, we'll generally use `:ets`.
 
   We define a callback that can be implemented by a number
   of potential backends.
