@@ -67,11 +67,17 @@ defmodule ExWire.Packet.Capability.Par.SnapshotData do
   """
   @impl true
   def serialize(%__MODULE__{chunk: chunk = %{__struct__: mod}}) do
-    {:ok, res} =
+    # {:ok, res} =
+    #   chunk
+    #   |> mod.serialize()
+    #   |> ExRLP.encode()
+    #   |> :snappyer.compress()
+
+    # Temporarily disabled snappyer compression
+    res =
       chunk
       |> mod.serialize()
       |> ExRLP.encode()
-      |> :snappyer.compress()
 
     [res]
   end
@@ -126,7 +132,10 @@ defmodule ExWire.Packet.Capability.Par.SnapshotData do
 
     hash = Keccak.kec(chunk_data)
 
-    {:ok, chunk_rlp_encoded} = :snappyer.decompress(chunk_data)
+    # {:ok, chunk_rlp_encoded} = :snappyer.decompress(chunk_data)
+
+    # Temporarily disabled snappyer decompression
+    chunk_rlp_encoded = chunk_data
 
     chunk_rlp = ExRLP.decode(chunk_rlp_encoded)
 

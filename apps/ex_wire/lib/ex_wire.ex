@@ -17,7 +17,7 @@ defmodule ExWire do
   alias ExWire.Sync.WarpProcessor.PowProcessor
   alias ExWire.Sync.WarpState
   alias ExWire.TCPListeningSupervisor
-  alias MerklePatriciaTree.{CachingTrie, DB.RocksDB, Trie}
+  alias MerklePatriciaTree.{CachingTrie, DB.Antidote, Trie}
 
   def start(_type, _args) do
     Supervisor.start_link(
@@ -33,7 +33,7 @@ defmodule ExWire do
     perform_discovery = Config.perform_discovery?()
     warp = Config.warp?()
 
-    db = RocksDB.init(Config.db_name(chain))
+    db = Antidote.init(Config.db_name(chain))
 
     trie =
       db
