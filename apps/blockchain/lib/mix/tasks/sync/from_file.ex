@@ -13,19 +13,15 @@ defmodule Mix.Tasks.Sync.FromFile do
   """
   use Mix.Task
   require Logger
-  alias Blockchain.Block
-  alias Blockchain.Blocktree
-  alias Blockchain.Chain
-  alias Blockchain.Genesis
-  alias MerklePatriciaTree.DB
-  alias MerklePatriciaTree.DB.RocksDB
-  alias MerklePatriciaTree.Trie
+  alias Blockchain.{Block, Blocktree, Chain, Genesis}
+  alias Blockchain.Blocktree.State
+  alias MerklePatriciaTree.{CachingTrie, DB.Antidote, Trie}
 
   def run(args) do
     {db, chain} = setup()
 
     current_block_number =
-      case DB.get(db, "current_block_number") do
+      case Antidote.get(db, "current_block_number") do
         {:ok, current_block_number} ->
           current_block_number
 
@@ -34,7 +30,7 @@ defmodule Mix.Tasks.Sync.FromFile do
       end
 
     tree =
-      case DB.get(db, "current_block_tree") do
+      case Antidote.get(db, "current_block_tree") do
         {:ok, current_block_tree} ->
           :erlang.binary_to_term(current_block_tree)
 
@@ -59,9 +55,9 @@ defmodule Mix.Tasks.Sync.FromFile do
     add_block_to_tree(db, chain, tree, blocks, current_block_number)
   end
 
-  @spec setup() :: {DB.t(), Chain.t()}
+  @spec setup() :: {Antidote.t(), Chain.t()}
   defp setup() do
-    db = RocksDB.init(db_name())
+    db = Antidote.init(db_name())
     chain = Chain.load_chain(:foundation)
 
     {db, chain}
@@ -72,18 +68,18 @@ defmodule Mix.Tasks.Sync.FromFile do
 
     if is_nil(next_block) do
       :ok = Logger.info("Validation complete")
-      DB.put!(db, "current_block_number", 0)
+      Antidote.put!(db, "current_block_number", 0)
     else
       case Blocktree.verify_and_add_block(tree, chain, next_block, db) do
         {:ok, next_tree} ->
           :ok = Logger.info("Verified Block #{n}")
-          DB.put!(db, "current_block_number", next_block.header.number)
+          Antidote.put!(db, "current_block_number", next_block.header.number)
           add_block_to_tree(db, chain, next_tree, blocks, n + 1)
 
         {:invalid, error} ->
           :ok = Logger.info("Failed to Verify Block #{n}")
           _ = Logger.error(inspect(error))
-          DB.put!(db, "current_block_tree", :erlang.term_to_binary(tree))
+          Antidote.put!(db, "current_block_tree", :erlang.term_to_binary(tree))
       end
     end
   end
