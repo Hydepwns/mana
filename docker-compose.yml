@@ -1,0 +1,129 @@
+version: '3.7'
+
+services:
+  antidote1:
+    image: antidotedb/antidote:latest
+    container_name: mana_antidote1
+    hostname: antidote1
+    ports:
+      - "8087:8087"
+    environment:
+      - NODE_NAME=antidote1@antidote1
+      - COOKIE=mana_secret_cookie
+      - SHORT_NAME=true
+      - ANTIDOTE_TXN_CERT=true
+      - ANTIDOTE_TXN_PROT=clocksi
+      - ANTIDOTE_RECOVER_FROM_LOG=true
+      - ANTIDOTE_META_DATA_ON_START=true
+      - ANTIDOTE_SYNC_LOG=true
+      - ANTIDOTE_ENABLE_LOGGING=true
+      - ANTIDOTE_AUTO_START_READ_SERVERS=true
+    volumes:
+      - antidote1_data:/antidote-data
+    networks:
+      - mana_antidote
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  antidote2:
+    image: antidotedb/antidote:latest
+    container_name: mana_antidote2
+    hostname: antidote2
+    ports:
+      - "8088:8087"
+    environment:
+      - NODE_NAME=antidote2@antidote2
+      - COOKIE=mana_secret_cookie
+      - SHORT_NAME=true
+      - ANTIDOTE_TXN_CERT=true
+      - ANTIDOTE_TXN_PROT=clocksi
+      - ANTIDOTE_RECOVER_FROM_LOG=true
+      - ANTIDOTE_META_DATA_ON_START=true
+      - ANTIDOTE_SYNC_LOG=true
+      - ANTIDOTE_ENABLE_LOGGING=true
+      - ANTIDOTE_AUTO_START_READ_SERVERS=true
+      - ANTIDOTE_PEERS=antidote1@antidote1:8087
+    volumes:
+      - antidote2_data:/antidote-data
+    networks:
+      - mana_antidote
+    depends_on:
+      - antidote1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  antidote3:
+    image: antidotedb/antidote:latest
+    container_name: mana_antidote3
+    hostname: antidote3
+    ports:
+      - "8089:8087"
+    environment:
+      - NODE_NAME=antidote3@antidote3
+      - COOKIE=mana_secret_cookie
+      - SHORT_NAME=true
+      - ANTIDOTE_TXN_CERT=true
+      - ANTIDOTE_TXN_PROT=clocksi
+      - ANTIDOTE_RECOVER_FROM_LOG=true
+      - ANTIDOTE_META_DATA_ON_START=true
+      - ANTIDOTE_SYNC_LOG=true
+      - ANTIDOTE_ENABLE_LOGGING=true
+      - ANTIDOTE_AUTO_START_READ_SERVERS=true
+      - ANTIDOTE_PEERS=antidote1@antidote1:8087,antidote2@antidote2:8087
+    volumes:
+      - antidote3_data:/antidote-data
+    networks:
+      - mana_antidote
+    depends_on:
+      - antidote1
+      - antidote2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Monitoring for AntidoteDB cluster
+  antidote_monitor:
+    image: prom/prometheus:latest
+    container_name: mana_antidote_monitor
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - mana_antidote
+    depends_on:
+      - antidote1
+      - antidote2
+      - antidote3
+
+volumes:
+  antidote1_data:
+    driver: local
+  antidote2_data:
+    driver: local
+  antidote3_data:
+    driver: local
+  prometheus_data:
+    driver: local
+
+networks:
+  mana_antidote:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
