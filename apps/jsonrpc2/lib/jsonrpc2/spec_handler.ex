@@ -50,7 +50,14 @@ defmodule JSONRPC2.SpecHandler do
   def handle_request("eth_coinbase", _), do: {:error, :not_supported}
   def handle_request("eth_mining", _), do: {:error, :not_supported}
   def handle_request("eth_hashrate", _), do: {:error, :not_supported}
-  def handle_request("eth_gasPrice", _), do: {:error, :not_supported}
+  
+  def handle_request("eth_gasPrice", _) do
+    # Return a default gas price of 20 Gwei (20 * 10^9 wei)
+    # This should ideally be calculated based on recent block gas prices
+    default_gas_price = 20_000_000_000
+    encode_quantity(default_gas_price)
+  end
+  
   def handle_request("eth_accounts", _), do: {:error, :not_supported}
 
   def handle_request("eth_blockNumber", _) do
@@ -79,9 +86,17 @@ defmodule JSONRPC2.SpecHandler do
   end
 
   def handle_request("eth_getTransactionCount", [hex_address, hex_block_number_or_tag]) do
-    with {:ok, block_number} <- decode_block_number(hex_block_number_or_tag),
-         {:ok, address} <- decode_hex(hex_address) do
-      @sync.transaction_count(address, block_number)
+    with {:ok, address} <- decode_hex(hex_address) do
+      case hex_block_number_or_tag do
+        "pending" ->
+          # Get nonce including pending transactions
+          encode_quantity(Blockchain.TransactionPool.get_next_nonce(address))
+          
+        _ ->
+          with {:ok, block_number} <- decode_block_number(hex_block_number_or_tag) do
+            @sync.transaction_count(address, block_number)
+          end
+      end
     end
   end
 
@@ -117,9 +132,38 @@ defmodule JSONRPC2.SpecHandler do
   end
 
   def handle_request("eth_sign", _), do: {:error, :not_supported}
-  def handle_request("eth_sendTransaction", _), do: {:error, :not_supported}
-  def handle_request("eth_sendRawTransaction", _), do: {:error, :not_supported}
-  def handle_request("eth_call", _), do: {:error, :not_supported}
+  
+  def handle_request("eth_sendTransaction", [transaction_params]) do
+    # This requires wallet functionality to sign transactions
+    # Currently not supported as it requires private key management
+    {:error, "eth_sendTransaction requires wallet functionality which is not implemented"}
+  end
+  
+  def handle_request("eth_sendRawTransaction", [raw_transaction]) do
+    # Add pre-signed transaction to the pool
+    case Blockchain.TransactionPool.add_transaction(raw_transaction) do
+      {:ok, transaction_hash} ->
+        # Return transaction hash
+        transaction_hash
+        
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+  
+  def handle_request("eth_call", [raw_call_request, hex_block_number_or_tag]) do
+    with {:ok, call_request} <- CallRequest.new(raw_call_request),
+         {:ok, block_number} <- decode_block_number(hex_block_number_or_tag) do
+      sync_data = @sync.last_sync_state()
+      state = sync_data.trie
+      chain = Map.get(sync_data, :chain, Chain.load_chain(:foundation))
+      
+      case JSONRPC2.SpecHandler.EthCall.run(state, call_request, block_number, chain) do
+        {:ok, result} -> encode_unformatted_data(result)
+        {:error, _reason} -> nil
+      end
+    end
+  end
 
   def handle_request("eth_estimateGas", [raw_call_request, hex_block_number_or_tag]) do
     with {:ok, call_request} <- CallRequest.new(raw_call_request),
@@ -148,7 +192,15 @@ defmodule JSONRPC2.SpecHandler do
 
   def handle_request("eth_getTransactionByHash", [hex_transaction_hash]) do
     with {:ok, transaction_hash} <- decode_hex(hex_transaction_hash) do
-      @sync.transaction_by_hash(transaction_hash)
+      # First check the transaction pool for pending transactions
+      case Blockchain.TransactionPool.get_transaction(transaction_hash) do
+        nil ->
+          # Not in pool, check blockchain
+          @sync.transaction_by_hash(transaction_hash)
+        pending_tx ->
+          # Return pending transaction
+          format_pending_transaction(pending_tx)
+      end
     end
   end
 
@@ -200,17 +252,99 @@ defmodule JSONRPC2.SpecHandler do
   def handle_request("eth_compileSolidity", _), do: {:error, :not_supported}
   # eth_compileSerpent is deprecated
   def handle_request("eth_compileSerpent", _), do: {:error, :not_supported}
-  def handle_request("eth_newFilter", _), do: {:error, :not_supported}
-  def handle_request("eth_newBlockFilter", _), do: {:error, :not_supported}
-  def handle_request("eth_newPendingTransactionFilter", _), do: {:error, :not_supported}
-  def handle_request("eth_uninstallFilter", _), do: {:error, :not_supported}
-  def handle_request("eth_getFilterChanges", _), do: {:error, :not_supported}
-  def handle_request("eth_getFilterLogs", _), do: {:error, :not_supported}
-  def handle_request("eth_getLogs", _), do: {:error, :not_supported}
+  
+  def handle_request("eth_newFilter", [filter_params]) do
+    case JSONRPC2.FilterManager.new_filter(filter_params) do
+      {:ok, filter_id} -> filter_id
+      _ -> nil
+    end
+  end
+  
+  def handle_request("eth_newBlockFilter", _) do
+    case JSONRPC2.FilterManager.new_block_filter() do
+      {:ok, filter_id} -> filter_id
+      _ -> nil
+    end
+  end
+  
+  def handle_request("eth_newPendingTransactionFilter", _) do
+    case JSONRPC2.FilterManager.new_pending_transaction_filter() do
+      {:ok, filter_id} -> filter_id
+      _ -> nil
+    end
+  end
+  
+  def handle_request("eth_uninstallFilter", [filter_id]) do
+    JSONRPC2.FilterManager.uninstall_filter(filter_id)
+  end
+  
+  def handle_request("eth_getFilterChanges", [filter_id]) do
+    case JSONRPC2.FilterManager.get_filter_changes(filter_id) do
+      {:ok, changes} -> changes
+      _ -> nil
+    end
+  end
+  
+  def handle_request("eth_getFilterLogs", [filter_id]) do
+    case JSONRPC2.FilterManager.get_filter_logs(filter_id) do
+      {:ok, logs} -> logs
+      _ -> nil
+    end
+  end
+  
+  def handle_request("eth_getLogs", [filter_params]) do
+    sync_data = @sync.last_sync_state()
+    state_trie = sync_data.trie
+    
+    case JSONRPC2.SpecHandler.LogsFilter.filter_logs(filter_params, state_trie) do
+      {:ok, logs} -> logs
+      {:error, _reason} -> []
+    end
+  end
   def handle_request("eth_getWork", _), do: {:error, :not_supported}
   def handle_request("eth_submitWork", _), do: {:error, :not_supported}
   def handle_request("eth_submitHashrate", _), do: {:error, :not_supported}
   def handle_request("eth_getProof", _), do: {:error, :not_supported}
+  
+  def handle_request("eth_pendingTransactions", _) do
+    # Return all pending transactions from the pool
+    pending_txs = Blockchain.TransactionPool.get_pending_transactions()
+    |> Enum.map(&format_pending_transaction/1)
+    
+    pending_txs
+  end
+  
+  # WebSocket subscription methods
+  def handle_request("eth_subscribe", [subscription_type | params], %{ws_pid: ws_pid}) when is_pid(ws_pid) do
+    # Extract params based on subscription type
+    subscription_params = case {subscription_type, params} do
+      {"logs", [filter_params]} -> filter_params
+      {_, []} -> %{}
+      {_, [p]} -> p
+      _ -> %{}
+    end
+    
+    case JSONRPC2.SubscriptionManager.subscribe(subscription_type, subscription_params, ws_pid) do
+      {:ok, subscription_id} -> subscription_id
+      {:error, reason} -> {:error, reason}
+    end
+  end
+  
+  def handle_request("eth_subscribe", _params, _context) do
+    {:error, "eth_subscribe is only available over WebSocket connections"}
+  end
+  
+  def handle_request("eth_unsubscribe", [subscription_id], %{ws_pid: ws_pid}) when is_pid(ws_pid) do
+    case JSONRPC2.SubscriptionManager.unsubscribe(subscription_id, ws_pid) do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
+    end
+  end
+  
+  def handle_request("eth_unsubscribe", _params, _context) do
+    {:error, "eth_unsubscribe is only available over WebSocket connections"}
+  end
+  
   # db_putString is deprecated
   def handle_request("db_putString", _), do: {:error, :not_supported}
   # db_getString is deprecated
@@ -237,5 +371,24 @@ defmodule JSONRPC2.SpecHandler do
       "earliest" -> {:ok, @sync.starting_block_number()}
       hex_number -> decode_unsigned(hex_number)
     end
+  end
+  
+  defp format_pending_transaction(tx) do
+    %{
+      "blockHash" => nil,  # Pending transactions have no block
+      "blockNumber" => nil,
+      "from" => encode_unformatted_data(Map.get(tx, :from, <<0::160>>)),
+      "gas" => encode_quantity(Map.get(tx, :gas_limit, tx[:gas])),
+      "gasPrice" => encode_quantity(tx.gas_price),
+      "hash" => encode_unformatted_data(tx.hash),
+      "input" => encode_unformatted_data(Map.get(tx, :data, <<>>)),
+      "nonce" => encode_quantity(tx.nonce),
+      "to" => if(tx.to, do: encode_unformatted_data(tx.to), else: nil),
+      "transactionIndex" => nil,  # No index for pending
+      "value" => encode_quantity(Map.get(tx, :value, 0)),
+      "v" => encode_quantity(Map.get(tx, :v, 0)),
+      "r" => encode_quantity(Map.get(tx, :r, 0)),
+      "s" => encode_quantity(Map.get(tx, :s, 0))
+    }
   end
 end
