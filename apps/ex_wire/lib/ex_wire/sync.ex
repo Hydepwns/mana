@@ -602,9 +602,7 @@ defmodule ExWire.Sync do
       :unsent ->
         :ok =
           Logger.debug(fn ->
-            "[Sync] No connected peers to send #{packet.__struct__}, trying again in #{
-              @retry_delay / 1000
-            } second(s)"
+            "[Sync] No connected peers to send #{packet.__struct__}, trying again in #{@retry_delay / 1000} second(s)"
           end)
 
         Process.send_after(self(), retry_message, @retry_delay)

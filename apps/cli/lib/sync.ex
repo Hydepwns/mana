@@ -77,7 +77,9 @@ defmodule CLI.Sync do
               _ = Logger.debug(fn -> "Failed block: #{inspect(next_block)}" end)
 
               _ =
-                Logger.error(fn -> "Failed to verify block #{block_number}: #{inspect(error)}" end)
+                Logger.error(fn ->
+                  "Failed to verify block #{block_number}: #{inspect(error)}"
+                end)
 
               committed_trie = TrieStorage.commit!(tree)
 

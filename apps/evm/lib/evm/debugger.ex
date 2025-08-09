@@ -200,9 +200,7 @@ defmodule EVM.Debugger do
       # If we're not next, we're likely a freshly hit breakpoint and should display a helpful prompt
       # to the user.
       IO.puts(
-        "\n\n-- Breakpoint ##{breakpoint.id} triggered with conditions #{
-          Breakpoint.describe(breakpoint)
-        } --"
+        "\n\n-- Breakpoint ##{breakpoint.id} triggered with conditions #{Breakpoint.describe(breakpoint)} --"
       )
     end
 
@@ -222,9 +220,7 @@ defmodule EVM.Debugger do
   @spec print_machine_state(MachineState.t()) :: any()
   def print_machine_state(machine_state) do
     IO.puts(
-      "gas: #{machine_state.gas} | pc: #{machine_state.program_counter} | memory: #{
-        machine_state.memory |> byte_size
-      } | words: #{machine_state.active_words} | # stack: #{machine_state.stack |> Enum.count()}"
+      "gas: #{machine_state.gas} | pc: #{machine_state.program_counter} | memory: #{machine_state.memory |> byte_size} | words: #{machine_state.active_words} | # stack: #{machine_state.stack |> Enum.count()}"
     )
   end
 
@@ -362,9 +358,7 @@ defmodule EVM.Debugger do
        ) do
     :ok =
       Logger.info(
-        "machine_state:  #{inspect(machine_state)}, sub_state: #{inspect(sub_state)}, exec_env: #{
-          inspect(exec_env)
-        }"
+        "machine_state:  #{inspect(machine_state)}, sub_state: #{inspect(sub_state)}, exec_env: #{inspect(exec_env)}"
       )
 
     prompt(breakpoint, machine_state, sub_state, exec_env, input_sequence)
@@ -520,7 +514,7 @@ defmodule EVM.Debugger do
   end
 
   @spec printable(integer()) :: boolean()
-  defp printable(x) when x in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789',
+  defp printable(x) when x in ~c"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 0123456789",
     do: true
 
   defp printable(_), do: false

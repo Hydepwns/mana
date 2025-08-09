@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :ex_wire,
   caps: [{"eth", 62}, {"eth", 63}, {"par", 1}],

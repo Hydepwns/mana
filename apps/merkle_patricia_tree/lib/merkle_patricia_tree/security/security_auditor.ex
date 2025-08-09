@@ -43,55 +43,60 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
   require Logger
 
   @type auditor :: %{
-    rate_limits: map(),
-    security_events: list(map()),
-    vulnerabilities: list(map()),
-    audit_log: list(map()),
-    ssl_config: map(),
-    access_controls: map(),
-    start_time: integer()
-  }
+          rate_limits: map(),
+          security_events: list(map()),
+          vulnerabilities: list(map()),
+          audit_log: list(map()),
+          ssl_config: map(),
+          access_controls: map(),
+          start_time: integer()
+        }
 
   @type security_event :: %{
-    id: String.t(),
-    type: atom(),
-    severity: :low | :medium | :high | :critical,
-    message: String.t(),
-    metadata: map(),
-    timestamp: integer(),
-    ip_address: String.t() | nil,
-    user_id: String.t() | nil
-  }
+          id: String.t(),
+          type: atom(),
+          severity: :low | :medium | :high | :critical,
+          message: String.t(),
+          metadata: map(),
+          timestamp: integer(),
+          ip_address: String.t() | nil,
+          user_id: String.t() | nil
+        }
 
   @type vulnerability :: %{
-    id: String.t(),
-    type: atom(),
-    severity: :low | :medium | :high | :critical,
-    description: String.t(),
-    cve_id: String.t() | nil,
-    affected_component: String.t(),
-    remediation: String.t(),
-    discovered_at: integer()
-  }
+          id: String.t(),
+          type: atom(),
+          severity: :low | :medium | :high | :critical,
+          description: String.t(),
+          cve_id: String.t() | nil,
+          affected_component: String.t(),
+          remediation: String.t(),
+          discovered_at: integer()
+        }
 
   @type audit_result :: %{
-    overall_score: integer(),
-    vulnerabilities: list(vulnerability()),
-    recommendations: list(String.t()),
-    compliance_status: map(),
-    timestamp: integer()
-  }
+          overall_score: integer(),
+          vulnerabilities: list(vulnerability()),
+          recommendations: list(String.t()),
+          compliance_status: map(),
+          timestamp: integer()
+        }
 
   # Default configuration
-  @default_rate_limit_requests 100  # requests per minute
-  @default_rate_limit_window 60_000  # 1 minute window
-  @default_max_input_size 1024 * 1024  # 1MB max input size
-  @default_audit_interval 3600_000  # 1 hour audit interval
+  # requests per minute
+  @default_rate_limit_requests 100
+  # 1 minute window
+  @default_rate_limit_window 60_000
+  # 1MB max input size
+  @default_max_input_size 1024 * 1024
+  # 1 hour audit interval
+  @default_audit_interval 3600_000
 
   # Security thresholds
   @min_password_length 12
   @max_failed_attempts 5
-  @session_timeout 3600  # 1 hour
+  # 1 hour
+  @session_timeout 3600
   @max_concurrent_sessions 10
 
   def start_link(opts \\ []) do
@@ -319,7 +324,8 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
   defp check_rate_limit_internal(ip_address, endpoint, state) do
     current_time = System.system_time(:millisecond)
-    window_start = current_time - 60_000  # 1 minute window
+    # 1 minute window
+    window_start = current_time - 60_000
 
     # Get current rate limit data for this IP and endpoint
     rate_limit_key = "#{ip_address}:#{endpoint}"
@@ -327,7 +333,9 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
     if current_requests < @default_rate_limit_requests do
       # Update rate limit tracking
-      new_rate_limits = update_rate_limit_tracking(rate_limit_key, current_time, state.rate_limits)
+      new_rate_limits =
+        update_rate_limit_tracking(rate_limit_key, current_time, state.rate_limits)
+
       {:ok, :allowed}
     else
       {:error, :rate_limited}
@@ -338,9 +346,10 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
     # Validate SSL/TLS configuration
     required_fields = [:certfile, :keyfile, :cacertfile]
 
-    missing_fields = Enum.filter(required_fields, fn field ->
-      not Map.has_key?(ssl_config, field) or ssl_config[field] == nil
-    end)
+    missing_fields =
+      Enum.filter(required_fields, fn field ->
+        not Map.has_key?(ssl_config, field) or ssl_config[field] == nil
+      end)
 
     if length(missing_fields) > 0 do
       {:error, "Missing required SSL fields: #{Enum.join(missing_fields, ", ")}"}
@@ -374,6 +383,7 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
     audit_log
     |> Enum.filter(fn event ->
       event_time = event.timestamp
+
       cond do
         end_time == :infinity -> event_time >= start_time
         true -> event_time >= start_time and event_time <= end_time
@@ -396,9 +406,10 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
   defp update_security_configuration(state, config) do
     # Update security configuration
-    %{state |
-      ssl_config: Map.merge(state.ssl_config, Map.get(config, :ssl, %{})),
-      access_controls: Map.merge(state.access_controls, Map.get(config, :access_controls, %{}))
+    %{
+      state
+      | ssl_config: Map.merge(state.ssl_config, Map.get(config, :ssl, %{})),
+        access_controls: Map.merge(state.access_controls, Map.get(config, :access_controls, %{}))
     }
   end
 
@@ -410,30 +421,36 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
     # Check for potential SQL injection vulnerabilities
     if has_sql_injection_risk() do
-      vulnerabilities = [%{
-        id: generate_vulnerability_id(),
-        type: :sql_injection,
-        severity: :high,
-        description: "Potential SQL injection vulnerability detected",
-        cve_id: "CVE-2023-XXXX",
-        affected_component: "Database queries",
-        remediation: "Use parameterized queries and input validation",
-        discovered_at: System.system_time(:second)
-      } | vulnerabilities]
+      vulnerabilities = [
+        %{
+          id: generate_vulnerability_id(),
+          type: :sql_injection,
+          severity: :high,
+          description: "Potential SQL injection vulnerability detected",
+          cve_id: "CVE-2023-XXXX",
+          affected_component: "Database queries",
+          remediation: "Use parameterized queries and input validation",
+          discovered_at: System.system_time(:second)
+        }
+        | vulnerabilities
+      ]
     end
 
     # Check for XSS vulnerabilities
     if has_xss_risk() do
-      vulnerabilities = [%{
-        id: generate_vulnerability_id(),
-        type: :xss,
-        severity: :medium,
-        description: "Potential XSS vulnerability detected",
-        cve_id: nil,
-        affected_component: "Web interface",
-        remediation: "Sanitize user input and use CSP headers",
-        discovered_at: System.system_time(:second)
-      } | vulnerabilities]
+      vulnerabilities = [
+        %{
+          id: generate_vulnerability_id(),
+          type: :xss,
+          severity: :medium,
+          description: "Potential XSS vulnerability detected",
+          cve_id: nil,
+          affected_component: "Web interface",
+          remediation: "Sanitize user input and use CSP headers",
+          discovered_at: System.system_time(:second)
+        }
+        | vulnerabilities
+      ]
     end
 
     vulnerabilities
@@ -445,16 +462,19 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
     # Check for weak password policies
     if has_weak_password_policy() do
-      vulnerabilities = [%{
-        id: generate_vulnerability_id(),
-        type: :weak_authentication,
-        severity: :medium,
-        description: "Weak password policy detected",
-        cve_id: nil,
-        affected_component: "Authentication system",
-        remediation: "Implement strong password requirements",
-        discovered_at: System.system_time(:second)
-      } | vulnerabilities]
+      vulnerabilities = [
+        %{
+          id: generate_vulnerability_id(),
+          type: :weak_authentication,
+          severity: :medium,
+          description: "Weak password policy detected",
+          cve_id: nil,
+          affected_component: "Authentication system",
+          remediation: "Implement strong password requirements",
+          discovered_at: System.system_time(:second)
+        }
+        | vulnerabilities
+      ]
     end
 
     vulnerabilities
@@ -501,9 +521,10 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
     # Basic SQL injection prevention
     dangerous_patterns = ["'", ";", "--", "/*", "*/", "DROP", "DELETE", "UPDATE", "INSERT"]
 
-    has_dangerous_pattern = Enum.any?(dangerous_patterns, fn pattern ->
-      String.contains?(String.upcase(input), pattern)
-    end)
+    has_dangerous_pattern =
+      Enum.any?(dangerous_patterns, fn pattern ->
+        String.contains?(String.upcase(input), pattern)
+      end)
 
     if has_dangerous_pattern do
       {:error, "Potentially dangerous SQL input detected"}
@@ -549,14 +570,19 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
     cond do
       String.length(input) < @min_password_length ->
         {:error, "Password must be at least #{@min_password_length} characters"}
+
       not String.match?(input, ~r/[A-Z]/) ->
         {:error, "Password must contain at least one uppercase letter"}
+
       not String.match?(input, ~r/[a-z]/) ->
         {:error, "Password must contain at least one lowercase letter"}
+
       not String.match?(input, ~r/[0-9]/) ->
         {:error, "Password must contain at least one digit"}
+
       not String.match?(input, ~r/[^A-Za-z0-9]/) ->
         {:error, "Password must contain at least one special character"}
+
       true ->
         {:ok, input}
     end
@@ -568,10 +594,11 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
   defp validate_general_input(input) when is_binary(input) do
     # General input sanitization
-    sanitized = input
-    |> String.trim()
-    |> String.replace(~r/<script[^>]*>.*?<\/script>/is, "")
-    |> String.replace(~r/<[^>]*>/i, "")
+    sanitized =
+      input
+      |> String.trim()
+      |> String.replace(~r/<script[^>]*>.*?<\/script>/is, "")
+      |> String.replace(~r/<[^>]*>/i, "")
 
     if String.length(sanitized) > @default_max_input_size do
       {:error, "Input too large"}
@@ -629,15 +656,18 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
   defp calculate_security_score(vulnerabilities) do
     base_score = 100
 
-    score_reduction = Enum.reduce(vulnerabilities, 0, fn vuln, acc ->
-      reduction = case vuln.severity do
-        :critical -> 25
-        :high -> 15
-        :medium -> 10
-        :low -> 5
-      end
-      acc + reduction
-    end)
+    score_reduction =
+      Enum.reduce(vulnerabilities, 0, fn vuln, acc ->
+        reduction =
+          case vuln.severity do
+            :critical -> 25
+            :high -> 15
+            :medium -> 10
+            :low -> 5
+          end
+
+        acc + reduction
+      end)
 
     max(0, base_score - score_reduction)
   end
@@ -673,7 +703,9 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
   defp get_rate_limit_requests(key, window_start, rate_limits) do
     case Map.get(rate_limits, key) do
-      nil -> 0
+      nil ->
+        0
+
       requests ->
         # Filter requests within the window
         Enum.count(requests, fn timestamp -> timestamp >= window_start end)

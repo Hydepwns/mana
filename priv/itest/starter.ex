@@ -47,6 +47,6 @@ defmodule Starter do
   def terminate(_, state) do
     # cleanup by killing the
     os_pid = Keyword.get(state, :os_pid)
-    :os.cmd('pkill -15 -g #{os_pid}')
+    :os.cmd(~c"pkill -15 -g #{os_pid}")
   end
 end

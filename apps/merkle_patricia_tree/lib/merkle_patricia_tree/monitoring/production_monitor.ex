@@ -39,43 +39,51 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
   require Logger
 
   @type monitor :: %{
-    metrics: map(),
-    health_status: :healthy | :warning | :critical,
-    alerts: list(map()),
-    performance_stats: map(),
-    resource_usage: map(),
-    start_time: integer()
-  }
+          metrics: map(),
+          health_status: :healthy | :warning | :critical,
+          alerts: list(map()),
+          performance_stats: map(),
+          resource_usage: map(),
+          start_time: integer()
+        }
 
   @type metric :: %{
-    name: String.t(),
-    value: number(),
-    unit: String.t(),
-    timestamp: integer(),
-    labels: map()
-  }
+          name: String.t(),
+          value: number(),
+          unit: String.t(),
+          timestamp: integer(),
+          labels: map()
+        }
 
   @type alert :: %{
-    id: String.t(),
-    severity: :info | :warning | :critical,
-    message: String.t(),
-    timestamp: integer(),
-    metric: String.t(),
-    value: number(),
-    threshold: number()
-  }
+          id: String.t(),
+          severity: :info | :warning | :critical,
+          message: String.t(),
+          timestamp: integer(),
+          metric: String.t(),
+          value: number(),
+          threshold: number()
+        }
 
   # Default configuration
-  @default_metrics_interval 30_000  # 30 seconds
-  @default_health_check_interval 60_000  # 1 minute
-  @default_alert_check_interval 30_000  # 30 seconds
+  # 30 seconds
+  @default_metrics_interval 30_000
+  # 1 minute
+  @default_health_check_interval 60_000
+  # 30 seconds
+  @default_alert_check_interval 30_000
 
   # Alert thresholds
-  @memory_threshold 0.9  # 90% memory usage
-  @cpu_threshold 0.8  # 80% CPU usage
-  @disk_threshold 0.8  # 80% disk usage
-  @error_rate_threshold 0.05  # 5% error rate
-  @latency_threshold 1000  # 1 second latency
+  # 90% memory usage
+  @memory_threshold 0.9
+  # 80% CPU usage
+  @cpu_threshold 0.8
+  # 80% disk usage
+  @disk_threshold 0.8
+  # 5% error rate
+  @error_rate_threshold 0.05
+  # 1 second latency
+  @latency_threshold 1000
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -150,7 +158,10 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
   @impl GenServer
   def init(opts) do
     metrics_interval = Keyword.get(opts, :metrics_interval, @default_metrics_interval)
-    health_check_interval = Keyword.get(opts, :health_check_interval, @default_health_check_interval)
+
+    health_check_interval =
+      Keyword.get(opts, :health_check_interval, @default_health_check_interval)
+
     alert_check_interval = Keyword.get(opts, :alert_check_interval, @default_alert_check_interval)
 
     # Initialize monitoring state
@@ -237,10 +248,11 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
     new_performance_stats = collect_performance_stats()
     new_resource_usage = collect_resource_usage()
 
-    new_state = %{state |
-      metrics: new_metrics,
-      performance_stats: new_performance_stats,
-      resource_usage: new_resource_usage
+    new_state = %{
+      state
+      | metrics: new_metrics,
+        performance_stats: new_performance_stats,
+        resource_usage: new_resource_usage
     }
 
     # Schedule next metrics collection
@@ -336,16 +348,20 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
     latency_healthy = (performance.avg_latency || 0) < @latency_threshold
 
     # Determine overall health status
-    status = cond do
-      memory_healthy and cpu_healthy and disk_healthy and error_rate_healthy and latency_healthy ->
-        :healthy
-      not memory_healthy or not cpu_healthy or not disk_healthy ->
-        :critical
-      not error_rate_healthy or not latency_healthy ->
-        :warning
-      true ->
-        :healthy
-    end
+    status =
+      cond do
+        memory_healthy and cpu_healthy and disk_healthy and error_rate_healthy and latency_healthy ->
+          :healthy
+
+        not memory_healthy or not cpu_healthy or not disk_healthy ->
+          :critical
+
+        not error_rate_healthy or not latency_healthy ->
+          :warning
+
+        true ->
+          :healthy
+      end
 
     %{
       status: status,
@@ -369,32 +385,67 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
 
     # Check memory usage
     if (metrics.memory_usage || 0) > @memory_threshold do
-      alert = create_alert("memory_usage", :critical, "High memory usage", metrics.memory_usage, @memory_threshold)
+      alert =
+        create_alert(
+          "memory_usage",
+          :critical,
+          "High memory usage",
+          metrics.memory_usage,
+          @memory_threshold
+        )
+
       new_alerts = [alert | new_alerts]
     end
 
     # Check CPU usage
     if (metrics.cpu_usage || 0) > @cpu_threshold do
-      alert = create_alert("cpu_usage", :warning, "High CPU usage", metrics.cpu_usage, @cpu_threshold)
+      alert =
+        create_alert("cpu_usage", :warning, "High CPU usage", metrics.cpu_usage, @cpu_threshold)
+
       new_alerts = [alert | new_alerts]
     end
 
     # Check disk usage
     if (metrics.disk_usage || 0) > @disk_threshold do
-      alert = create_alert("disk_usage", :warning, "High disk usage", metrics.disk_usage, @disk_threshold)
+      alert =
+        create_alert(
+          "disk_usage",
+          :warning,
+          "High disk usage",
+          metrics.disk_usage,
+          @disk_threshold
+        )
+
       new_alerts = [alert | new_alerts]
     end
 
     # Check error rate
     error_rate = get_error_rate(performance)
+
     if error_rate > @error_rate_threshold do
-      alert = create_alert("error_rate", :critical, "High error rate", error_rate, @error_rate_threshold)
+      alert =
+        create_alert(
+          "error_rate",
+          :critical,
+          "High error rate",
+          error_rate,
+          @error_rate_threshold
+        )
+
       new_alerts = [alert | new_alerts]
     end
 
     # Check latency
     if (performance.avg_latency || 0) > @latency_threshold do
-      alert = create_alert("latency", :warning, "High latency", performance.avg_latency, @latency_threshold)
+      alert =
+        create_alert(
+          "latency",
+          :warning,
+          "High latency",
+          performance.avg_latency,
+          @latency_threshold
+        )
+
       new_alerts = [alert | new_alerts]
     end
 
@@ -421,7 +472,9 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
 
   defp send_alert_notification(alert) do
     # Send alert to configured notification channels
-    Logger.warning("Alert triggered: #{alert.message} (Value: #{alert.value}, Threshold: #{alert.threshold})")
+    Logger.warning(
+      "Alert triggered: #{alert.message} (Value: #{alert.value}, Threshold: #{alert.threshold})"
+    )
 
     # TODO: Implement actual notification sending (Slack, email, etc.)
     :ok
@@ -508,13 +561,14 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
 
   defp get_network_io do
     %{
-      bytes_in: :rand.uniform(1000000),
-      bytes_out: :rand.uniform(1000000)
+      bytes_in: :rand.uniform(1_000_000),
+      bytes_out: :rand.uniform(1_000_000)
     }
   end
 
   defp get_uptime do
-    :erlang.statistics(:wall_clock) |> elem(0) / 1000
+    {wall_clock, _} = :erlang.statistics(:wall_clock)
+    wall_clock / 1000
   end
 
   defp get_process_count do

@@ -108,25 +108,42 @@ defmodule ExWire.Handshake.EIP8 do
   @spec unwrap_eip_8(binary(), Key.private_key()) ::
           {:ok, ExRLP.t(), binary(), binary()} | {:error, String.t()}
   def unwrap_eip_8(encoded_packet, my_static_private_key) do
-    <<auth_size_int::size(16), _::binary()>> = encoded_packet
+    Logger.debug("[EIP-8] Attempting to unwrap packet (#{byte_size(encoded_packet)} bytes)")
+    
+    if byte_size(encoded_packet) < 2 do
+      Logger.error("[EIP-8] Packet too small: #{byte_size(encoded_packet)} bytes")
+      {:error, "Packet too small"}
+    else
+      <<auth_size_int::size(16), _::binary>> = encoded_packet
+      Logger.debug("[EIP-8] Auth size: #{auth_size_int} bytes")
+      
+      case encoded_packet do
+        <<auth_size::binary-size(2), ecies_encoded_message::binary-size(auth_size_int),
+          frame_rest::binary>> ->
+          Logger.debug("[EIP-8] Attempting ECIES decryption")
+          
+          with {:ok, rlp_bin} <-
+                 ExthCrypto.ECIES.decrypt(
+                   my_static_private_key,
+                   ecies_encoded_message,
+                   <<>>,
+                   auth_size
+                 ) do
+            Logger.debug("[EIP-8] Successfully decrypted, decoding RLP")
+            rlp = ExRLP.decode(rlp_bin)
+            Logger.debug("[EIP-8] RLP decoded, #{length(rlp)} elements")
 
-    case encoded_packet do
-      <<auth_size::binary-size(2), ecies_encoded_message::binary-size(auth_size_int),
-        frame_rest::binary()>> ->
-        with {:ok, rlp_bin} <-
-               ExthCrypto.ECIES.decrypt(
-                 my_static_private_key,
-                 ecies_encoded_message,
-                 <<>>,
-                 auth_size
-               ) do
-          rlp = ExRLP.decode(rlp_bin)
+            {:ok, rlp, auth_size <> ecies_encoded_message, frame_rest}
+          else
+            {:error, reason} ->
+              Logger.error("[EIP-8] ECIES decryption failed: #{inspect(reason)}")
+              {:error, "ECIES decryption failed: #{inspect(reason)}"}
+          end
 
-          {:ok, rlp, auth_size <> ecies_encoded_message, frame_rest}
-        end
-
-      _ ->
-        {:error, "Invalid encoded packet"}
+        _ ->
+          Logger.error("[EIP-8] Invalid packet structure, expected #{auth_size_int + 2} bytes, got #{byte_size(encoded_packet)}")
+          {:error, "Invalid encoded packet"}
+      end
     end
   end
 end

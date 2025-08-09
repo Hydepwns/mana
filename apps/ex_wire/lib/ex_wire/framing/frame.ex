@@ -119,7 +119,7 @@ defmodule ExWire.Framing.Frame do
         # is header always 128 bits?
         header_enc::binary-size(16),
         header_mac::binary-size(16),
-        frame_rest::binary()
+        frame_rest::binary
       >> = frame
 
       # verify header mac
@@ -129,9 +129,7 @@ defmodule ExWire.Framing.Frame do
       if expected_header_mac != header_mac do
         :ok =
           Logger.error(
-            "Failed to match ingress header mac, expected: #{inspect(expected_header_mac)}, got #{
-              inspect(header_mac)
-            }"
+            "Failed to match ingress header mac, expected: #{inspect(expected_header_mac)}, got #{inspect(header_mac)}"
           )
 
         {:error, :failed_to_match_header_ingress_mac}
@@ -140,7 +138,7 @@ defmodule ExWire.Framing.Frame do
 
         <<
           frame_size::integer-size(24),
-          _header_data_and_padding::binary()
+          _header_data_and_padding::binary
         >> = header
 
         # TODO: We should read the header? But, it's unused by all clients.
@@ -158,7 +156,7 @@ defmodule ExWire.Framing.Frame do
           <<
             frame_enc_with_padding::binary-size(frame_size_with_padding),
             frame_mac::binary-size(16),
-            frame_rest::binary()
+            frame_rest::binary
           >> = frame_rest
 
           ingress_mac = MAC.update(ingress_mac, frame_enc_with_padding)
@@ -173,12 +171,12 @@ defmodule ExWire.Framing.Frame do
 
             <<
               frame::binary-size(frame_size),
-              _frame_padding::binary()
+              _frame_padding::binary
             >> = frame_with_padding
 
             <<
               packet_type_rlp::binary-size(1),
-              packet_data_rlp::binary()
+              packet_data_rlp::binary
             >> = frame
 
             {

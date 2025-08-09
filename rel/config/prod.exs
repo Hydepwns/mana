@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 # Production configuration for Mana-Ethereum
 # This configuration is optimized for production deployment

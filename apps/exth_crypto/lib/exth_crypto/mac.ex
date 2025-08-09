@@ -28,8 +28,8 @@ defmodule ExthCrypto.MAC do
   def mac(data, key, hash_algorithm, length \\ nil) when is_atom(hash_algorithm) do
     if Enum.member?(Hash.hash_algorithms(), hash_algorithm) do
       case length do
-        nil -> :crypto.hmac(hash_algorithm, key, data)
-        _ -> :crypto.hmac(hash_algorithm, key, data, length)
+        nil -> :crypto.mac(:hmac, hash_algorithm, key, data)
+        _ -> :crypto.macN(:hmac, hash_algorithm, key, data, length)
       end
     end
 

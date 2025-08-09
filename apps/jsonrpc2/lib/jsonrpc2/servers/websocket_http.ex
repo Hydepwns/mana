@@ -217,7 +217,7 @@ defmodule JSONRPC2.Servers.WebSocketHTTP do
        ),
        do: []
 
-  '''
+  ~c"""
   Returns a supervisor child spec for the given `handler` via http scheme with `cowboy_opts`.
 
   Allows you to embed a server directly in your app's supervision tree, rather than letting
@@ -227,7 +227,7 @@ defmodule JSONRPC2.Servers.WebSocketHTTP do
   which are allowed in `cowboy_opts`.
 
   If the server `ref` is not set in `cowboy_opts`, `handler.HTTP` or `handler.HTTPS` is the default.
-  '''
+  """
 
   @spec child_spec(:web_ws | :web | :ws, module, configuration) :: Supervisor.child_spec()
   defp child_spec(type, handler, configuration) do

@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 require Logger
 
 try do

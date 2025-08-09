@@ -69,7 +69,10 @@ defmodule Mix.Tasks.Benchmark do
 
       # Benchmark AntidoteDB
       antidote_start = System.monotonic_time(:microsecond)
-      {_, antidote_conn} = MerklePatriciaTree.DB.Antidote.init(:"benchmark_antidote_batch_#{batch_size}")
+
+      {_, antidote_conn} =
+        MerklePatriciaTree.DB.Antidote.init(:"benchmark_antidote_batch_#{batch_size}")
+
       MerklePatriciaTree.DB.Antidote.batch_put!(antidote_conn, test_data, 50)
       antidote_end = System.monotonic_time(:microsecond)
       antidote_time = antidote_end - antidote_start
@@ -78,7 +81,10 @@ defmodule Mix.Tasks.Benchmark do
       # Report results
       IO.puts("  AntidoteDB (ETS): #{antidote_time} μs")
       IO.puts("  Average per operation: #{Float.round(antidote_time / batch_size, 2)} μs")
-      IO.puts("  Operations per second: #{Float.round(1_000_000 / (antidote_time / batch_size), 0)}")
+
+      IO.puts(
+        "  Operations per second: #{Float.round(1_000_000 / (antidote_time / batch_size), 0)}"
+      )
     end)
   end
 
@@ -95,9 +101,10 @@ defmodule Mix.Tasks.Benchmark do
     trie = MerklePatriciaTree.Trie.new(db)
 
     # Insert data into trie
-    trie = Enum.reduce(trie_data, trie, fn {key, value}, acc ->
-      MerklePatriciaTree.Trie.put_raw_key!(acc, key, value)
-    end)
+    trie =
+      Enum.reduce(trie_data, trie, fn {key, value}, acc ->
+        MerklePatriciaTree.Trie.put_raw_key!(acc, key, value)
+      end)
 
     # Read data from trie
     Enum.each(trie_data, fn {key, _value} ->
@@ -110,7 +117,8 @@ defmodule Mix.Tasks.Benchmark do
 
     # Report results
     IO.puts("AntidoteDB (ETS) - Trie Operations (500 items): #{antidote_time} μs")
-    IO.puts("Average per operation: #{Float.round(antidote_time / 1000, 2)} μs") # 500 writes + 500 reads
+    # 500 writes + 500 reads
+    IO.puts("Average per operation: #{Float.round(antidote_time / 1000, 2)} μs")
     IO.puts("Operations per second: #{Float.round(1_000_000 / (antidote_time / 1000), 0)}")
   end
 
@@ -148,31 +156,38 @@ defmodule Mix.Tasks.Benchmark do
 
       # Benchmark AntidoteDB
       antidote_start = System.monotonic_time(:microsecond)
-      {_, antidote_conn} = MerklePatriciaTree.DB.Antidote.init(:"benchmark_antidote_concurrent_#{num_tasks}")
 
-      tasks = for i <- 1..num_tasks do
-        Task.async(fn ->
-          for j <- 1..100 do
-            key = "concurrent_key_#{i}_#{j}"
-            value = "concurrent_value_#{i}_#{j}"
-            MerklePatriciaTree.DB.Antidote.put!(antidote_conn, key, value)
-            MerklePatriciaTree.DB.Antidote.get(antidote_conn, key)
-          end
-        end)
-      end
+      {_, antidote_conn} =
+        MerklePatriciaTree.DB.Antidote.init(:"benchmark_antidote_concurrent_#{num_tasks}")
+
+      tasks =
+        for i <- 1..num_tasks do
+          Task.async(fn ->
+            for j <- 1..100 do
+              key = "concurrent_key_#{i}_#{j}"
+              value = "concurrent_value_#{i}_#{j}"
+              MerklePatriciaTree.DB.Antidote.put!(antidote_conn, key, value)
+              MerklePatriciaTree.DB.Antidote.get(antidote_conn, key)
+            end
+          end)
+        end
 
       Enum.each(tasks, &Task.await/1)
       antidote_end = System.monotonic_time(:microsecond)
       antidote_time = antidote_end - antidote_start
       MerklePatriciaTree.DB.Antidote.close(antidote_conn)
 
-      total_operations = num_tasks * 100 * 2 # 100 puts + 100 gets per task
+      # 100 puts + 100 gets per task
+      total_operations = num_tasks * 100 * 2
 
       # Report results
       IO.puts("  AntidoteDB (ETS): #{antidote_time} μs")
       IO.puts("  Total operations: #{total_operations}")
       IO.puts("  Average per operation: #{Float.round(antidote_time / total_operations, 2)} μs")
-      IO.puts("  Operations per second: #{Float.round(1_000_000 / (antidote_time / total_operations), 0)}")
+
+      IO.puts(
+        "  Operations per second: #{Float.round(1_000_000 / (antidote_time / total_operations), 0)}"
+      )
     end)
   end
 

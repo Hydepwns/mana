@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 config :jsonrpc2,
   ipc: [enabled: false, path: Enum.join([System.user_home!(), "/.ethereum", "/mana.ipc"])],

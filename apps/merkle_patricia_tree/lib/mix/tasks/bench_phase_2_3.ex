@@ -48,7 +48,8 @@ defmodule Mix.Tasks.Bench.Phase23 do
 
   @impl Mix.Task
   def run(args) do
-    {opts, _remaining, _invalid} = OptionParser.parse(args, switches: @switches, aliases: @aliases)
+    {opts, _remaining, _invalid} =
+      OptionParser.parse(args, switches: @switches, aliases: @aliases)
 
     benchmark = opts[:benchmark] || "all"
     duration = opts[:duration] || 60
@@ -65,18 +66,35 @@ defmodule Mix.Tasks.Bench.Phase23 do
 
     start_time = System.monotonic_time(:millisecond)
 
-    results = case benchmark do
-      "load_stress" -> run_load_stress_benchmark(duration, concurrent_users, verbose)
-      "memory_optimization" -> run_memory_optimization_benchmark(large_state_size, verbose)
-      "distributed_transactions" -> run_distributed_transactions_benchmark(concurrent_users, verbose)
-      "crdt_operations" -> run_crdt_operations_benchmark(verbose)
-      "large_state" -> run_large_state_benchmark(large_state_size, verbose)
-      "all" -> run_all_benchmarks(duration, concurrent_users, large_state_size, verbose)
-      _ ->
-        Logger.error("Unknown benchmark: #{benchmark}")
-        Logger.info("Available benchmarks: load_stress, memory_optimization, distributed_transactions, crdt_operations, large_state, all")
-        System.halt(1)
-    end
+    results =
+      case benchmark do
+        "load_stress" ->
+          run_load_stress_benchmark(duration, concurrent_users, verbose)
+
+        "memory_optimization" ->
+          run_memory_optimization_benchmark(large_state_size, verbose)
+
+        "distributed_transactions" ->
+          run_distributed_transactions_benchmark(concurrent_users, verbose)
+
+        "crdt_operations" ->
+          run_crdt_operations_benchmark(verbose)
+
+        "large_state" ->
+          run_large_state_benchmark(large_state_size, verbose)
+
+        "all" ->
+          run_all_benchmarks(duration, concurrent_users, large_state_size, verbose)
+
+        _ ->
+          Logger.error("Unknown benchmark: #{benchmark}")
+
+          Logger.info(
+            "Available benchmarks: load_stress, memory_optimization, distributed_transactions, crdt_operations, large_state, all"
+          )
+
+          System.halt(1)
+      end
 
     end_time = System.monotonic_time(:millisecond)
     total_duration = end_time - start_time
@@ -109,9 +127,19 @@ defmodule Mix.Tasks.Bench.Phase23 do
 
     if verbose do
       Logger.info("Load Stress Results:")
-      Logger.info("  Blockchain Scenario: #{results.blockchain_scenario.throughput_ops_per_sec} ops/sec")
-      Logger.info("  High Concurrency: #{results.high_concurrency.throughput_ops_per_sec} ops/sec")
-      Logger.info("  Large State: #{results.large_state_operations.throughput_ops_per_sec} ops/sec")
+
+      Logger.info(
+        "  Blockchain Scenario: #{results.blockchain_scenario.throughput_ops_per_sec} ops/sec"
+      )
+
+      Logger.info(
+        "  High Concurrency: #{results.high_concurrency.throughput_ops_per_sec} ops/sec"
+      )
+
+      Logger.info(
+        "  Large State: #{results.large_state_operations.throughput_ops_per_sec} ops/sec"
+      )
+
       Logger.info("  Network Stress: #{results.network_stress.failure_rate}% failure rate")
       Logger.info("  CRDT Performance: #{results.crdt_performance.crdt_operations} operations")
       Logger.info("  Memory Pressure: #{results.memory_pressure.peak_memory_mb} MB peak")
@@ -125,11 +153,12 @@ defmodule Mix.Tasks.Bench.Phase23 do
     Logger.info("💾 Running Memory Optimization Testing")
 
     # Initialize memory optimizer
-    {:ok, optimizer} = MerklePatriciaTree.DB.MemoryOptimizer.init(
-      max_cache_size: 100_000,
-      compression_enabled: true,
-      gc_threshold: 0.8
-    )
+    {:ok, optimizer} =
+      MerklePatriciaTree.DB.MemoryOptimizer.init(
+        max_cache_size: 100_000,
+        compression_enabled: true,
+        gc_threshold: 0.8
+      )
 
     # Generate large dataset
     large_dataset = generate_large_dataset(large_state_size)
@@ -171,7 +200,11 @@ defmodule Mix.Tasks.Bench.Phase23 do
       Logger.info("Distributed Transactions Results:")
       Logger.info("  Connection Pool Efficiency: #{results.connection_pooling.efficiency}%")
       Logger.info("  Load Balancing Distribution: #{results.load_balancing.distribution}")
-      Logger.info("  Transaction Throughput: #{results.transaction_throughput.ops_per_sec} ops/sec")
+
+      Logger.info(
+        "  Transaction Throughput: #{results.transaction_throughput.ops_per_sec} ops/sec"
+      )
+
       Logger.info("  Fault Tolerance Recovery: #{results.fault_tolerance.recovery_time_ms} ms")
     end
 
@@ -249,12 +282,13 @@ defmodule Mix.Tasks.Bench.Phase23 do
     end)
 
     # Retrieve items
-    hits = Enum.count(dataset, fn item ->
-      case MerklePatriciaTree.DB.MemoryOptimizer.get(optimizer, item.key) do
-        {:ok, _} -> true
-        _ -> false
-      end
-    end)
+    hits =
+      Enum.count(dataset, fn item ->
+        case MerklePatriciaTree.DB.MemoryOptimizer.get(optimizer, item.key) do
+          {:ok, _} -> true
+          _ -> false
+        end
+      end)
 
     end_time = System.monotonic_time(:microsecond)
     duration = (end_time - start_time) / 1_000_000
@@ -268,14 +302,16 @@ defmodule Mix.Tasks.Bench.Phase23 do
 
   defp test_compression_efficiency(optimizer, dataset) do
     # Test compression efficiency
-    original_size = Enum.reduce(dataset, 0, fn item, acc ->
-      acc + byte_size(item.value)
-    end)
+    original_size =
+      Enum.reduce(dataset, 0, fn item, acc ->
+        acc + byte_size(item.value)
+      end)
 
-    compressed_size = Enum.reduce(dataset, 0, fn item, acc ->
-      compressed = :zlib.compress(item.value)
-      acc + byte_size(compressed)
-    end)
+    compressed_size =
+      Enum.reduce(dataset, 0, fn item, acc ->
+        compressed = :zlib.compress(item.value)
+        acc + byte_size(compressed)
+      end)
 
     %{
       ratio: compressed_size / original_size,
@@ -314,6 +350,7 @@ defmodule Mix.Tasks.Bench.Phase23 do
     start_time = System.monotonic_time(:microsecond)
 
     processed_count = 0
+
     processor = fn _item ->
       processed_count = processed_count + 1
       :ok
@@ -334,7 +371,8 @@ defmodule Mix.Tasks.Bench.Phase23 do
   defp test_connection_pooling(concurrent_users) do
     # Test connection pooling efficiency
     %{
-      efficiency: 95.5,  # Simulated efficiency percentage
+      # Simulated efficiency percentage
+      efficiency: 95.5,
       pool_size: 20,
       concurrent_connections: concurrent_users
     }
@@ -352,7 +390,8 @@ defmodule Mix.Tasks.Bench.Phase23 do
   defp test_transaction_throughput(concurrent_users) do
     # Test transaction throughput
     %{
-      ops_per_sec: concurrent_users * 100,  # Simulated throughput
+      # Simulated throughput
+      ops_per_sec: concurrent_users * 100,
       concurrent_transactions: concurrent_users,
       avg_latency_ms: 5.2
     }
@@ -406,7 +445,8 @@ defmodule Mix.Tasks.Bench.Phase23 do
   defp test_large_state_loading(size) do
     # Test large state loading
     %{
-      throughput: size / 10,  # Simulated throughput
+      # Simulated throughput
+      throughput: size / 10,
       size_items: size,
       duration_seconds: 10.0
     }
@@ -415,7 +455,8 @@ defmodule Mix.Tasks.Bench.Phase23 do
   defp test_large_state_traversal(size) do
     # Test large state traversal
     %{
-      speed: size / 5,  # Simulated speed
+      # Simulated speed
+      speed: size / 5,
       items_traversed: size,
       duration_seconds: 5.0
     }
@@ -424,7 +465,8 @@ defmodule Mix.Tasks.Bench.Phase23 do
   defp test_large_state_memory_usage(size) do
     # Test large state memory usage
     %{
-      peak_mb: size * 0.001,  # Simulated memory usage
+      # Simulated memory usage
+      peak_mb: size * 0.001,
       efficient_mb: size * 0.0005,
       optimization_percent: 50.0
     }

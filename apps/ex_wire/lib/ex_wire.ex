@@ -20,6 +20,9 @@ defmodule ExWire do
   alias MerklePatriciaTree.{CachingTrie, DB.Antidote, Trie}
 
   def start(_type, _args) do
+    # Initialize eth/66+ request tracking
+    ExWire.Packet.Capability.Eth.V66Wrapper.init_request_tracking()
+    
     Supervisor.start_link(
       get_children([]),
       strategy: :one_for_one

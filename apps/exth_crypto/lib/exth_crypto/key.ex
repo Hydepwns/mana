@@ -13,7 +13,7 @@ defmodule ExthCrypto.Key do
   @type key_pair :: {public_key(), private_key()}
 
   @spec public_der_key(public_der_encoded_key_material()) :: public_key_der()
-  def public_der_key(der = <<0x04, _::binary()>>) do
+  def public_der_key(der = <<0x04, _::binary>>) do
     {:public_der, der}
   end
 
@@ -26,7 +26,7 @@ defmodule ExthCrypto.Key do
       <<0x01>>
   """
   @spec public_der_to_raw(public_key_der()) :: public_key()
-  def public_der_to_raw({:public_der, <<0x04, public_key::binary()>>}) do
+  def public_der_to_raw({:public_der, <<0x04, public_key::binary>>}) do
     public_key
   end
 

@@ -41,9 +41,7 @@ defmodule ExWire.Adapter.UDP do
         state = %{network: network, network_args: network_args}
       ) do
     Exth.trace(fn ->
-      "Got UDP message from #{inspect(ip)}:#{to_string(port)} with #{byte_size(data)} bytes, handling with {#{
-        Atom.to_string(network)
-      }, #{inspect(network_args)}}"
+      "Got UDP message from #{inspect(ip)}:#{to_string(port)} with #{byte_size(data)} bytes, handling with {#{Atom.to_string(network)}, #{inspect(network_args)}}"
     end)
 
     :ok = handle_inbound_message(ip, port, data, network, network_args)

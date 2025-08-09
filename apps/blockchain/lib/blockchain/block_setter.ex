@@ -123,10 +123,10 @@ defmodule Blockchain.BlockSetter do
     put_header(block, :state_root, root_hash)
   end
 
-  '''
+  ~c"""
   Sets a given block header field as a shortcut when
   we want to change a single field.
-  '''
+  """
 
   @spec put_header(Block.t(), any(), any()) :: Block.t()
   defp put_header(block, key, value) do

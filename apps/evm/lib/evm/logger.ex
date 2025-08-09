@@ -29,9 +29,7 @@ defmodule EVM.Logger do
 
   defp log_opcode_and_gas_left(operation, machine_state) do
     Logger.debug(fn ->
-      "[#{current_step(machine_state)}] pc(#{machine_state.program_counter}) [#{
-        operation_string(operation)
-      }(0x#{opcode_string(operation)}) Gas Left: #{machine_state.gas})"
+      "[#{current_step(machine_state)}] pc(#{machine_state.program_counter}) [#{operation_string(operation)}(0x#{opcode_string(operation)}) Gas Left: #{machine_state.gas})"
     end)
   end
 

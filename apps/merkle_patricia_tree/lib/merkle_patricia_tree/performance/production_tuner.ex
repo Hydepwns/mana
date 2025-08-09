@@ -40,55 +40,63 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
   require Logger
 
   @type tuner :: %{
-    performance_metrics: map(),
-    optimization_history: list(map()),
-    current_config: map(),
-    workload_patterns: map(),
-    cache_stats: map(),
-    database_stats: map(),
-    network_stats: map(),
-    recommendations: list(map()),
-    start_time: integer()
-  }
+          performance_metrics: map(),
+          optimization_history: list(map()),
+          current_config: map(),
+          workload_patterns: map(),
+          cache_stats: map(),
+          database_stats: map(),
+          network_stats: map(),
+          recommendations: list(map()),
+          start_time: integer()
+        }
 
   @type performance_metric :: %{
-    name: String.t(),
-    value: number(),
-    unit: String.t(),
-    timestamp: integer(),
-    threshold: number(),
-    status: :optimal | :warning | :critical
-  }
+          name: String.t(),
+          value: number(),
+          unit: String.t(),
+          timestamp: integer(),
+          threshold: number(),
+          status: :optimal | :warning | :critical
+        }
 
   @type optimization :: %{
-    id: String.t(),
-    type: atom(),
-    description: String.t(),
-    impact: :low | :medium | :high,
-    applied_at: integer(),
-    results: map()
-  }
+          id: String.t(),
+          type: atom(),
+          description: String.t(),
+          impact: :low | :medium | :high,
+          applied_at: integer(),
+          results: map()
+        }
 
   @type recommendation :: %{
-    id: String.t(),
-    type: atom(),
-    priority: :low | :medium | :high | :critical,
-    description: String.t(),
-    expected_impact: map(),
-    implementation_steps: list(String.t())
-  }
+          id: String.t(),
+          type: atom(),
+          priority: :low | :medium | :high | :critical,
+          description: String.t(),
+          expected_impact: map(),
+          implementation_steps: list(String.t())
+        }
 
   # Default configuration
-  @default_tuning_interval 300_000  # 5 minutes
-  @default_analysis_interval 600_000  # 10 minutes
-  @default_optimization_interval 1800_000  # 30 minutes
+  # 5 minutes
+  @default_tuning_interval 300_000
+  # 10 minutes
+  @default_analysis_interval 600_000
+  # 30 minutes
+  @default_optimization_interval 1800_000
 
   # Performance thresholds
-  @cpu_threshold 0.8  # 80% CPU usage
-  @memory_threshold 0.9  # 90% memory usage
-  @latency_threshold 1000  # 1 second latency
-  @throughput_threshold 1000  # 1000 requests per second
-  @error_rate_threshold 0.05  # 5% error rate
+  # 80% CPU usage
+  @cpu_threshold 0.8
+  # 90% memory usage
+  @memory_threshold 0.9
+  # 1 second latency
+  @latency_threshold 1000
+  # 1000 requests per second
+  @throughput_threshold 1000
+  # 5% error rate
+  @error_rate_threshold 0.05
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -180,7 +188,9 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
   def init(opts) do
     tuning_interval = Keyword.get(opts, :tuning_interval, @default_tuning_interval)
     analysis_interval = Keyword.get(opts, :analysis_interval, @default_analysis_interval)
-    optimization_interval = Keyword.get(opts, :optimization_interval, @default_optimization_interval)
+
+    optimization_interval =
+      Keyword.get(opts, :optimization_interval, @default_optimization_interval)
 
     # Initialize performance tuner state
     tuner = %{
@@ -307,10 +317,7 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
     recommendations = generate_performance_recommendations(analysis)
 
     # Update state
-    %{state |
-      performance_metrics: metrics,
-      recommendations: recommendations
-    }
+    %{state | performance_metrics: metrics, recommendations: recommendations}
   end
 
   defp perform_workload_analysis(state) do
@@ -327,11 +334,12 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
     network_stats = collect_network_statistics()
 
     # Update state
-    %{state |
-      workload_patterns: workload_patterns,
-      cache_stats: cache_stats,
-      database_stats: database_stats,
-      network_stats: network_stats
+    %{
+      state
+      | workload_patterns: workload_patterns,
+        cache_stats: cache_stats,
+        database_stats: database_stats,
+        network_stats: network_stats
     }
   end
 
@@ -403,11 +411,16 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
   defp analyze_performance_patterns(metrics) do
     # Analyze performance patterns and identify bottlenecks
     %{
-      cpu_bottleneck: Enum.any?(metrics, fn m -> m.name == "cpu_usage" and m.status == :critical end),
-      memory_bottleneck: Enum.any?(metrics, fn m -> m.name == "memory_usage" and m.status == :critical end),
-      latency_bottleneck: Enum.any?(metrics, fn m -> m.name == "request_latency" and m.status == :critical end),
-      throughput_bottleneck: Enum.any?(metrics, fn m -> m.name == "throughput" and m.status == :critical end),
-      error_bottleneck: Enum.any?(metrics, fn m -> m.name == "error_rate" and m.status == :critical end)
+      cpu_bottleneck:
+        Enum.any?(metrics, fn m -> m.name == "cpu_usage" and m.status == :critical end),
+      memory_bottleneck:
+        Enum.any?(metrics, fn m -> m.name == "memory_usage" and m.status == :critical end),
+      latency_bottleneck:
+        Enum.any?(metrics, fn m -> m.name == "request_latency" and m.status == :critical end),
+      throughput_bottleneck:
+        Enum.any?(metrics, fn m -> m.name == "throughput" and m.status == :critical end),
+      error_bottleneck:
+        Enum.any?(metrics, fn m -> m.name == "error_rate" and m.status == :critical end)
     }
   end
 
@@ -416,50 +429,62 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
 
     # CPU optimization recommendations
     if analysis.cpu_bottleneck do
-      recommendations = [%{
-        id: generate_recommendation_id(),
-        type: :cpu_optimization,
-        priority: :high,
-        description: "High CPU usage detected. Consider increasing worker pool size or optimizing algorithms.",
-        expected_impact: %{cpu_usage: -20, throughput: 15},
-        implementation_steps: [
-          "Increase worker pool size",
-          "Optimize CPU-intensive algorithms",
-          "Consider horizontal scaling"
-        ]
-      } | recommendations]
+      recommendations = [
+        %{
+          id: generate_recommendation_id(),
+          type: :cpu_optimization,
+          priority: :high,
+          description:
+            "High CPU usage detected. Consider increasing worker pool size or optimizing algorithms.",
+          expected_impact: %{cpu_usage: -20, throughput: 15},
+          implementation_steps: [
+            "Increase worker pool size",
+            "Optimize CPU-intensive algorithms",
+            "Consider horizontal scaling"
+          ]
+        }
+        | recommendations
+      ]
     end
 
     # Memory optimization recommendations
     if analysis.memory_bottleneck do
-      recommendations = [%{
-        id: generate_recommendation_id(),
-        type: :memory_optimization,
-        priority: :critical,
-        description: "High memory usage detected. Consider increasing memory or optimizing memory usage.",
-        expected_impact: %{memory_usage: -30, stability: 25},
-        implementation_steps: [
-          "Increase system memory",
-          "Optimize memory allocation",
-          "Implement memory pooling"
-        ]
-      } | recommendations]
+      recommendations = [
+        %{
+          id: generate_recommendation_id(),
+          type: :memory_optimization,
+          priority: :critical,
+          description:
+            "High memory usage detected. Consider increasing memory or optimizing memory usage.",
+          expected_impact: %{memory_usage: -30, stability: 25},
+          implementation_steps: [
+            "Increase system memory",
+            "Optimize memory allocation",
+            "Implement memory pooling"
+          ]
+        }
+        | recommendations
+      ]
     end
 
     # Latency optimization recommendations
     if analysis.latency_bottleneck do
-      recommendations = [%{
-        id: generate_recommendation_id(),
-        type: :latency_optimization,
-        priority: :high,
-        description: "High latency detected. Consider optimizing database queries and network configuration.",
-        expected_impact: %{latency: -40, user_experience: 30},
-        implementation_steps: [
-          "Optimize database queries",
-          "Implement connection pooling",
-          "Add caching layers"
-        ]
-      } | recommendations]
+      recommendations = [
+        %{
+          id: generate_recommendation_id(),
+          type: :latency_optimization,
+          priority: :high,
+          description:
+            "High latency detected. Consider optimizing database queries and network configuration.",
+          expected_impact: %{latency: -40, user_experience: 30},
+          implementation_steps: [
+            "Optimize database queries",
+            "Implement connection pooling",
+            "Add caching layers"
+          ]
+        }
+        | recommendations
+      ]
     end
 
     recommendations
@@ -690,7 +715,7 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
 
   defp get_cache_size do
     # Simplified cache size
-    :rand.uniform(100000)
+    :rand.uniform(100_000)
   end
 
   defp get_database_connections do

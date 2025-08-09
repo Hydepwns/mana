@@ -46,7 +46,9 @@ defmodule ExWire.PeerSupervisor do
       {:ok, _pid} = DynamicSupervisor.start_child(@name, spec)
     else
       :ok =
-        Logger.debug(fn -> "[PeerSup] Not connecting due to max peers (#{@max_peers}) reached" end)
+        Logger.debug(fn ->
+          "[PeerSup] Not connecting due to max peers (#{@max_peers}) reached"
+        end)
     end
   end
 
@@ -69,9 +71,7 @@ defmodule ExWire.PeerSupervisor do
     spawn(fn ->
       for child <- children do
         Exth.trace(fn ->
-          "[PeerSup] Sending #{to_string(packet.__struct__)} packet to peer #{
-            inspect(Server.get_peer(child).ident)
-          }"
+          "[PeerSup] Sending #{to_string(packet.__struct__)} packet to peer #{inspect(Server.get_peer(child).ident)}"
         end)
 
         Server.send_packet(child, packet)

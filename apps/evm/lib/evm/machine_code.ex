@@ -122,7 +122,7 @@ defmodule EVM.MachineCode do
 
   defp decompile(acc, <<>>, _), do: Enum.reverse(acc)
 
-  defp decompile(acc, <<opcode::8, bytecode::binary()>>, opts) do
+  defp decompile(acc, <<opcode::8, bytecode::binary>>, opts) do
     {op, rest_of_bytecode} =
       decompile_opcode(opcode, EVM.Operation.metadata(opcode), bytecode, opts)
 
@@ -156,7 +156,7 @@ defmodule EVM.MachineCode do
   end
 
   defp consume_instr_args(bytecode, args_size) do
-    <<op_args::binary-size(args_size), rest::binary()>> = bytecode
+    <<op_args::binary-size(args_size), rest::binary>> = bytecode
     {op_args, rest}
   end
 end

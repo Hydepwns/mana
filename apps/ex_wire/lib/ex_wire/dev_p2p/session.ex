@@ -14,14 +14,16 @@ defmodule ExWire.DEVp2p.Session do
   @type t :: %__MODULE__{
           hello_sent: Hello.t() | nil,
           hello_received: Hello.t() | nil,
-          packet_id_map: PacketIdMap.t()
+          packet_id_map: PacketIdMap.t(),
+          negotiated_version: integer() | nil
         }
 
   @default_packet_id_map PacketIdMap.default_map()
 
   defstruct hello_sent: nil,
             hello_received: nil,
-            packet_id_map: @default_packet_id_map
+            packet_id_map: @default_packet_id_map,
+            negotiated_version: nil
 
   @doc """
   Checks whether or not the session is active.
@@ -76,12 +78,25 @@ defmodule ExWire.DEVp2p.Session do
   """
   @spec hello_received(t, Hello.t()) :: t
   def hello_received(session, hello) do
-    packet_id_map =
-      hello.caps
-      |> Capability.get_matching_capabilities(Mana.get_our_capabilities_map())
-      |> PacketIdMap.new()
+    matching_caps = Capability.get_matching_capabilities(hello.caps, Mana.get_our_capabilities_map())
+    packet_id_map = PacketIdMap.new(matching_caps)
+    
+    # Find the highest negotiated eth protocol version
+    negotiated_version = find_negotiated_eth_version(matching_caps)
 
-    %{session | hello_received: hello, packet_id_map: packet_id_map}
+    %{session | 
+      hello_received: hello, 
+      packet_id_map: packet_id_map,
+      negotiated_version: negotiated_version
+    }
+  end
+  
+  # Find the highest mutually supported eth protocol version
+  defp find_negotiated_eth_version(capabilities) do
+    capabilities
+    |> Enum.filter(fn %Capability{name: name} -> name == "eth" end)
+    |> Enum.map(fn %Capability{version: version} -> version end)
+    |> Enum.max(fn -> nil end)
   end
 
   @doc """

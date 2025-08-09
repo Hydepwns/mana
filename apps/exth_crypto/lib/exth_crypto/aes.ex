@@ -5,6 +5,26 @@ defmodule ExthCrypto.AES do
 
   @block_size 32
   @type block_size :: unquote(@block_size)
+  
+  # Helper to determine AES algorithm based on key size
+  defp aes_algorithm(mode, key) do
+    key_bits = byte_size(key) * 8
+    
+    case {mode, key_bits} do
+      {:cbc, 128} -> :aes_128_cbc
+      {:cbc, 192} -> :aes_192_cbc
+      {:cbc, 256} -> :aes_256_cbc
+      {:cbc, _} -> :aes_256_cbc  # Default to 256
+      {:ctr, 128} -> :aes_128_ctr
+      {:ctr, 192} -> :aes_192_ctr
+      {:ctr, 256} -> :aes_256_ctr
+      {:ctr, _} -> :aes_256_ctr  # Default to 256
+      {:ecb, 128} -> :aes_128_ecb
+      {:ecb, 192} -> :aes_192_ecb
+      {:ecb, 256} -> :aes_256_ecb
+      {:ecb, _} -> :aes_256_ecb  # Default to 256
+    end
+  end
   @doc """
   Returns the blocksize for AES encryption when used as block mode encryption.
 
@@ -66,21 +86,25 @@ defmodule ExthCrypto.AES do
         ) :: ExthCrypto.Cipher.ciphertext()
   def encrypt(plaintext, :cbc, symmetric_key, init_vector) do
     padding_bits = (16 - rem(byte_size(plaintext), 16)) * 8
+    padded_plaintext = <<0::size(padding_bits)>> <> plaintext
 
-    :crypto.block_encrypt(
-      :aes_cbc,
+    :crypto.crypto_one_time(
+      aes_algorithm(:cbc, symmetric_key),
       symmetric_key,
       init_vector,
-      <<0::size(padding_bits)>> <> plaintext
+      padded_plaintext,
+      true
     )
   end
 
   def encrypt(plaintext, :ctr, symmetric_key, init_vector) do
-    {_state, ciphertext} =
-      :crypto.stream_init(:aes_ctr, symmetric_key, init_vector)
-      |> :crypto.stream_encrypt(plaintext)
-
-    ciphertext
+    :crypto.crypto_one_time(
+      aes_algorithm(:ctr, symmetric_key),
+      symmetric_key,
+      init_vector,
+      plaintext,
+      true
+    )
   end
 
   @spec encrypt(
@@ -90,8 +114,9 @@ defmodule ExthCrypto.AES do
         ) :: ExthCrypto.Cipher.ciphertext()
   def encrypt(plaintext, :ecb, symmetric_key) do
     padding_bits = (16 - rem(byte_size(plaintext), 16)) * 8
+    padded_plaintext = <<0::size(padding_bits)>> <> plaintext
 
-    :crypto.block_encrypt(:aes_ecb, symmetric_key, <<0::size(padding_bits)>> <> plaintext)
+    :crypto.crypto_one_time(aes_algorithm(:ecb, symmetric_key), symmetric_key, padded_plaintext, true)
   end
 
   @doc """
@@ -151,15 +176,23 @@ defmodule ExthCrypto.AES do
           ExthCrypto.Cipher.init_vector()
         ) :: ExthCrypto.Cipher.plaintext()
   def decrypt(ciphertext, :cbc, symmetric_key, init_vector) do
-    :crypto.block_decrypt(:aes_cbc, symmetric_key, init_vector, ciphertext)
+    :crypto.crypto_one_time(
+      aes_algorithm(:cbc, symmetric_key),
+      symmetric_key,
+      init_vector,
+      ciphertext,
+      false
+    )
   end
 
   def decrypt(ciphertext, :ctr, symmetric_key, init_vector) do
-    {_state, plaintext} =
-      :crypto.stream_init(:aes_ctr, symmetric_key, init_vector)
-      |> :crypto.stream_decrypt(ciphertext)
-
-    plaintext
+    :crypto.crypto_one_time(
+      aes_algorithm(:ctr, symmetric_key),
+      symmetric_key,
+      init_vector,
+      ciphertext,
+      false
+    )
   end
 
   @spec decrypt(
@@ -168,7 +201,7 @@ defmodule ExthCrypto.AES do
           ExthCrypto.Key.symmetric_key()
         ) :: ExthCrypto.Cipher.plaintext()
   def decrypt(ciphertext, :ecb, symmetric_key) do
-    :crypto.block_decrypt(:aes_ecb, symmetric_key, ciphertext)
+    :crypto.crypto_one_time(aes_algorithm(:ecb, symmetric_key), symmetric_key, ciphertext, false)
   end
 
   @doc """
@@ -187,8 +220,7 @@ defmodule ExthCrypto.AES do
           ExthCrypto.Cipher.init_vector()
         ) :: ExthCrypto.Cipher.stream()
   def stream_init(:ctr, symmetric_key, init_vector) do
-    # IO.inspect(["Have symm key: ", symmetric_key])
-    :crypto.stream_init(:aes_ctr, symmetric_key, init_vector)
+    :crypto.crypto_init(aes_algorithm(:ctr, symmetric_key), symmetric_key, init_vector, true)
   end
 
   @doc """
@@ -205,7 +237,8 @@ defmodule ExthCrypto.AES do
   @spec stream_encrypt(ExthCrypto.Cipher.plaintext(), ExthCrypto.Cipher.stream()) ::
           {ExthCrypto.Cipher.stream(), ExthCrypto.Cipher.ciphertext()}
   def stream_encrypt(plaintext, stream) do
-    :crypto.stream_encrypt(stream, plaintext)
+    ciphertext = :crypto.crypto_update(stream, plaintext)
+    {stream, ciphertext}
   end
 
   @doc """
@@ -216,13 +249,16 @@ defmodule ExthCrypto.AES do
 
       iex> stream = ExthCrypto.AES.stream_init(:ctr, ExthCrypto.Test.symmetric_key(), ExthCrypto.Test.init_vector)
       iex> {_stream_2, ciphertext} = ExthCrypto.AES.stream_encrypt("hello", stream)
-      iex> {_stream_3, plaintext} = ExthCrypto.AES.stream_decrypt(ciphertext, stream)
+      iex> decrypt_stream = ExthCrypto.AES.stream_init(:ctr, ExthCrypto.Test.symmetric_key(), ExthCrypto.Test.init_vector)
+      iex> {_stream_3, plaintext} = ExthCrypto.AES.stream_decrypt(ciphertext, decrypt_stream)
       iex> plaintext
       "hello"
   """
   @spec stream_decrypt(ExthCrypto.Cipher.ciphertext(), ExthCrypto.Cipher.stream()) ::
           {ExthCrypto.Cipher.stream(), ExthCrypto.Cipher.plaintext()}
-  def stream_decrypt(plaintext, stream) do
-    :crypto.stream_decrypt(stream, plaintext)
+  def stream_decrypt(ciphertext, stream) do
+    # For CTR mode, decryption uses the same operation as encryption
+    plaintext = :crypto.crypto_update(stream, ciphertext)
+    {stream, plaintext}
   end
 end

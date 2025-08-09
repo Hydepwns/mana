@@ -159,14 +159,18 @@ defmodule ExWire.Handshake do
           {:ok, t(), Secrets.t(), binary()}
           | {:invalid, :invalid_ECIES_encoded_message | :invalid_message_tag}
   def handle_ack(handshake = %Handshake{}, ack_data) do
+    Logger.debug("[Handshake] Handling ACK response (#{byte_size(ack_data)} bytes)")
+    
     case read_ack_resp(ack_data, ExWire.Config.private_key()) do
       {:ok, ack_resp, ack_resp_bin, frame_rest} ->
+        Logger.debug("[Handshake] Successfully read ACK response, deriving secrets")
         updated_handshake = add_ack_data(handshake, ack_resp, ack_resp_bin)
         secrets = ExWire.Framing.Secrets.derive_secrets(updated_handshake)
 
         {:ok, updated_handshake, secrets, frame_rest}
 
       {:error, reason} ->
+        Logger.error("[Handshake] Failed to read ACK response: #{inspect(reason)}")
         {:invalid, reason}
     end
   end
@@ -192,18 +196,23 @@ defmodule ExWire.Handshake do
           {:ok, t(), Secrets.t()}
           | {:invalid, :invalid_ECIES_encoded_message | :invalid_message_tag}
   def handle_auth(handshake = %Handshake{}, auth_data) do
+    Logger.debug("[Handshake] Handling auth message (#{byte_size(auth_data)} bytes)")
+    
     case read_auth_msg(auth_data, ExWire.Config.private_key()) do
       {:ok, auth_msg, <<>>} ->
+        Logger.debug("[Handshake] Successfully read auth message, generating ACK response")
         resp_handshake =
           handshake
           |> add_auth_data(auth_msg, auth_data)
           |> generate_ack_resp()
 
         secrets = ExWire.Framing.Secrets.derive_secrets(resp_handshake)
+        Logger.debug("[Handshake] Secrets derived successfully")
 
         {:ok, resp_handshake, secrets}
 
       {:error, reason} ->
+        Logger.error("[Handshake] Failed to read auth message: #{inspect(reason)}")
         {:invalid, reason}
     end
   end
@@ -265,8 +274,11 @@ defmodule ExWire.Handshake do
           {:ok, AuthMsgV4.t(), binary()}
           | {:error, :invalid_ECIES_encoded_message | :invalid_message_tag}
   def read_auth_msg(encoded_auth, my_static_private_key) do
+    Logger.debug("[Handshake] Attempting to read auth message (#{byte_size(encoded_auth)} bytes)")
+    
     case EIP8.unwrap_eip_8(encoded_auth, my_static_private_key) do
       {:ok, rlp, _bin, frame_rest} ->
+        Logger.debug("[Handshake] Successfully unwrapped EIP-8 auth message")
         # unwrap eip-8
         auth_msg =
           rlp
@@ -275,7 +287,8 @@ defmodule ExWire.Handshake do
 
         {:ok, auth_msg, frame_rest}
 
-      {:error, _} ->
+      {:error, eip8_error} ->
+        Logger.debug("[Handshake] EIP-8 unwrap failed: #{inspect(eip8_error)}, trying plain format")
         # unwrap plain
         with {:ok, plaintext} <-
                ExthCrypto.ECIES.decrypt(my_static_private_key, encoded_auth, <<>>, <<>>) do
@@ -297,7 +310,12 @@ defmodule ExWire.Handshake do
             |> AuthMsgV4.deserialize()
             |> AuthMsgV4.set_initiator_ephemeral_public_key(my_static_private_key)
 
+          Logger.debug("[Handshake] Successfully decrypted plain auth message")
           {:ok, auth_msg, <<>>}
+        else
+          {:error, reason} ->
+            Logger.error("[Handshake] Failed to decrypt plain auth message: #{inspect(reason)}")
+            {:error, :invalid_ECIES_encoded_message}
         end
     end
   end

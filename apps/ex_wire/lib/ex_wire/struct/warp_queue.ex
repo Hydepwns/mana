@@ -213,9 +213,7 @@ defmodule ExWire.Struct.WarpQueue do
       warp_queue.block_tree.best_block.block_hash != warp_queue.manifest.block_hash ->
         :ok =
           Logger.error(fn ->
-            "[Warp] Mismatched block hash: expected: #{
-              Exth.encode_hex(warp_queue.manifest.block_hash)
-            }, got: #{Exth.encode_hex(warp_queue.block_tree.best_block.block_hash)}"
+            "[Warp] Mismatched block hash: expected: #{Exth.encode_hex(warp_queue.manifest.block_hash)}, got: #{Exth.encode_hex(warp_queue.block_tree.best_block.block_hash)}"
           end)
 
         {:failure, :mismatched_block_hash}
@@ -223,9 +221,7 @@ defmodule ExWire.Struct.WarpQueue do
       warp_queue.state_root != warp_queue.manifest.state_root ->
         :ok =
           Logger.error(fn ->
-            "[Warp] Mismatched state root: expected: #{
-              Exth.encode_hex(warp_queue.manifest.state_root)
-            }, got: #{Exth.encode_hex(warp_queue.state_root)}"
+            "[Warp] Mismatched state root: expected: #{Exth.encode_hex(warp_queue.manifest.state_root)}, got: #{Exth.encode_hex(warp_queue.state_root)}"
           end)
 
         {:failure, :mismatched_state_root}
@@ -242,11 +238,7 @@ defmodule ExWire.Struct.WarpQueue do
     # Show some stats for debugging
     :ok =
       Logger.debug(fn ->
-        "[Warp] Completed: #{next_processed_accounts} account(s) in #{
-          Time.elapsed(warp_queue.warp_start, :second)
-        } at #{Time.rate(next_processed_accounts, warp_queue.warp_start, "accts", :second)} with new state root #{
-          Exth.encode_hex(state_root)
-        }"
+        "[Warp] Completed: #{next_processed_accounts} account(s) in #{Time.elapsed(warp_queue.warp_start, :second)} at #{Time.rate(next_processed_accounts, warp_queue.warp_start, "accts", :second)} with new state root #{Exth.encode_hex(state_root)}"
       end)
 
     %{
@@ -287,9 +279,7 @@ defmodule ExWire.Struct.WarpQueue do
 
     :ok =
       Logger.debug(fn ->
-        "[Warp] Completed: #{min}..#{max} with #{missing} missing block(s) in #{
-          Time.elapsed(warp_queue.warp_start, :second)
-        } at #{Time.rate(Enum.count(list), warp_queue.warp_start, "blks", :second)}"
+        "[Warp] Completed: #{min}..#{max} with #{missing} missing block(s) in #{Time.elapsed(warp_queue.warp_start, :second)} at #{Time.rate(Enum.count(list), warp_queue.warp_start, "blks", :second)}"
       end)
 
     %{

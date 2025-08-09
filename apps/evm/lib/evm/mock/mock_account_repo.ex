@@ -80,7 +80,7 @@ defmodule EVM.Mock.MockAccountRepo do
   def account_code_hash(mock_account_repo, address) do
     account = account(mock_account_repo, address)
 
-    hash = unless is_nil(account), do: account.code_hash
+    hash = if not is_nil(account), do: account.code_hash
 
     {mock_account_repo, hash}
   end

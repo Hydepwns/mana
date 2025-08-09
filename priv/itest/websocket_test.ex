@@ -8,7 +8,7 @@ defmodule WebsocketTest do
     [&flags/0, [&invoke_test/0]]
   end
 
-  defp flags(), do: ['run']
+  defp flags(), do: [~c"run"]
 
   defp invoke_test() do
     IO.puts("Invoked test!")

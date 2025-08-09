@@ -20,7 +20,7 @@ defmodule Release do
   end
 
   defp find_and_extract_release(path) do
-    untar_path = '/tmp/mana/'
+    untar_path = ~c"/tmp/mana/"
     :ok = :erl_tar.extract(String.to_charlist(path), [{:cwd, untar_path}, :compressed])
     recursive_search(untar_path, "mana")
   end

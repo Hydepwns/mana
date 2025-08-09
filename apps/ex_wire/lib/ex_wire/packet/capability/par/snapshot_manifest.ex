@@ -144,8 +144,9 @@ defmodule ExWire.Packet.Capability.Par.SnapshotManifest do
   end
 
   @doc """
-  Handles a SnapshotManifest message. We should send our manifest
-  to the peer. For now, we'll do nothing.
+  Handles a SnapshotManifest request from a peer. This is typically in response
+  to a GetSnapshotManifest message, and we should serve our current snapshot
+  manifest if available.
 
   ## Examples
 
@@ -154,8 +155,19 @@ defmodule ExWire.Packet.Capability.Par.SnapshotManifest do
       :ok
   """
   @impl true
-  def handle(_packet = %__MODULE__{}) do
-    # TODO: Respond with empty manifest
+  def handle(_packet = %__MODULE__{}, peer_info \\ %{}) do
+    # This handler is called when we receive a SnapshotManifest from a peer
+    # In the context of serving, we respond to GetSnapshotManifest requests
+    # via ExWire.Sync.SnapshotServer.handle_manifest_request/2
+    
+    # For now, just log that we received a manifest (peer is sharing their snapshot)
+    case peer_info do
+      %{peer_id: peer_id} ->
+        Logger.debug("[SnapshotManifest] Received manifest from peer #{peer_id}")
+      _ ->
+        Logger.debug("[SnapshotManifest] Received manifest from unknown peer")
+    end
+    
     :ok
   end
 end

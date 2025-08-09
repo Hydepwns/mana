@@ -73,7 +73,7 @@ defmodule ExthCrypto.KDF.NistSp80056 do
             results <> result
           end)
 
-        <<derived_keying_material::binary-size(key_data_len), _::binary()>> =
+        <<derived_keying_material::binary-size(key_data_len), _::binary>> =
           derived_keying_material_padded
 
         {:ok, derived_keying_material}

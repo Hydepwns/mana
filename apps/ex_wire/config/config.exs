@@ -1,6 +1,6 @@
 # This file is responsible for configuring your application
 # and its dependencies with the aid of the Mix.Config module.
-use Mix.Config
+import Config
 
 defer = fn fun ->
   apply(fun, [])
@@ -25,9 +25,9 @@ mana_version =
   end)
 
 config :ex_wire,
-  p2p_version: 0x04,
-  protocol_version: 63,
-  caps: [{"eth", 62}, {"par", 1}],
+  p2p_version: 0x05,
+  protocol_version: 67,
+  caps: [{"eth", 66}, {"eth", 67}, {"par", 1}],
   # TODO: This should be set and stored in a file
   private_key: :random,
   bootnodes: :from_chain,

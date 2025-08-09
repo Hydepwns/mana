@@ -1,4 +1,4 @@
-use Mix.Config
+import Config
 
 defer = fn fun ->
   apply(fun, [])

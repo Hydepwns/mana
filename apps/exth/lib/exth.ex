@@ -29,7 +29,7 @@ defmodule Exth do
   Function for logging to debug only when a command-line option is set.
   This can be used for turning on deep debugging (e.g. tracing network stacks).
   """
-  @spec trace((() -> String.t())) :: :ok
+  @spec trace((-> String.t())) :: :ok
   def trace(fun) do
     _ = if System.get_env("TRACE"), do: Logger.debug(fun)
 

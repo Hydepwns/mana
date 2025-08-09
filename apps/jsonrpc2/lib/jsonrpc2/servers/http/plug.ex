@@ -33,7 +33,7 @@ defmodule JSONRPC2.Servers.HTTP.Plug do
   def init(opts) when is_list(opts) do
     handler = Keyword.fetch!(opts, :handler)
 
-    unless Code.ensure_loaded?(handler) do
+    if !Code.ensure_loaded?(handler) do
       raise ArgumentError,
         message: "Could not load handler for #{inspect(__MODULE__)}, got: #{inspect(handler)}"
     end

@@ -1,3 +1,3 @@
-use Mix.Config
+import Config
 
 config :ex_unit, case_load_timeout: 120_000

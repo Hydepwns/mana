@@ -66,8 +66,8 @@ defmodule EVM.Functions do
 
   ## Examples
 
-      # TODO: Once we add gas cost, make this more reasonable
-      # TODO: How do we pass in state?
+      # Gas costs are implemented in EVM.Gas module
+      # State is passed through ExecEnv parameter
       iex> EVM.Functions.is_exception_halt?(%EVM.MachineState{program_counter: 0, gas: 0xffff}, %EVM.ExecEnv{machine_code: <<0xfee>>})
       {:halt, :undefined_instruction}
 

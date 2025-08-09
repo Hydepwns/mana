@@ -41,7 +41,11 @@ defmodule JSONRPC2 do
     http_configuration = WebSocketHTTP.new(http, :web)
     ws_configuration = WebSocketHTTP.new(ws, :ws)
 
+    filter_manager = {JSONRPC2.FilterManager, []}
+    subscription_manager = {JSONRPC2.SubscriptionManager, []}
+    
     children =
+      [filter_manager, subscription_manager] ++
       Enum.concat(
         ipc_child,
         WebSocketHTTP.children(http_configuration, ws_configuration, SpecHandler)

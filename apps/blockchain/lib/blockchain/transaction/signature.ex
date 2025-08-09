@@ -146,7 +146,7 @@ defmodule Blockchain.Transaction.Signature do
       end
 
     case :libsecp256k1.ecdsa_recover_compact(hash, signature, :uncompressed, recovery_id) do
-      {:ok, <<_byte::8, public_key::binary()>>} -> {:ok, public_key}
+      {:ok, <<_byte::8, public_key::binary>>} -> {:ok, public_key}
       {:error, reason} -> {:error, to_string(reason)}
     end
   end

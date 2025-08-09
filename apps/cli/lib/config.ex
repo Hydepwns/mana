@@ -15,6 +15,6 @@ defmodule CLI.Config do
   """
   @spec db_name(atom()) :: nonempty_charlist()
   def db_name(chain_id) do
-    'db/mana-' ++ Atom.to_charlist(chain_id)
+    ~c"db/mana-" ++ Atom.to_charlist(chain_id)
   end
 end
