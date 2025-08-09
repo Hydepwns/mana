@@ -147,9 +147,7 @@ defmodule ExWire.P2P.Manager do
       {:error, reason} ->
         _ =
           Logger.error(
-            "[Network] [#{peer}] Failed to read incoming packet from #{peer.host_name} `#{
-              to_string(reason)
-            }`)"
+            "[Network] [#{peer}] Failed to read incoming packet from #{peer.host_name} `#{to_string(reason)}`)"
           )
 
         %{conn | last_error: reason}
@@ -219,11 +217,29 @@ defmodule ExWire.P2P.Manager do
   defp get_packet(session, message_id, packet_data) do
     case PacketIdMap.get_packet_module(session.packet_id_map, message_id) do
       {:ok, packet_mod} ->
-        {:ok, packet_mod, apply(packet_mod, :deserialize, [packet_data])}
+        # Handle eth/66+ request IDs if applicable
+        packet = if should_handle_request_id?(packet_mod, session.negotiated_version) do
+          ExWire.Packet.Capability.Eth.V66Wrapper.deserialize(
+            packet_data, 
+            packet_mod, 
+            session.negotiated_version
+          )
+        else
+          apply(packet_mod, :deserialize, [packet_data])
+        end
+        
+        {:ok, packet_mod, packet}
 
       :unsupported_packet ->
         :unknown_packet_type
     end
+  end
+  
+  # Check if this packet type requires request ID handling for the negotiated version
+  defp should_handle_request_id?(packet_mod, negotiated_version) do
+    negotiated_version != nil and 
+    negotiated_version >= 66 and
+    ExWire.Packet.Capability.Eth.V66Wrapper.requires_request_id_module?(packet_mod)
   end
 
   @spec notify_subscribers(Packet.packet(), Connection.t()) :: list(any())
@@ -290,12 +306,30 @@ defmodule ExWire.P2P.Manager do
 
     :ok =
       Logger.debug(fn ->
-        "[Network] [#{peer}] Sending packet #{inspect(packet_mod)} (#{
-          inspect(message_id, base: :hex)
-        }) to #{peer.host_name} (##{conn.sent_message_count + 1})"
+        "[Network] [#{peer}] Sending packet #{inspect(packet_mod)} (#{inspect(message_id, base: :hex)}) to #{peer.host_name} (##{conn.sent_message_count + 1})"
       end)
 
-    packet_data = apply(packet_mod, :serialize, [packet])
+    # Handle eth/66+ request IDs if applicable
+    packet_data = if should_handle_request_id?(packet_mod, session.negotiated_version) do
+      # Wrap packet with request ID for eth/66+
+      {wrapped_packet, request_id} = ExWire.Packet.Capability.Eth.V66Wrapper.wrap_packet(
+        packet,
+        session.negotiated_version
+      )
+      
+      # Track the request if it's a request message (for correlation with responses)
+      if request_id != nil do
+        ExWire.Packet.Capability.Eth.V66Wrapper.track_request(request_id, %{
+          packet: packet,
+          peer: peer,
+          timestamp: System.monotonic_time(:millisecond)
+        })
+      end
+      
+      ExWire.Packet.Capability.Eth.V66Wrapper.serialize(wrapped_packet, session.negotiated_version)
+    else
+      apply(packet_mod, :serialize, [packet])
+    end
 
     {frame, updated_secrets} = Frame.frame(message_id, packet_data, secrets)
 
@@ -311,9 +345,7 @@ defmodule ExWire.P2P.Manager do
   defp send_unframed_data(data, socket, peer) do
     _ =
       Logger.debug(fn ->
-        "[Network] [#{peer}] Sending raw data message of length #{byte_size(data)} byte(s) to #{
-          peer.host_name
-        }"
+        "[Network] [#{peer}] Sending raw data message of length #{byte_size(data)} byte(s) to #{peer.host_name}"
       end)
 
     TCP.send_data(socket, data)

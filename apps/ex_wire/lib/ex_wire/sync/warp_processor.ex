@@ -398,9 +398,7 @@ defmodule ExWire.Sync.WarpProcessor do
 
         :ok =
           Logger.debug(fn ->
-            "[Warp] Processed #{Enum.count(processed_blocks)} block(s) in #{Time.elapsed(start)} (trie commit time: #{
-              trie_elapsed
-            })."
+            "[Warp] Processed #{Enum.count(processed_blocks)} block(s) in #{Time.elapsed(start)} (trie commit time: #{trie_elapsed})."
           end)
 
         :ok = GenServer.cast(pid, {:processed_block_chunk, chunk_hash, processed_blocks, block})
@@ -477,9 +475,7 @@ defmodule ExWire.Sync.WarpProcessor do
 
         :ok =
           Logger.debug(fn ->
-            "[Warp] Processed #{Enum.count(state_chunk.account_entries)} account(s) #{
-              Time.elapsed(start)
-            } (trie commit time: #{trie_elapsed})."
+            "[Warp] Processed #{Enum.count(state_chunk.account_entries)} account(s) #{Time.elapsed(start)} (trie commit time: #{trie_elapsed})."
           end)
 
         GenServer.cast(processor_pid, {:new_account_states, chunk_hash, account_states, pid})
@@ -522,9 +518,7 @@ defmodule ExWire.Sync.WarpProcessor do
 
         :ok =
           Logger.debug(fn ->
-            "[Warp] Starting to process #{processed_accounts} account state(s) from state root #{
-              Exth.encode_hex(state_root)
-            }."
+            "[Warp] Starting to process #{processed_accounts} account state(s) from state root #{Exth.encode_hex(state_root)}."
           end)
 
         state_trie = TrieStorage.set_root_hash(task_trie, state_root)
@@ -538,16 +532,12 @@ defmodule ExWire.Sync.WarpProcessor do
 
         :ok =
           Logger.debug(fn ->
-            "[Warp] Processed #{processed_accounts} account state(s) #{Time.elapsed(start)} (trie commit time: #{
-              trie_elapsed
-            }). New state root: #{Exth.encode_hex(next_state_root)}"
+            "[Warp] Processed #{processed_accounts} account state(s) #{Time.elapsed(start)} (trie commit time: #{trie_elapsed}). New state root: #{Exth.encode_hex(next_state_root)}"
           end)
 
         :ok =
           Logger.debug(fn ->
-            "[Warp] #{processed_accounts}: #{Exth.encode_hex(state_root)}->#{
-              Exth.encode_hex(next_state_root)
-            }"
+            "[Warp] #{processed_accounts}: #{Exth.encode_hex(state_root)}->#{Exth.encode_hex(next_state_root)}"
           end)
 
         :ok =
