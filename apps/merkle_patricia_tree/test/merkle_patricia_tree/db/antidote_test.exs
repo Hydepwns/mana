@@ -199,14 +199,15 @@ defmodule MerklePatriciaTree.DB.AntidoteTest do
       {_, connection} = Antidote.init(MerklePatriciaTree.Test.random_atom(20))
 
       # Simulate concurrent operations
-      tasks = for i <- 1..10 do
-        Task.async(fn ->
-          key = "concurrent_key_#{i}"
-          value = "concurrent_value_#{i}"
-          Antidote.put!(connection, key, value)
-          assert Antidote.get(connection, key) == {:ok, value}
-        end)
-      end
+      tasks =
+        for i <- 1..10 do
+          Task.async(fn ->
+            key = "concurrent_key_#{i}"
+            value = "concurrent_value_#{i}"
+            Antidote.put!(connection, key, value)
+            assert Antidote.get(connection, key) == {:ok, value}
+          end)
+        end
 
       Enum.each(tasks, &Task.await/1)
     end

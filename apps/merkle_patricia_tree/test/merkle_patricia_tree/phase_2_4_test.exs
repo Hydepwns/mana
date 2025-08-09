@@ -436,6 +436,7 @@ defmodule MerklePatriciaTree.Phase24Test do
 
       # Test numeric environment variables
       antidote_port = System.get_env("ANTIDOTE_PORT")
+
       if antidote_port do
         assert is_integer(String.to_integer(antidote_port))
       end

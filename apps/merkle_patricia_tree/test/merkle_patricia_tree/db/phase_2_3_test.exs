@@ -42,7 +42,11 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       ]
 
       # Test operation grouping logic
-      grouped_ops = AntidoteOptimized.group_operations_by_node(%{connections: %{{"node1", 8087} => []}}, operations)
+      grouped_ops =
+        AntidoteOptimized.group_operations_by_node(
+          %{connections: %{{"node1", 8087} => []}},
+          operations
+        )
 
       assert length(grouped_ops) > 0
       assert Enum.all?(grouped_ops, fn {_node, ops} -> length(ops) > 0 end)
@@ -54,14 +58,16 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
 
       # Verify state generation
       assert length(large_state) == 100
+
       assert Enum.all?(large_state, fn state ->
-        Map.has_key?(state, :key) and Map.has_key?(state, :value)
-      end)
+               Map.has_key?(state, :key) and Map.has_key?(state, :value)
+             end)
     end
 
     test "performs CRDT operations" do
       # Test CRDT operation encoding/decoding
-      crdt_message = AntidoteOptimized.encode_crdt_message(:counter, "bucket", "key", {:increment, 5}, "tx123")
+      crdt_message =
+        AntidoteOptimized.encode_crdt_message(:counter, "bucket", "key", {:increment, 5}, "tx123")
 
       assert is_binary(crdt_message)
 
@@ -72,10 +78,11 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
 
     test "provides performance metrics" do
       # Test metrics collection
-      metrics = AntidoteOptimized.get_metrics(%{
-        connections: %{{"node1", 8087} => []},
-        cache: :ets.new(:test_cache, [:set, :private])
-      })
+      metrics =
+        AntidoteOptimized.get_metrics(%{
+          connections: %{{"node1", 8087} => []},
+          cache: :ets.new(:test_cache, [:set, :private])
+        })
 
       assert is_map(metrics)
       assert Map.has_key?(metrics, :connected_nodes)
@@ -84,10 +91,11 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
 
     test "optimizes memory usage" do
       # Test memory optimization
-      result = AntidoteOptimized.optimize_memory(%{
-        cache: :ets.new(:test_cache, [:set, :private]),
-        connections: %{}
-      })
+      result =
+        AntidoteOptimized.optimize_memory(%{
+          cache: :ets.new(:test_cache, [:set, :private]),
+          connections: %{}
+        })
 
       assert :ok = result
     end
@@ -108,7 +116,8 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
 
     test "stores and retrieves values with compression", %{optimizer: optimizer} do
       # Store a large value that should be compressed
-      large_value = String.duplicate("test_data", 1000)  # ~14KB
+      # ~14KB
+      large_value = String.duplicate("test_data", 1000)
       :ok = MemoryOptimizer.put(optimizer, "large_key", large_value)
 
       # Retrieve the value
@@ -164,6 +173,7 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
 
       # Process with streaming
       processed_items = []
+
       processor = fn item ->
         processed_items = [item | processed_items]
         :ok
@@ -192,20 +202,22 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       state_data = LoadStressTest.generate_ethereum_state_data(100)
 
       assert length(state_data) == 100
+
       assert Enum.all?(state_data, fn state ->
-        Map.has_key?(state, :address) and
-        Map.has_key?(state, :balance) and
-        Map.has_key?(state, :nonce) and
-        Map.has_key?(state, :code) and
-        Map.has_key?(state, :storage)
-      end)
+               Map.has_key?(state, :address) and
+                 Map.has_key?(state, :balance) and
+                 Map.has_key?(state, :nonce) and
+                 Map.has_key?(state, :code) and
+                 Map.has_key?(state, :storage)
+             end)
     end
 
     test "generates valid Ethereum addresses" do
       address = LoadStressTest.generate_ethereum_address()
 
       assert is_binary(address)
-      assert byte_size(address) == 40  # 20 bytes = 40 hex chars
+      # 20 bytes = 40 hex chars
+      assert byte_size(address) == 40
       assert String.match?(address, ~r/^[0-9a-f]{40}$/)
     end
 
@@ -237,13 +249,14 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       transactions = LoadStressTest.generate_block_transactions(state_data, 5)
 
       assert length(transactions) == 5
+
       assert Enum.all?(transactions, fn tx ->
-        Map.has_key?(tx, :from) and
-        Map.has_key?(tx, :to) and
-        Map.has_key?(tx, :value) and
-        Map.has_key?(tx, :gas) and
-        Map.has_key?(tx, :gas_price)
-      end)
+               Map.has_key?(tx, :from) and
+                 Map.has_key?(tx, :to) and
+                 Map.has_key?(tx, :value) and
+                 Map.has_key?(tx, :gas) and
+                 Map.has_key?(tx, :gas_price)
+             end)
 
       # Process transactions
       results = LoadStressTest.process_blocks(db, state_data)
@@ -256,22 +269,24 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       workload = LoadStressTest.simulate_user_workload(db, 1, 10)
 
       assert length(workload) == 10
+
       assert Enum.all?(workload, fn op ->
-        Map.has_key?(op, :user_id) and
-        Map.has_key?(op, :operation_id) and
-        Map.has_key?(op, :duration_ms)
-      end)
+               Map.has_key?(op, :user_id) and
+                 Map.has_key?(op, :operation_id) and
+                 Map.has_key?(op, :duration_ms)
+             end)
     end
 
     test "generates large state trees" do
       large_state = LoadStressTest.generate_large_state_tree(100)
 
       assert length(large_state) == 100
+
       assert Enum.all?(large_state, fn state ->
-        Map.has_key?(state, :key) and
-        Map.has_key?(state, :value) and
-        Map.has_key?(state, :children)
-      end)
+               Map.has_key?(state, :key) and
+                 Map.has_key?(state, :value) and
+                 Map.has_key?(state, :children)
+             end)
     end
 
     test "loads large state efficiently" do
@@ -328,9 +343,10 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       latency_results = LoadStressTest.simulate_network_latency(db)
 
       assert length(latency_results) == 100
+
       assert Enum.all?(latency_results, fn %{latency_ms: latency} ->
-        latency >= 10 and latency <= 1000
-      end)
+               latency >= 10 and latency <= 1000
+             end)
     end
 
     test "simulates connection failures" do
@@ -350,11 +366,12 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       node_failure_results = LoadStressTest.simulate_node_failures(db)
 
       assert length(node_failure_results) == 10
+
       assert Enum.all?(node_failure_results, fn failure ->
-        Map.has_key?(failure, :failure_id) and
-        Map.has_key?(failure, :downtime_ms) and
-        Map.has_key?(failure, :total_time_ms)
-      end)
+               Map.has_key?(failure, :failure_id) and
+                 Map.has_key?(failure, :downtime_ms) and
+                 Map.has_key?(failure, :total_time_ms)
+             end)
     end
 
     test "measures recovery time" do
@@ -377,11 +394,12 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       counter_results = LoadStressTest.test_crdt_counters(db)
 
       assert length(counter_results) == 100
+
       assert Enum.all?(counter_results, fn counter ->
-        Map.has_key?(counter, :counter_id) and
-        Map.has_key?(counter, :operations) and
-        Map.has_key?(counter, :time_ms)
-      end)
+               Map.has_key?(counter, :counter_id) and
+                 Map.has_key?(counter, :operations) and
+                 Map.has_key?(counter, :time_ms)
+             end)
     end
 
     test "performs CRDT set operations" do
@@ -390,11 +408,12 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       set_results = LoadStressTest.test_crdt_sets(db)
 
       assert length(set_results) == 50
+
       assert Enum.all?(set_results, fn set ->
-        Map.has_key?(set, :set_id) and
-        Map.has_key?(set, :elements) and
-        Map.has_key?(set, :time_ms)
-      end)
+               Map.has_key?(set, :set_id) and
+                 Map.has_key?(set, :elements) and
+                 Map.has_key?(set, :time_ms)
+             end)
     end
 
     test "performs CRDT map operations" do
@@ -403,11 +422,12 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       map_results = LoadStressTest.test_crdt_maps(db)
 
       assert length(map_results) == 25
+
       assert Enum.all?(map_results, fn map ->
-        Map.has_key?(map, :map_id) and
-        Map.has_key?(map, :keys) and
-        Map.has_key?(map, :time_ms)
-      end)
+               Map.has_key?(map, :map_id) and
+                 Map.has_key?(map, :keys) and
+                 Map.has_key?(map, :time_ms)
+             end)
     end
 
     test "tests conflict resolution" do
@@ -459,10 +479,11 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       frag_results = LoadStressTest.test_memory_fragmentation(db)
 
       assert length(frag_results) == 100
+
       assert Enum.all?(frag_results, fn cycle ->
-        Map.has_key?(cycle, :cycle) and
-        Map.has_key?(cycle, :time_ms)
-      end)
+               Map.has_key?(cycle, :cycle) and
+                 Map.has_key?(cycle, :time_ms)
+             end)
     end
 
     test "tests garbage collection under pressure" do
@@ -483,11 +504,12 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       read_results = LoadStressTest.test_read_heavy_workload(db)
 
       assert length(read_results) == 1000
+
       assert Enum.all?(read_results, fn op ->
-        Map.has_key?(op, :operation_id) and
-        Map.has_key?(op, :type) and
-        Map.has_key?(op, :time_ms)
-      end)
+               Map.has_key?(op, :operation_id) and
+                 Map.has_key?(op, :type) and
+                 Map.has_key?(op, :time_ms)
+             end)
     end
 
     test "tests write-heavy workload" do
@@ -496,11 +518,12 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       write_results = LoadStressTest.test_write_heavy_workload(db)
 
       assert length(write_results) == 1000
+
       assert Enum.all?(write_results, fn op ->
-        Map.has_key?(op, :operation_id) and
-        Map.has_key?(op, :type) and
-        Map.has_key?(op, :time_ms)
-      end)
+               Map.has_key?(op, :operation_id) and
+                 Map.has_key?(op, :type) and
+                 Map.has_key?(op, :time_ms)
+             end)
     end
 
     test "tests balanced workload" do
@@ -509,11 +532,12 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       balanced_results = LoadStressTest.test_balanced_workload(db)
 
       assert length(balanced_results) == 1000
+
       assert Enum.all?(balanced_results, fn op ->
-        Map.has_key?(op, :operation_id) and
-        Map.has_key?(op, :type) and
-        Map.has_key?(op, :time_ms)
-      end)
+               Map.has_key?(op, :operation_id) and
+                 Map.has_key?(op, :type) and
+                 Map.has_key?(op, :time_ms)
+             end)
     end
 
     test "tests burst traffic" do
@@ -522,11 +546,12 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       burst_results = LoadStressTest.test_burst_traffic(db)
 
       assert length(burst_results) == 10
+
       assert Enum.all?(burst_results, fn burst ->
-        Map.has_key?(burst, :burst_id) and
-        Map.has_key?(burst, :operations) and
-        Map.has_key?(burst, :time_ms)
-      end)
+               Map.has_key?(burst, :burst_id) and
+                 Map.has_key?(burst, :operations) and
+                 Map.has_key?(burst, :time_ms)
+             end)
     end
   end
 

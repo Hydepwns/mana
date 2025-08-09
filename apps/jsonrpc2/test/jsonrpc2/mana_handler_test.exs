@@ -150,9 +150,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["#{
-          encode_hex(block.header.number)
-        }", false], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["#{encode_hex(block.header.number)}", false], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"difficulty":"0x1", "gasLimit":"0x0", "gasUsed":"0x0", "number":"0x1", "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "size":"0x1f5", "stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "timestamp":"0x1", "totalDifficulty":"0x1", "transactions":[], "transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "uncles":[], "extraData":"0x", "hash":"0x0000000000000000000000000000000000000000000000000000000000000010", "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "miner":"0x0000000000000000000000000000000000000010", "nonce":"0x0000000000000000", "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000010"}})
       )
     end
@@ -169,9 +167,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["#{
-          encode_hex(block.header.number)
-        }", true], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["#{encode_hex(block.header.number)}", true], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"difficulty":"0x1", "extraData":"0x", "gasLimit":"0x0", "gasUsed":"0x0", "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "miner":"0x0000000000000000000000000000000000000010", "nonce":"0x0000000000000000", "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000010", "size":"0x28c", "stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "timestamp":"0x1", "totalDifficulty":"0x1", "transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "uncles":[], "hash":"0x0000000000000000000000000000000000000000000000000000000000000010", "number":"0x1", "transactions":[{"from":"0x619f56e8bed07fe196c0dbc41b52e2bc64817b3a", "gas":"0x7", "gasPrice":"0x6", "hash":"0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "input":"0x01", "nonce":"0x5", "r":"0x55fa77ee62e6c42e83b4f868c1e41643e45fd6f02a381a663318884751cb690a", "s":"0x7bd63c407cea7d619d598fb5766980ab8497b1b11c26d8bc59a132af96317793", "to":"0x", "transactionIndex":"0x0", "v":"0x1b", "value":"0x5", "blockHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "blockNumber":"0x1"}, {"from":"0x619f56e8bed07fe196c0dbc41b52e2bc64817b3a", "gas":"0x7", "gasPrice":"0x6", "hash":"0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "input":"0x01", "nonce":"0x5", "r":"0x55fa77ee62e6c42e83b4f868c1e41643e45fd6f02a381a663318884751cb690a", "s":"0x7bd63c407cea7d619d598fb5766980ab8497b1b11c26d8bc59a132af96317793", "to":"0x", "transactionIndex":"0x0", "v":"0x1b", "value":"0x5", "blockHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "blockNumber":"0x1"}]}})
       )
     end
@@ -188,9 +184,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["#{
-          encode_hex(block.header.number)
-        }", false], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": ["#{encode_hex(block.header.number)}", false], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"difficulty":"0x1", "extraData":"0x", "gasLimit":"0x0", "gasUsed":"0x0", "hash":"0x0000000000000000000000000000000000000000000000000000000000000010", "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "miner":"0x0000000000000000000000000000000000000010", "nonce":"0x0000000000000000", "number":"0x1", "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000010", "size":"0x28c", "stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "timestamp":"0x1", "totalDifficulty":"0x1", "transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "uncles":[], "transactions":["0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b"]}})
       )
     end
@@ -204,9 +198,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByHash", "params": ["#{
-          encode_hex(block.block_hash)
-        }", false], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByHash", "params": ["#{encode_hex(block.block_hash)}", false], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"difficulty":"0x1", "gasLimit":"0x0", "gasUsed":"0x0", "number":"0x1", "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "size":"0x1f5", "stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "timestamp":"0x1", "totalDifficulty":"0x1", "transactions":[], "transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "uncles":[], "extraData":"0x", "hash":"0x0000000000000000000000000000000000000000000000000000000000000010", "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "miner":"0x0000000000000000000000000000000000000010", "nonce":"0x0000000000000000", "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000010"}})
       )
     end
@@ -219,9 +211,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByHash", "params": ["#{
-          encode_hex(block.block_hash)
-        }", true], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByHash", "params": ["#{encode_hex(block.block_hash)}", true], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"difficulty":"0x1", "gasLimit":"0x0", "gasUsed":"0x0", "number":"0x1", "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "size":"0x28c", "stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "timestamp":"0x1", "totalDifficulty":"0x1", "transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "uncles":[], "extraData":"0x", "hash":"0x0000000000000000000000000000000000000000000000000000000000000005", "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "miner":"0x0000000000000000000000000000000000000010", "nonce":"0x0000000000000000", "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000010", "transactions":[{"blockNumber":"0x1", "from":"0x619f56e8bed07fe196c0dbc41b52e2bc64817b3a", "gas":"0x7", "gasPrice":"0x6", "nonce":"0x5", "r":"0x55fa77ee62e6c42e83b4f868c1e41643e45fd6f02a381a663318884751cb690a", "s":"0x7bd63c407cea7d619d598fb5766980ab8497b1b11c26d8bc59a132af96317793", "transactionIndex":"0x0", "v":"0x1b", "value":"0x5", "blockHash":"0x0000000000000000000000000000000000000000000000000000000000000005", "hash":"0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "input":"0x01", "to":"0x"}, {"blockNumber":"0x1", "from":"0x619f56e8bed07fe196c0dbc41b52e2bc64817b3a", "gas":"0x7", "gasPrice":"0x6", "nonce":"0x5", "r":"0x55fa77ee62e6c42e83b4f868c1e41643e45fd6f02a381a663318884751cb690a", "s":"0x7bd63c407cea7d619d598fb5766980ab8497b1b11c26d8bc59a132af96317793", "transactionIndex":"0x0", "v":"0x1b", "value":"0x5", "blockHash":"0x0000000000000000000000000000000000000000000000000000000000000005", "hash":"0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "input":"0x01", "to":"0x"}]}})
       )
     end
@@ -234,9 +224,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByHash", "params": ["#{
-          encode_hex(block.block_hash)
-        }", false], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getBlockByHash", "params": ["#{encode_hex(block.block_hash)}", false], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"difficulty":"0x1", "gasLimit":"0x0", "gasUsed":"0x0", "number":"0x1", "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "size":"0x28c", "stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "timestamp":"0x1", "totalDifficulty":"0x1", "transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "uncles":[], "extraData":"0x", "hash":"0x0000000000000000000000000000000000000000000000000000000000000006", "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "miner":"0x0000000000000000000000000000000000000010", "nonce":"0x0000000000000000", "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000010", "transactions":["0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b"]}})
       )
     end
@@ -250,9 +238,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getTransactionByBlockHashAndIndex", "params": ["#{
-          encode_hex(block.block_hash)
-        }", "0x00"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getTransactionByBlockHashAndIndex", "params": ["#{encode_hex(block.block_hash)}", "0x00"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"blockNumber":"0x1", "from":"0x619f56e8bed07fe196c0dbc41b52e2bc64817b3a", "gas":"0x7", "gasPrice":"0x6", "nonce":"0x5", "r":"0x55fa77ee62e6c42e83b4f868c1e41643e45fd6f02a381a663318884751cb690a", "s":"0x7bd63c407cea7d619d598fb5766980ab8497b1b11c26d8bc59a132af96317793", "transactionIndex":"0x0", "v":"0x1b", "value":"0x5", "blockHash":"0x0000000000000000000000000000000000000000000000000000000000000003", "hash":"0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "input":"0x01", "to":"0x"}})
       )
     end
@@ -275,9 +261,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getTransactionByBlockNumberAndIndex", "params": ["#{
-          encode_hex(block.header.number)
-        }", "#{encode_hex(index)}"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getTransactionByBlockNumberAndIndex", "params": ["#{encode_hex(block.header.number)}", "#{encode_hex(index)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"blockNumber":"0x63", "from":"0x619f56e8bed07fe196c0dbc41b52e2bc64817b3a", "gas":"0x7", "gasPrice":"0x6", "nonce":"0x5", "r":"0x55fa77ee62e6c42e83b4f868c1e41643e45fd6f02a381a663318884751cb690a", "s":"0x7bd63c407cea7d619d598fb5766980ab8497b1b11c26d8bc59a132af96317793", "transactionIndex":"0x0", "v":"0x1b", "value":"0x5", "blockHash":"0x0000000000000000000000000000000000000000000000000000000000000003", "hash":"0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "input":"0x01", "to":"0x"}})
       )
     end
@@ -301,9 +285,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getBlockTransactionCountByHash", "params": ["#{
-          encode_hex(block.block_hash)
-        }"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getBlockTransactionCountByHash", "params": ["#{encode_hex(block.block_hash)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":"0x3"})
       )
     end
@@ -328,9 +310,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getBlockTransactionCountByNumber", "params": ["#{
-          encode_hex(block.header.number)
-        }"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getBlockTransactionCountByNumber", "params": ["#{encode_hex(block.header.number)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":"0x3"})
       )
     end
@@ -356,9 +336,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getUncleCountByBlockHash", "params": ["#{
-          encode_hex(block.block_hash)
-        }"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getUncleCountByBlockHash", "params": ["#{encode_hex(block.block_hash)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":"0x4"})
       )
     end
@@ -384,9 +362,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getUncleCountByBlockNumber", "params": ["#{
-          encode_hex(block.header.number)
-        }"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getUncleCountByBlockNumber", "params": ["#{encode_hex(block.header.number)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":"0x4"})
       )
     end
@@ -537,9 +513,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getTransactionByHash", "params": ["#{
-          transaction_hash(transaction)
-        }"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getTransactionByHash", "params": ["#{transaction_hash(transaction)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"blockHash":"0x0000000000000000000000000000000000000000000000000000000000001aa1", "from":"0x619f56e8bed07fe196c0dbc41b52e2bc64817b3a", "hash":"0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "input":"0x01", "r":"0x55fa77ee62e6c42e83b4f868c1e41643e45fd6f02a381a663318884751cb690a", "s":"0x7bd63c407cea7d619d598fb5766980ab8497b1b11c26d8bc59a132af96317793", "to":"0x", "v":"0x1b", "blockNumber":"0x1", "gas":"0x7", "gasPrice":"0x6", "nonce":"0x5", "transactionIndex":"0x0", "value":"0x5"}})
       )
     end
@@ -562,9 +536,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getTransactionReceipt", "params": ["#{
-          transaction_hash(transaction)
-        }"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getTransactionReceipt", "params": ["#{transaction_hash(transaction)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"blockHash":"0x0000000000000000000000000000000000000000000000000000000000001aaa", "contractAddress":"0x2e07fda729826779d050aa629355211735ce350d", "from":"0x619f56e8bed07fe196c0dbc41b52e2bc64817b3a", "logs":[], "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "to":"0x", "transactionHash":"0x7f71d14c13c402ce13c6f063b83e085f097a878e33163d6146cece277936531b", "blockNumber":"0x1", "cumulativeGasUsed":"0x3e8", "gasUsed":"0x3e8", "status":"0x1", "transactionIndex":"0x0"}})
       )
     end
@@ -592,9 +564,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getUncleByBlockHashAndIndex", "params": ["#{
-          encode_hex(block.block_hash)
-        }", "#{encode_hex(index)}"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getUncleByBlockHashAndIndex", "params": ["#{encode_hex(block.block_hash)}", "#{encode_hex(index)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"hash":"0xa33912876669bdef5f8e9bcd54b32864c2cd6af57370f06dd17472942c5728a5", "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "miner":"0x0000000000000000000000000000000000000010", "nonce":"0x0000000000000000", "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000010", "stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "transactions":[], "transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "uncles":[], "difficulty":"0x1", "extraData":"0x", "gasLimit":"0x0", "gasUsed":"0x0", "number":"0x1", "size":"0x1f5", "timestamp":"0x1", "totalDifficulty":"0x1"}})
       )
     end
@@ -622,9 +592,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_getUncleByBlockNumberAndIndex", "params": ["#{
-          encode_hex(block.header.number)
-        }", "#{encode_hex(index)}"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_getUncleByBlockNumberAndIndex", "params": ["#{encode_hex(block.header.number)}", "#{encode_hex(index)}"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":{"hash":"0xa33912876669bdef5f8e9bcd54b32864c2cd6af57370f06dd17472942c5728a5", "logsBloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "miner":"0x0000000000000000000000000000000000000010", "nonce":"0x0000000000000000", "parentHash":"0x0000000000000000000000000000000000000000000000000000000000000010", "receiptsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "sha3Uncles":"0x0000000000000000000000000000000000000000000000000000000000000010", "stateRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "transactions":[], "transactionsRoot":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421", "uncles":[], "difficulty":"0x1", "extraData":"0x", "gasLimit":"0x0", "gasUsed":"0x0", "number":"0x1", "size":"0x1f5", "timestamp":"0x1", "totalDifficulty":"0x1"}})
       )
     end
@@ -804,11 +772,7 @@ defmodule JSONRPC2.ManaHandlerTest do
 
       assert_rpc_reply(
         SpecHandler,
-        ~s({"jsonrpc": "2.0", "method": "eth_estimateGas", "params": [{"from": "#{
-          encode_hex(from_address)
-        }", "to": "#{encode_hex(to_address)}", "gas": "#{encode_hex(10_000)}", "gas_price": "#{
-          encode_hex(1)
-        }", "value": "#{encode_hex(1)}", "data": "#{encode_hex("")}"}, "latest"], "id": 71}),
+        ~s({"jsonrpc": "2.0", "method": "eth_estimateGas", "params": [{"from": "#{encode_hex(from_address)}", "to": "#{encode_hex(to_address)}", "gas": "#{encode_hex(10_000)}", "gas_price": "#{encode_hex(1)}", "value": "#{encode_hex(1)}", "data": "#{encode_hex("")}"}, "latest"], "id": 71}),
         ~s({"id":71, "jsonrpc":"2.0", "result":"#{encode_hex(21_000)}"})
       )
     end

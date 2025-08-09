@@ -95,7 +95,9 @@ defmodule JSONRPC2.Response.BlockTest do
 
     test "returns uncle hashes" do
       internal_block =
-        TestFactory.build(:block, ommers: [TestFactory.build(:header), TestFactory.build(:header)])
+        TestFactory.build(:block,
+          ommers: [TestFactory.build(:header), TestFactory.build(:header)]
+        )
 
       response_block = Block.new(internal_block)
 
