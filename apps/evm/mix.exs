@@ -14,13 +14,12 @@ defmodule EVM.Mixfile do
         maintainers: ["DROO", "Geoffrey Hayes", "Ayrat Badykov", "Mason Forest"],
         licenses: ["MIT", "Apache 2"],
         links: %{
-          "GitHub" =>
-            "https://github.com/axol-io/mana/tree/master/apps/evm"
+          "GitHub" => "https://github.com/axol-io/mana/tree/master/apps/evm"
         }
       ],
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      deps: deps(),
+      deps: deps()
       # Temporarily disabled warnings-as-errors to allow compilation
       # elixirc_options: [warnings_as_errors: true]
     ]

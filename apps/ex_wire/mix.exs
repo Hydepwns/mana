@@ -14,17 +14,20 @@ defmodule ExWire.Mixfile do
         maintainers: ["Geoffrey Hayes", "Ayrat Badykov", "Mason Forest"],
         licenses: ["MIT", "Apache 2"],
         links: %{
-          "GitHub" =>
-            "https://github.com/mana-ethereum/mana/tree/master/apps/ex_wire"
+          "GitHub" => "https://github.com/mana-ethereum/mana/tree/master/apps/ex_wire"
         }
       ],
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
+      deps: deps()
       # Temporarily disabled warnings-as-errors to allow compilation
       # elixirc_options: [warnings_as_errors: true]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   def application do
     [extra_applications: [:logger]]

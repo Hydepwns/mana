@@ -20,7 +20,7 @@ defmodule MerklePatriciaTree.Mixfile do
       ],
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      deps: deps(),
+      deps: deps()
       # Temporarily disabled warnings-as-errors to allow compilation
       # elixirc_options: [warnings_as_errors: true]
     ]
@@ -35,7 +35,6 @@ defmodule MerklePatriciaTree.Mixfile do
       # External deps
       {:logger_file_backend, "~> 0.0.10"},
       {:ex_rlp, "~> 0.6"},
-
       {:jason, "~> 1.1"},
       # Umbrella deps
       {:exth_crypto, in_umbrella: true}

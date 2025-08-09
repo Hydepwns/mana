@@ -40,9 +40,8 @@ defmodule Mana.MixProject do
       {:ex_doc, "~> 0.19", only: :dev, runtime: false},
       {:dialyxir, "~> 1.0.0-rc.4", only: [:dev, :test], runtime: false},
       {:ethereumex, "~> 0.5.1"},
-      {:jason, "~> 1.1"},
+      {:jason, "~> 1.4"},
       {:credo, "~> 1.0.0-rc1", only: [:dev, :test], runtime: false},
-
       {:artificery, "~> 0.1.0"},
       {:logger_file_backend, "~> 0.0.10"},
       {:ssl_verify_fun, "~> 1.1.7", override: true}

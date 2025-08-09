@@ -14,13 +14,12 @@ defmodule Blockchain.Mixfile do
         maintainers: ["Geoffrey Hayes", "Ayrat Badykov", "Mason Forest"],
         licenses: ["MIT", "Apache 2"],
         links: %{
-          "GitHub" =>
-            "https://github.com/mana-ethereum/mana/tree/master/apps/blockchain"
+          "GitHub" => "https://github.com/mana-ethereum/mana/tree/master/apps/blockchain"
         }
       ],
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
-      deps: deps(),
+      deps: deps()
       # Temporarily disabled warnings-as-errors to allow compilation
       # elixirc_options: [warnings_as_errors: true]
     ]
@@ -36,7 +35,11 @@ defmodule Blockchain.Mixfile do
       {:evm, in_umbrella: true},
       {:exth, in_umbrella: true},
       {:exth_crypto, in_umbrella: true},
-      {:merkle_patricia_tree, in_umbrella: true}
+      {:merkle_patricia_tree, in_umbrella: true},
+      # Monitoring dependencies
+      {:jason, "~> 1.1"},
+      {:cowboy, "~> 2.5"},
+      {:telemetry, "~> 1.0"}
     ]
   end
 end

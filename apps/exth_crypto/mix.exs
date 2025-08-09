@@ -20,8 +20,10 @@ defmodule ExthCrypto.Mixfile do
   end
 
   def application do
-    # Specify extra applications you'll use from Erlang/Elixir
-    [extra_applications: [:logger, :logger_file_backend]]
+    [
+      mod: {ExthCrypto.Application, []},
+      extra_applications: [:logger, :logger_file_backend, :crypto]
+    ]
   end
 
   defp deps do
@@ -30,7 +32,8 @@ defmodule ExthCrypto.Mixfile do
       {:logger_file_backend, "~> 0.0.10"},
       {:libsecp256k1, "~> 0.1.10"},
       # {:keccakf1600, "~> 2.1", hex: :keccakf1600_orig},  # Temporarily disabled due to Erlang 27 compatibility issues
-      {:binary, "~> 0.0.4"}
+      {:binary, "~> 0.0.4"},
+      {:jason, "~> 1.4"}  # For HSM configuration JSON handling
     ]
   end
 end
