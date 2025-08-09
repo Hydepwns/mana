@@ -36,22 +36,23 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
   require Logger
 
   @type client :: %{
-    nodes: list({String.t(), non_neg_integer()}),
-    connections: map(),
-    cache: :ets.tid(),
-    pool_size: non_neg_integer(),
-    timeout: non_neg_integer(),
-    retry_attempts: non_neg_integer(),
-    retry_delay: non_neg_integer(),
-    batch_size: non_neg_integer(),
-    cache_size: non_neg_integer()
-  }
+          nodes: list({String.t(), non_neg_integer()}),
+          connections: map(),
+          cache: :ets.tid(),
+          pool_size: non_neg_integer(),
+          timeout: non_neg_integer(),
+          retry_attempts: non_neg_integer(),
+          retry_delay: non_neg_integer(),
+          batch_size: non_neg_integer(),
+          cache_size: non_neg_integer()
+        }
 
   @type transaction_id :: binary()
   @type bucket :: String.t()
   @type key :: String.t()
   @type value :: binary()
-  @type operation :: {:get, bucket(), key()} | {:put, bucket(), key(), value()} | {:delete, bucket(), key()}
+  @type operation ::
+          {:get, bucket(), key()} | {:put, bucket(), key(), value()} | {:delete, bucket(), key()}
 
   # Default configuration
   @default_pool_size 20
@@ -64,7 +65,8 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
   @doc """
   Connects to multiple AntidoteDB nodes with load balancing.
   """
-  @spec connect(list({String.t(), non_neg_integer()}), Keyword.t()) :: {:ok, client()} | {:error, String.t()}
+  @spec connect(list({String.t(), non_neg_integer()}), Keyword.t()) ::
+          {:ok, client()} | {:error, String.t()}
   def connect(nodes, opts \\ []) do
     pool_size = Keyword.get(opts, :pool_size, @default_pool_size)
     timeout = Keyword.get(opts, :timeout, @default_timeout)
@@ -74,15 +76,17 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
     cache_size = Keyword.get(opts, :cache_size, @default_cache_size)
 
     # Initialize connection pool for each node
-    connections = Enum.reduce_while(nodes, %{}, fn {host, port}, acc ->
-      case init_node_connection(host, port, pool_size, timeout) do
-        {:ok, connection_pool} ->
-          {:cont, Map.put(acc, {host, port}, connection_pool)}
-        {:error, reason} ->
-          Logger.warning("Failed to connect to node #{host}:#{port}: #{reason}")
-          {:cont, acc}
-      end
-    end)
+    connections =
+      Enum.reduce_while(nodes, %{}, fn {host, port}, acc ->
+        case init_node_connection(host, port, pool_size, timeout) do
+          {:ok, connection_pool} ->
+            {:cont, Map.put(acc, {host, port}, connection_pool)}
+
+          {:error, reason} ->
+            Logger.warning("Failed to connect to node #{host}:#{port}: #{reason}")
+            {:cont, acc}
+        end
+      end)
 
     if map_size(connections) == 0 do
       {:error, "Failed to connect to any AntidoteDB nodes"}
@@ -110,21 +114,27 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
   @doc """
   Optimized batch transaction with connection pooling and load balancing.
   """
-  @spec batch_transaction(client(), list(operation())) :: {:ok, list(any())} | {:error, String.t()}
+  @spec batch_transaction(client(), list(operation())) ::
+          {:ok, list(any())} | {:error, String.t()}
   def batch_transaction(client, operations) do
     # Group operations by node for load balancing
     grouped_ops = group_operations_by_node(client, operations)
 
     # Process each group in parallel
-    results = Enum.map(grouped_ops, fn {node, ops} ->
-      process_node_operations(client, node, ops)
-    end)
+    results =
+      Enum.map(grouped_ops, fn {node, ops} ->
+        process_node_operations(client, node, ops)
+      end)
 
     # Combine results
-    case Enum.find(results, fn {:error, _} -> true; _ -> false end) do
+    case Enum.find(results, fn
+           {:error, _} -> true
+           _ -> false
+         end) do
       nil ->
         combined_results = Enum.flat_map(results, fn {:ok, res} -> res end)
         {:ok, combined_results}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -148,6 +158,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
             Logger.error("Failed to load large state: #{inspect(e)}")
             {:error, "Failed to load large state: #{inspect(e)}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to start streaming transaction: #{reason}"}
     end
@@ -156,11 +167,13 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
   @doc """
   Advanced CRDT operations for blockchain state management.
   """
-  @spec crdt_operation(client(), bucket(), key(), atom(), any(), transaction_id()) :: :ok | {:error, String.t()}
+  @spec crdt_operation(client(), bucket(), key(), atom(), any(), transaction_id()) ::
+          :ok | {:error, String.t()}
   def crdt_operation(client, bucket, key, crdt_type, operation, tx_id) do
     case get_connection(client) do
       {:ok, connection} ->
         message = encode_crdt_message(crdt_type, bucket, key, operation, tx_id)
+
         case send_message(connection, message) do
           {:ok, response} ->
             case decode_crdt_response(response) do
@@ -168,9 +181,11 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
               {:ok, %{status: :error, reason: reason}} -> {:error, reason}
               {:error, reason} -> {:error, "Failed to decode CRDT response: #{reason}"}
             end
+
           {:error, reason} ->
             {:error, "Failed to send CRDT operation: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to get connection: #{reason}"}
     end
@@ -211,17 +226,27 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
   # Private functions
 
   defp init_node_connection(host, port, pool_size, timeout) do
-    connections = Enum.map(1..pool_size, fn _ ->
-      case :gen_tcp.connect(String.to_charlist(host), port, [:binary, {:packet, 0}, {:active, false}], timeout) do
-        {:ok, socket} -> {:ok, socket}
-        {:error, reason} -> {:error, reason}
-      end
-    end)
+    connections =
+      Enum.map(1..pool_size, fn _ ->
+        case :gen_tcp.connect(
+               String.to_charlist(host),
+               port,
+               [:binary, {:packet, 0}, {:active, false}],
+               timeout
+             ) do
+          {:ok, socket} -> {:ok, socket}
+          {:error, reason} -> {:error, reason}
+        end
+      end)
 
-    case Enum.find(connections, fn {:error, _} -> true; _ -> false end) do
+    case Enum.find(connections, fn
+           {:error, _} -> true
+           _ -> false
+         end) do
       nil ->
         pool = Enum.map(connections, fn {:ok, socket} -> socket end)
         {:ok, pool}
+
       {:error, reason} ->
         {:error, "Failed to initialize connection pool: #{reason}"}
     end
@@ -230,6 +255,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
   defp group_operations_by_node(client, operations) do
     # Simple round-robin load balancing
     nodes = Map.keys(client.connections)
+
     Enum.chunk_every(operations, client.batch_size)
     |> Enum.with_index()
     |> Enum.map(fn {ops, index} ->
@@ -244,9 +270,11 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
         case start_transaction(connection) do
           {:ok, tx_id} ->
             try do
-              results = Enum.map(operations, fn op ->
-                process_operation(connection, op, tx_id)
-              end)
+              results =
+                Enum.map(operations, fn op ->
+                  process_operation(connection, op, tx_id)
+                end)
+
               commit_transaction(connection, tx_id)
               {:ok, results}
             rescue
@@ -255,9 +283,11 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
                 Logger.error("Node operation failed: #{inspect(e)}")
                 {:error, "Node operation failed: #{inspect(e)}"}
             end
+
           {:error, reason} ->
             {:error, "Failed to start transaction: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to get connection: #{reason}"}
     end
@@ -272,7 +302,9 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
 
   defp get_connection_from_node(client, node) do
     case Map.get(client.connections, node) do
-      nil -> {:error, "Node not available"}
+      nil ->
+        {:error, "Node not available"}
+
       pool ->
         # Simple round-robin from pool
         connection = Enum.random(pool)
@@ -281,20 +313,25 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
   end
 
   defp start_transaction(connection) do
-    message = encode_message(1, %{}) # start_tx
+    # start_tx
+    message = encode_message(1, %{})
+
     case send_message(connection, message) do
       {:ok, response} ->
         case decode_response(response) do
           {:ok, %{tx_id: tx_id}} -> {:ok, tx_id}
           {:error, reason} -> {:error, "Failed to start transaction: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to send start transaction: #{reason}"}
     end
   end
 
   defp commit_transaction(connection, tx_id) do
-    message = encode_message(2, %{tx_id: tx_id}) # commit_tx
+    # commit_tx
+    message = encode_message(2, %{tx_id: tx_id})
+
     case send_message(connection, message) do
       {:ok, response} ->
         case decode_response(response) do
@@ -302,13 +339,16 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
           {:ok, %{status: :error, reason: reason}} -> {:error, reason}
           {:error, reason} -> {:error, "Failed to decode commit response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to send commit transaction: #{reason}"}
     end
   end
 
   defp abort_transaction(connection, tx_id) do
-    message = encode_message(3, %{tx_id: tx_id}) # abort_tx
+    # abort_tx
+    message = encode_message(3, %{tx_id: tx_id})
+
     case send_message(connection, message) do
       {:ok, response} ->
         case decode_response(response) do
@@ -316,13 +356,16 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
           {:ok, %{status: :error, reason: reason}} -> {:error, reason}
           {:error, reason} -> {:error, "Failed to decode abort response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to send abort transaction: #{reason}"}
     end
   end
 
   defp process_operation(connection, {:get, bucket, key}, tx_id) do
-    message = encode_message(4, %{bucket: bucket, key: key, tx_id: tx_id}) # read
+    # read
+    message = encode_message(4, %{bucket: bucket, key: key, tx_id: tx_id})
+
     case send_message(connection, message) do
       {:ok, response} ->
         case decode_response(response) do
@@ -330,13 +373,16 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
           {:ok, %{value: nil}} -> {:error, :not_found}
           {:error, reason} -> {:error, "Failed to decode read response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to send read request: #{reason}"}
     end
   end
 
   defp process_operation(connection, {:put, bucket, key, value}, tx_id) do
-    message = encode_message(5, %{bucket: bucket, key: key, value: value, tx_id: tx_id}) # update
+    # update
+    message = encode_message(5, %{bucket: bucket, key: key, value: value, tx_id: tx_id})
+
     case send_message(connection, message) do
       {:ok, response} ->
         case decode_response(response) do
@@ -344,13 +390,16 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
           {:ok, %{status: :error, reason: reason}} -> {:error, reason}
           {:error, reason} -> {:error, "Failed to decode write response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to send write request: #{reason}"}
     end
   end
 
   defp process_operation(connection, {:delete, bucket, key}, tx_id) do
-    message = encode_message(6, %{bucket: bucket, key: key, tx_id: tx_id}) # delete
+    # delete
+    message = encode_message(6, %{bucket: bucket, key: key, tx_id: tx_id})
+
     case send_message(connection, message) do
       {:ok, response} ->
         case decode_response(response) do
@@ -358,6 +407,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
           {:ok, %{status: :error, reason: reason}} -> {:error, reason}
           {:error, reason} -> {:error, "Failed to decode delete response: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to send delete request: #{reason}"}
     end
@@ -368,6 +418,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
     case get_connection(client) do
       {:ok, connection} ->
         start_transaction(connection)
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -381,13 +432,16 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
         case parse_state_node(node_data) do
           {:leaf, value} ->
             Map.put(acc, state_root, value)
+
           {:branch, children} ->
             Enum.reduce(children, acc, fn {key, child_root}, child_acc ->
               load_state_recursive(client, bucket, child_root, tx_id, child_acc)
             end)
         end
+
       {:error, :not_found} ->
         acc
+
       {:error, reason} ->
         Logger.error("Failed to load state node #{state_root}: #{reason}")
         acc
@@ -449,6 +503,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
           {:ok, response} -> {:ok, response}
           {:error, reason} -> {:error, "Failed to receive response: #{inspect(reason)}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to send message: #{inspect(reason)}"}
     end
@@ -456,6 +511,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
 
   defp compact_cache(cache, max_size) do
     current_size = :ets.info(cache, :size)
+
     if current_size > max_size do
       # Remove oldest entries (simple LRU implementation)
       entries_to_remove = current_size - max_size
@@ -466,12 +522,14 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
   defp cleanup_expired_connections(connections) do
     # Cleanup expired connections (simplified)
     Enum.each(connections, fn {node, pool} ->
-      active_connections = Enum.filter(pool, fn conn ->
-        case :gen_tcp.send(conn, <<>>) do
-          :ok -> true
-          {:error, _} -> false
-        end
-      end)
+      active_connections =
+        Enum.filter(pool, fn conn ->
+          case :gen_tcp.send(conn, <<>>) do
+            :ok -> true
+            {:error, _} -> false
+          end
+        end)
+
       Map.put(connections, node, active_connections)
     end)
   end

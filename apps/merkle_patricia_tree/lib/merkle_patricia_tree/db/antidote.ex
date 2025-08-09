@@ -38,6 +38,7 @@ defmodule MerklePatriciaTree.DB.Antidote do
       {:ok, client} ->
         Logger.info("Connected to AntidoteDB for database: #{db_name}")
         {__MODULE__, {client, bucket}}
+
       {:error, reason} ->
         Logger.warning("Failed to connect to AntidoteDB: #{reason}. Falling back to ETS.")
         # Fallback to ETS implementation
@@ -68,13 +69,16 @@ defmodule MerklePatriciaTree.DB.Antidote do
         try do
           # Convert binary key to string for AntidoteDB
           key_str = Base.encode64(key)
+
           case MerklePatriciaTree.DB.AntidoteClient.get(client, bucket, key_str, tx_id) do
             {:ok, value} when is_binary(value) ->
               MerklePatriciaTree.DB.AntidoteClient.commit_transaction(client, tx_id)
               {:ok, value}
+
             {:error, :not_found} ->
               MerklePatriciaTree.DB.AntidoteClient.commit_transaction(client, tx_id)
               :not_found
+
             {:error, reason} ->
               MerklePatriciaTree.DB.AntidoteClient.abort_transaction(client, tx_id)
               Logger.error("Failed to read from AntidoteDB: #{reason}")
@@ -86,6 +90,7 @@ defmodule MerklePatriciaTree.DB.Antidote do
             Logger.error("Exception during read operation: #{inspect(e)}")
             :not_found
         end
+
       {:error, reason} ->
         Logger.error("Failed to start transaction for read: #{reason}")
         :not_found
@@ -109,10 +114,12 @@ defmodule MerklePatriciaTree.DB.Antidote do
         try do
           # Convert binary key to string for AntidoteDB
           key_str = Base.encode64(key)
+
           case MerklePatriciaTree.DB.AntidoteClient.put(client, bucket, key_str, value, tx_id) do
             :ok ->
               MerklePatriciaTree.DB.AntidoteClient.commit_transaction(client, tx_id)
               :ok
+
             {:error, reason} ->
               MerklePatriciaTree.DB.AntidoteClient.abort_transaction(client, tx_id)
               raise "Failed to write to AntidoteDB: #{inspect(reason)}"
@@ -123,6 +130,7 @@ defmodule MerklePatriciaTree.DB.Antidote do
             Logger.error("Exception during write operation: #{inspect(e)}")
             raise e
         end
+
       {:error, reason} ->
         Logger.error("Failed to start transaction for write: #{reason}")
         raise "Failed to start transaction for write: #{reason}"
@@ -146,10 +154,12 @@ defmodule MerklePatriciaTree.DB.Antidote do
         try do
           # Convert binary key to string for AntidoteDB
           key_str = Base.encode64(key)
+
           case MerklePatriciaTree.DB.AntidoteClient.delete(client, bucket, key_str, tx_id) do
             :ok ->
               MerklePatriciaTree.DB.AntidoteClient.commit_transaction(client, tx_id)
               :ok
+
             {:error, reason} ->
               MerklePatriciaTree.DB.AntidoteClient.abort_transaction(client, tx_id)
               raise "Failed to delete from AntidoteDB: #{inspect(reason)}"
@@ -160,6 +170,7 @@ defmodule MerklePatriciaTree.DB.Antidote do
             Logger.error("Exception during delete operation: #{inspect(e)}")
             raise e
         end
+
       {:error, reason} ->
         Logger.error("Failed to start transaction for delete: #{reason}")
         raise "Failed to start transaction for delete: #{reason}"
@@ -175,6 +186,7 @@ defmodule MerklePatriciaTree.DB.Antidote do
     Enum.each(key_value_pairs, fn {key, value} ->
       :ets.insert(table_name, {key, value})
     end)
+
     :ok
   end
 
@@ -188,21 +200,31 @@ defmodule MerklePatriciaTree.DB.Antidote do
         {:ok, tx_id} ->
           try do
             # Convert pairs to AntidoteDB format
-            operations = Enum.map(pairs, fn {key, value} ->
-              key_str = Base.encode64(key)
-              {:put, key_str, value}
-            end)
+            operations =
+              Enum.map(pairs, fn {key, value} ->
+                key_str = Base.encode64(key)
+                {:put, key_str, value}
+              end)
 
             # Perform batch operations
-            case MerklePatriciaTree.DB.AntidoteClient.batch_operations(client, bucket, operations, tx_id) do
+            case MerklePatriciaTree.DB.AntidoteClient.batch_operations(
+                   client,
+                   bucket,
+                   operations,
+                   tx_id
+                 ) do
               {:ok, results} ->
                 # Check if all operations succeeded
-                if Enum.all?(results, fn :ok -> true; _ -> false end) do
+                if Enum.all?(results, fn
+                     :ok -> true
+                     _ -> false
+                   end) do
                   MerklePatriciaTree.DB.AntidoteClient.commit_transaction(client, tx_id)
                 else
                   MerklePatriciaTree.DB.AntidoteClient.abort_transaction(client, tx_id)
                   raise "Some batch operations failed"
                 end
+
               {:error, reason} ->
                 MerklePatriciaTree.DB.AntidoteClient.abort_transaction(client, tx_id)
                 raise "Batch operations failed: #{reason}"
@@ -214,6 +236,7 @@ defmodule MerklePatriciaTree.DB.Antidote do
               Logger.error("Exception during batch operation: #{inspect(e)}")
               raise e
           end
+
         {:error, reason} ->
           Logger.error("Failed to start transaction for batch: #{reason}")
           raise "Failed to start transaction for batch: #{reason}"

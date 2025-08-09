@@ -29,29 +29,31 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
   require Logger
 
   @type optimizer :: %{
-    cache: :ets.tid(),
-    cache_size: non_neg_integer(),
-    max_cache_size: non_neg_integer(),
-    compression_enabled: boolean(),
-    gc_threshold: float(),
-    memory_monitor: pid() | nil,
-    stats: map()
-  }
+          cache: :ets.tid(),
+          cache_size: non_neg_integer(),
+          max_cache_size: non_neg_integer(),
+          compression_enabled: boolean(),
+          gc_threshold: float(),
+          memory_monitor: pid() | nil,
+          stats: map()
+        }
 
   @type cache_entry :: %{
-    key: any(),
-    value: any(),
-    size: non_neg_integer(),
-    access_count: non_neg_integer(),
-    last_access: integer(),
-    compressed: boolean()
-  }
+          key: any(),
+          value: any(),
+          size: non_neg_integer(),
+          access_count: non_neg_integer(),
+          last_access: integer(),
+          compressed: boolean()
+        }
 
   # Default configuration
   @default_max_cache_size 100_000
   @default_compression_enabled true
-  @default_gc_threshold 0.8  # 80% memory usage triggers GC
-  @default_compression_threshold 1024  # Compress values > 1KB
+  # 80% memory usage triggers GC
+  @default_gc_threshold 0.8
+  # Compress values > 1KB
+  @default_compression_threshold 1024
 
   @doc """
   Initializes the memory optimizer with configuration options.
@@ -138,18 +140,21 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
     case :ets.lookup(optimizer.cache, key) do
       [{^key, entry}] ->
         # Update access statistics
-        updated_entry = %{entry |
-          access_count: entry.access_count + 1,
-          last_access: System.monotonic_time(:millisecond)
+        updated_entry = %{
+          entry
+          | access_count: entry.access_count + 1,
+            last_access: System.monotonic_time(:millisecond)
         }
+
         :ets.insert(optimizer.cache, {key, updated_entry})
 
         # Decompress if needed
-        value = if entry.compressed do
-          decompress_value(entry.value)
-        else
-          entry.value
-        end
+        value =
+          if entry.compressed do
+            decompress_value(entry.value)
+          else
+            entry.value
+          end
 
         update_stats(optimizer, :hit, entry.size, entry.compressed)
         {:ok, value}
@@ -169,6 +174,7 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
       [{^key, entry}] ->
         :ets.delete(optimizer.cache, key)
         update_stats(optimizer, :delete, entry.size, entry.compressed)
+
       [] ->
         :ok
     end
@@ -229,7 +235,8 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
   @spec stream_large_dataset(optimizer(), Enumerable.t(), (any() -> any())) :: :ok
   def stream_large_dataset(optimizer, dataset, processor) do
     dataset
-    |> Stream.chunk_every(1000)  # Process in chunks
+    # Process in chunks
+    |> Stream.chunk_every(1000)
     |> Stream.each(fn chunk ->
       Enum.each(chunk, processor)
 
@@ -279,7 +286,8 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
         end
 
         # Schedule next check
-        Process.send_after(self(), :check_memory, 30_000)  # Check every 30 seconds
+        # Check every 30 seconds
+        Process.send_after(self(), :check_memory, 30_000)
         memory_monitor_loop(gc_threshold)
     end
   end
@@ -300,16 +308,21 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
 
   defp evict_entries(optimizer, needed_size) do
     # Get all entries sorted by access count and last access time
-    entries = :ets.tab2list(optimizer.cache)
-    |> Enum.map(fn {key, entry} -> {key, entry} end)
-    |> Enum.sort_by(fn {_key, entry} ->
-      {entry.access_count, entry.last_access}
-    end, :asc)
+    entries =
+      :ets.tab2list(optimizer.cache)
+      |> Enum.map(fn {key, entry} -> {key, entry} end)
+      |> Enum.sort_by(
+        fn {_key, entry} ->
+          {entry.access_count, entry.last_access}
+        end,
+        :asc
+      )
 
     # Evict entries until we have enough space
-    {evicted_entries, _remaining} = Enum.split_while(entries, fn {_key, entry} ->
-      entry.size <= needed_size
-    end)
+    {evicted_entries, _remaining} =
+      Enum.split_while(entries, fn {_key, entry} ->
+        entry.size <= needed_size
+      end)
 
     Enum.each(evicted_entries, fn {key, _entry} ->
       :ets.delete(optimizer.cache, key)
@@ -320,11 +333,13 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
 
   defp compact_cache(optimizer) do
     # Remove entries that haven't been accessed recently
-    cutoff_time = System.monotonic_time(:millisecond) - 300_000  # 5 minutes ago
+    # 5 minutes ago
+    cutoff_time = System.monotonic_time(:millisecond) - 300_000
 
-    entries_to_remove = :ets.select(optimizer.cache, [
-      {{:_, %{last_access: :"$1"}}, [{:<, :"$1", cutoff_time}], [true]}
-    ])
+    entries_to_remove =
+      :ets.select(optimizer.cache, [
+        {{:_, %{last_access: :"$1"}}, [{:<, :"$1", cutoff_time}], [true]}
+      ])
 
     :ets.select_delete(optimizer.cache, [
       {{:_, %{last_access: :"$1"}}, [{:<, :"$1", cutoff_time}], [true]}
@@ -350,38 +365,44 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
 
   defp update_memory_stats(optimizer) do
     memory_info = :erlang.memory()
-    memory_freed = optimizer.stats.memory_freed +
-      (memory_info[:total] - optimizer.stats.memory_freed)
+
+    memory_freed =
+      optimizer.stats.memory_freed +
+        (memory_info[:total] - optimizer.stats.memory_freed)
 
     %{optimizer | stats: %{optimizer.stats | memory_freed: memory_freed}}
   end
 
   defp update_stats(optimizer, operation, size, compressed) do
-    stats = case operation do
-      :put ->
-        %{optimizer.stats |
-          compressions: optimizer.stats.compressions + (if compressed, do: 1, else: 0)
-        }
-      :hit ->
-        %{optimizer.stats | cache_hits: optimizer.stats.cache_hits + 1}
-      :miss ->
-        %{optimizer.stats | cache_misses: optimizer.stats.cache_misses + 1}
-      :delete ->
-        %{optimizer.stats | memory_freed: optimizer.stats.memory_freed + size}
-    end
+    stats =
+      case operation do
+        :put ->
+          %{
+            optimizer.stats
+            | compressions: optimizer.stats.compressions + if(compressed, do: 1, else: 0)
+          }
+
+        :hit ->
+          %{optimizer.stats | cache_hits: optimizer.stats.cache_hits + 1}
+
+        :miss ->
+          %{optimizer.stats | cache_misses: optimizer.stats.cache_misses + 1}
+
+        :delete ->
+          %{optimizer.stats | memory_freed: optimizer.stats.memory_freed + size}
+      end
 
     %{optimizer | stats: stats}
   end
 
   defp update_gc_stats(optimizer, gc_time) do
-    stats = %{optimizer.stats |
-      gc_cycles: optimizer.stats.gc_cycles + 1
-    }
+    stats = %{optimizer.stats | gc_cycles: optimizer.stats.gc_cycles + 1}
     %{optimizer | stats: stats}
   end
 
   defp calculate_hit_rate(stats) do
     total_requests = stats.cache_hits + stats.cache_misses
+
     if total_requests > 0 do
       stats.cache_hits / total_requests * 100
     else
@@ -392,7 +413,8 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
   defp calculate_compression_ratio(stats) do
     if stats.compressions > 0 do
       # Simplified compression ratio calculation
-      0.7  # Assume 30% compression on average
+      # Assume 30% compression on average
+      0.7
     else
       1.0
     end
