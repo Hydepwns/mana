@@ -165,9 +165,7 @@ defmodule ExWire.Packet.Capability.Eth.Status do
       #       ourselves
       _ =
         Logger.debug(fn ->
-          "[Packet] Disconnecting to due incompatible protocol version (them #{
-            packet.protocol_version
-          }, us: #{ExWire.Config.protocol_version()})"
+          "[Packet] Disconnecting to due incompatible protocol version (them #{packet.protocol_version}, us: #{ExWire.Config.protocol_version()})"
         end)
 
       {:disconnect, :useless_peer}
