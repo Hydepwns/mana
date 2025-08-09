@@ -28,3 +28,4 @@ apps/blockchain/config/dev.secret.exs
 /priv/itest/_build/itest
 /priv/itest/itest
 apps/merkle_patricia_tree/log/
+.claude/
