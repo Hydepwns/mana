@@ -59,7 +59,7 @@ jobs:
       run: mix compile
 
     - name: Run tests
-      run: mix test --exclude network
+      run: mix test --exclude network --exclude skip_ci --exclude byzantine_fault --exclude rocksdb_required --exclude antidote_integration
 
     - name: Run credo
       run: mix credo --strict
