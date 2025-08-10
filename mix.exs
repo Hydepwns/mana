@@ -16,8 +16,7 @@ defmodule Mana.MixProject do
         :merkle_patricia_tree,
         :jsonrpc2
       ],
-      # Temporarily disabled warnings-as-errors to allow compilation
-      # elixirc_options: [warnings_as_errors: true],
+      elixirc_options: [warnings_as_errors: true],
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       dialyzer: [
@@ -42,6 +41,7 @@ defmodule Mana.MixProject do
       {:ethereumex, "~> 0.5.1"},
       {:jason, "~> 1.4"},
       {:credo, "~> 1.0.0-rc1", only: [:dev, :test], runtime: false},
+      {:stream_data, "~> 0.6", only: [:dev, :test]},
       {:artificery, "~> 0.1.0"},
       {:logger_file_backend, "~> 0.0.10"},
       {:ssl_verify_fun, "~> 1.1.7", override: true}
