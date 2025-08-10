@@ -68,7 +68,7 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
     cache = :ets.new(:memory_optimizer_cache, [:set, :private])
 
     # Start memory monitor
-    {:ok, memory_monitor} = start_memory_monitor(gc_threshold)
+    memory_monitor = start_memory_monitor(gc_threshold)
 
     optimizer = %{
       cache: cache,
