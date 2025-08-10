@@ -5,7 +5,7 @@ defmodule ExWire.Layer2.ZK.StateTree do
   """
 
   require Logger
-  use Bitwise
+  import Bitwise
 
   @type t :: %__MODULE__{
           depth: non_neg_integer(),

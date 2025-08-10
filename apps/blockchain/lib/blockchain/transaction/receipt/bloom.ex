@@ -1,7 +1,7 @@
 defmodule Blockchain.Transaction.Receipt.Bloom do
   alias ExthCrypto.Hash.Keccak
 
-  use Bitwise
+  import Bitwise
 
   def empty do
     List.duplicate(0, 256)

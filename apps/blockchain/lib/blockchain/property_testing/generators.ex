@@ -13,7 +13,7 @@ defmodule Blockchain.PropertyTesting.Generators do
   Generates random transaction data.
   """
   def transaction_data do
-    map(%{
+    StreamData.map(%{
       nonce: non_negative_integer(),
       gas_price: non_negative_integer(),
       gas_limit: positive_integer(),
@@ -27,7 +27,7 @@ defmodule Blockchain.PropertyTesting.Generators do
   Generates random block headers.
   """
   def block_header do
-    map(%{
+    StreamData.map(%{
       parent_hash: binary(length: 32),
       ommers_hash: binary(length: 32),
       beneficiary: binary(length: 20),

@@ -2,7 +2,7 @@ defmodule ExWire.Kademlia.XorDistance do
   @moduledoc """
   XOR metric used in Kademlia.
   """
-  use Bitwise
+  import Bitwise
 
   @doc """
   Calculates XOR metric value between two binaries.
