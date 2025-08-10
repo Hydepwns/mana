@@ -9,6 +9,7 @@ defmodule ExthCrypto.PropertyTests.CryptoPropertyTest do
   - Cryptographic operations handle edge cases gracefully
   """
 
+  use ExUnit.Case, async: true
   use ExUnitProperties
   import StreamData
   # TODO: Re-enable when Blockchain.PropertyTesting.Properties module is implemented

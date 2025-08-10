@@ -9,6 +9,7 @@ defmodule Blockchain.PropertyTests.TransactionPropertyTest do
 
   # TODO: Re-enable when Blockchain.PropertyTesting.Framework module is implemented
   # use Blockchain.PropertyTesting.Framework
+  use ExUnit.Case, async: true
   use ExUnitProperties
 
   alias Blockchain.Transaction
