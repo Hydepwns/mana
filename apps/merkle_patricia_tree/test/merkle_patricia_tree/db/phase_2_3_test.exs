@@ -27,8 +27,8 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       # This should fail gracefully when no nodes are available
       result = AntidoteOptimized.connect(nodes, pool_size: 5)
 
-      # Verify it handles connection failures gracefully
-      assert match?({:error, _}, result) or match?({:ok, %{connections: connections}}, result) when map_size(connections) >= 0
+      # Verify it handles connection failures gracefully  
+      assert match?({:error, _}, result) or match?({:ok, %{connections: connections}} when map_size(connections) >= 0, result)
     end
 
     test "handles batch transactions efficiently" do
