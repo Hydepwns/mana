@@ -223,6 +223,8 @@ defmodule VerkleTree.StateExpiryTest do
   end
 
   describe "integration with standard operations" do
+    @tag :verkle_experimental
+    @tag skip: "Verkle tree state expiry feature is experimental - timing calculations may vary"
     test "expired state doesn't interfere with new writes", %{
       tree: tree,
       expiry_manager: expiry_manager

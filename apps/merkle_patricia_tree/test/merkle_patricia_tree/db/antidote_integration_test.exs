@@ -7,6 +7,9 @@ defmodule MerklePatriciaTree.DB.AntidoteIntegrationTest do
   """
 
   use ExUnit.Case, async: false
+  
+  # Skip integration tests that require real AntidoteDB cluster in CI
+  @moduletag :antidote_integration
 
   alias MerklePatriciaTree.DB.Antidote
   alias MerklePatriciaTree.DB.AntidoteConnectionPool
