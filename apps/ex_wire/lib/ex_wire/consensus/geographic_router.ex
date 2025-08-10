@@ -273,7 +273,10 @@ defmodule ExWire.Consensus.GeographicRouter do
   def handle_cast({:update_datacenter_status, datacenter_id, updates}, state) do
     case Map.get(state.datacenters, datacenter_id) do
       nil ->
-        Logger.warning("[GeographicRouter] Attempted to update unknown datacenter: #{datacenter_id}")
+        Logger.warning(
+          "[GeographicRouter] Attempted to update unknown datacenter: #{datacenter_id}"
+        )
+
         {:noreply, state}
 
       datacenter_info ->
