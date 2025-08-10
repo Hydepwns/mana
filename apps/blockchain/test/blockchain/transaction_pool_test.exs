@@ -125,7 +125,7 @@ defmodule Blockchain.TransactionPoolTest do
       # Convert hex hash back to binary
       tx_hash =
         tx_hash_hex
-        |> String.slice(2..-1)
+        |> String.slice(2..-1//1)
         |> Base.decode16!(case: :lower)
 
       tx = TransactionPool.get_transaction(tx_hash)
@@ -151,8 +151,8 @@ defmodule Blockchain.TransactionPoolTest do
       {:ok, hash3} = TransactionPool.add_transaction(tx3)
 
       # Convert hex to binary
-      hash1_bin = hash1 |> String.slice(2..-1) |> Base.decode16!(case: :lower)
-      hash2_bin = hash2 |> String.slice(2..-1) |> Base.decode16!(case: :lower)
+      hash1_bin = hash1 |> String.slice(2..-1//1) |> Base.decode16!(case: :lower)
+      hash2_bin = hash2 |> String.slice(2..-1//1) |> Base.decode16!(case: :lower)
 
       TransactionPool.remove_transactions([hash1_bin, hash2_bin])
 
@@ -160,7 +160,7 @@ defmodule Blockchain.TransactionPoolTest do
       assert nil == TransactionPool.get_transaction(hash1_bin)
       assert nil == TransactionPool.get_transaction(hash2_bin)
 
-      hash3_bin = hash3 |> String.slice(2..-1) |> Base.decode16!(case: :lower)
+      hash3_bin = hash3 |> String.slice(2..-1//1) |> Base.decode16!(case: :lower)
       assert TransactionPool.get_transaction(hash3_bin) != nil
     end
   end

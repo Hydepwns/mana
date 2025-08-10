@@ -299,7 +299,7 @@ defmodule Blockchain.TransactionPool do
       binary =
         if String.starts_with?(raw, "0x") do
           raw
-          |> String.slice(2..-1)
+          |> String.slice(2..-1//1)
           |> Base.decode16!(case: :mixed)
         else
           raw
