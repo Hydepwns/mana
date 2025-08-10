@@ -110,6 +110,28 @@ defmodule ExthCrypto.Math do
   def bin_to_hex(bin), do: Base.encode16(bin, case: :lower)
 
   @doc """
+  Simple wrapper function to convert an integer to a hex string.
+
+  ## Examples
+
+      iex> ExthCrypto.Math.int_to_hex(255)
+      "ff"
+
+      iex> ExthCrypto.Math.int_to_hex(0)
+      "0"
+
+      iex> ExthCrypto.Math.int_to_hex(16910861)
+      "01020a0d"
+  """
+  @spec int_to_hex(non_neg_integer()) :: String.t()
+  def int_to_hex(0), do: "0"
+  def int_to_hex(n) when n > 0 do
+    n
+    |> :binary.encode_unsigned()
+    |> bin_to_hex()
+  end
+
+  @doc """
   Generate a random nonce value of specified length.
 
   ## Examples
