@@ -115,7 +115,7 @@ defmodule MerklePatriciaTree.DB.AntidoteConnectionPool do
   end
 
   @impl true
-  def handle_call(:checkout, from, state) do
+  def handle_call(:checkout, _from, state) do
     case find_available_connection(state.connections) do
       {conn, remaining} ->
         new_connections = [{conn, :busy} | remaining]
@@ -290,7 +290,7 @@ defmodule MerklePatriciaTree.DB.AntidoteConnectionPool do
 
   defp update_circuit_breakers(nodes, connections, circuit_breaker) do
     # Update circuit breaker state based on connection health
-    Map.new(nodes, fn {host, port} = node ->
+    Map.new(nodes, fn {_host, _port} = node ->
       current_breaker = Map.get(circuit_breaker, node)
 
       # Count successful connections to this node

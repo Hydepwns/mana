@@ -179,8 +179,8 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
   @impl GenServer
   def init(opts) do
-    rate_limit_requests = Keyword.get(opts, :rate_limit_requests, @default_rate_limit_requests)
-    rate_limit_window = Keyword.get(opts, :rate_limit_window, @default_rate_limit_window)
+    _rate_limit_requests = Keyword.get(opts, :rate_limit_requests, @default_rate_limit_requests)
+    _rate_limit_window = Keyword.get(opts, :rate_limit_window, @default_rate_limit_window)
     audit_interval = Keyword.get(opts, :audit_interval, @default_audit_interval)
 
     # Initialize security auditor state
@@ -333,7 +333,7 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
     if current_requests < @default_rate_limit_requests do
       # Update rate limit tracking
-      new_rate_limits =
+      _new_rate_limits =
         update_rate_limit_tracking(rate_limit_key, current_time, state.rate_limits)
 
       {:ok, :allowed}
@@ -686,17 +686,17 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
     }
   end
 
-  defp check_gdpr_compliance(state) do
+  defp check_gdpr_compliance(_state) do
     # Simplified GDPR compliance check
     true
   end
 
-  defp check_sox_compliance(state) do
+  defp check_sox_compliance(_state) do
     # Simplified SOX compliance check
     true
   end
 
-  defp check_pci_compliance(state) do
+  defp check_pci_compliance(_state) do
     # Simplified PCI compliance check
     true
   end

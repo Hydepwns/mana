@@ -8,7 +8,6 @@ defmodule MerklePatriciaTree.DB.Migration.ETSToAntidote do
   """
 
   alias MerklePatriciaTree.DB.{ETS, Antidote}
-  alias MerklePatriciaTree.DB.AntidoteClient
   require Logger
 
   @batch_size 1000
