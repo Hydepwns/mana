@@ -1,0 +1,25 @@
+# Optimism Sepolia Testnet Configuration
+name: "optimism_sepolia"
+network_type: "optimistic_rollup"
+chain_id: 11155420
+enabled: true
+
+l1_network:
+  endpoint: "https://sepolia.infura.io/v3/${INFURA_API_KEY}"
+  chain_id: 11155111
+  confirmation_blocks: 3
+
+l2_network:
+  endpoint: "https://sepolia.optimism.io"
+  chain_id: 11155420
+  confirmation_blocks: 1
+
+rollup_config:
+  type: "optimistic"
+  challenge_period: 1800  # 30 minutes for testnet
+  finalization_period: 300  # 5 minutes
+  batch_submission_frequency: 60  # 1 minute
+
+development:
+  enabled: true
+  fast_withdrawal_period: true
