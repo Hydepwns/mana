@@ -36,6 +36,7 @@ defmodule MerklePatriciaTree.Mixfile do
       {:logger_file_backend, "~> 0.0.10"},
       {:ex_rlp, "~> 0.6"},
       {:jason, "~> 1.1"},
+      {:rustler, "~> 0.29.1", runtime: false},
       # Umbrella deps
       {:exth_crypto, in_umbrella: true}
     ]

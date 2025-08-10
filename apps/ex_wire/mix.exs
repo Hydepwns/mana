@@ -20,7 +20,18 @@ defmodule ExWire.Mixfile do
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
-      deps: deps()
+      deps: deps(),
+      # Configure Rustler NIF compilation
+      rustler_crates: [
+        bls_nif: [
+          path: "native/bls_nif",
+          mode: if(Mix.env() == :prod, do: :release, else: :debug)
+        ],
+        kzg_nif: [
+          path: "native/kzg_nif",
+          mode: if(Mix.env() == :prod, do: :release, else: :debug)
+        ]
+      ]
       # Temporarily disabled warnings-as-errors to allow compilation
       # elixirc_options: [warnings_as_errors: true]
     ]
@@ -39,7 +50,16 @@ defmodule ExWire.Mixfile do
       {:blockchain, in_umbrella: true},
       {:exth, in_umbrella: true},
       {:exth_crypto, in_umbrella: true},
-      {:merkle_patricia_tree, in_umbrella: true}
+      {:merkle_patricia_tree, in_umbrella: true},
+      
+      # Parallel processing
+      {:flow, "~> 1.2"},
+      
+      # BLS signature NIF
+      {:rustler, "~> 0.29.1"},
+      
+      # YAML parsing for consensus spec tests
+      {:yaml_elixir, "~> 2.9"}
     ]
   end
 end
