@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Edoc do
 
   def run(_args) do
     try do
-      :edoc.application(Mix.Project.config[:app], '.', [])
+      :edoc.application(Mix.Project.config[:app], ~c".", [])
     catch
       :exit, _reason -> Mix.raise "Encountered some errors."
     end
