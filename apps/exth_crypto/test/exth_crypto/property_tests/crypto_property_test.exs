@@ -248,7 +248,8 @@ defmodule ExthCrypto.PropertyTests.CryptoPropertyTest do
 
   property "modular arithmetic operations" do
     check all(
-            {a, b} <- {pos_integer(), pos_integer()},
+            a <- positive_integer(),
+            b <- positive_integer(),
             # Keep numbers reasonable for testing
             a < 1000,
             b < 1000,
