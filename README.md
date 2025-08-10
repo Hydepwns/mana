@@ -1,6 +1,12 @@
 # Mana-Ethereum
 
-[![GitHub Actions](https://github.com/Hydepwns/mana/workflows/CI/badge.svg)](https://github.com/Hydepwns/mana/actions) [![codecov](https://codecov.io/gh/Hydepwns/mana/branch/master/graph/badge.svg)](https://codecov.io/gh/Hydepwns/mana)
+[![Hex.pm](https://img.shields.io/hexpm/v/mana.svg)](https://hex.pm/packages/mana)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-purple.svg)](https://hexdocs.pm/mana)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/Hydepwns/mana/tree/master.svg?style=shield)](https://dl.circleci.com/status-badge/redirect/gh/Hydepwns/mana/tree/master)
+[![GitHub Actions](https://github.com/Hydepwns/mana/workflows/CI/badge.svg)](https://github.com/Hydepwns/mana/actions)
+[![codecov](https://codecov.io/gh/Hydepwns/mana/branch/master/graph/badge.svg)](https://codecov.io/gh/Hydepwns/mana)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE_APACHE)
+[![Elixir Version](https://img.shields.io/badge/Elixir-~%3E%201.18-purple)](https://elixir-lang.org/)
 
 Distributed Ethereum client with multi-datacenter operation and universal Layer 2 support.
 
