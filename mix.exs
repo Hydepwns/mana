@@ -24,6 +24,14 @@ defmodule Mana.MixProject do
         ignore_warnings: ".dialyzer.ignore-warnings",
         plt_add_apps: [:mix, :iex, :ex_unit, :ranch, :plug, :hackney, :jason, :websockex, :cowboy]
       ],
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test
+      ],
       deps: deps()
     ]
   end
@@ -41,6 +49,7 @@ defmodule Mana.MixProject do
       {:ethereumex, "~> 0.5.1"},
       {:jason, "~> 1.4"},
       {:credo, "~> 1.0.0-rc1", only: [:dev, :test], runtime: false},
+      {:excoveralls, "~> 0.18", only: :test},
       {:stream_data, "~> 0.6", only: [:dev, :test]},
       {:artificery, "~> 0.1.0"},
       {:logger_file_backend, "~> 0.0.10"},

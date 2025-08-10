@@ -1,0 +1,58 @@
+name: Code Coverage
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test and Coverage
+    runs-on: ubuntu-latest
+    
+    env:
+      MIX_ENV: test
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: '1.18.4'
+        otp-version: '27.2'
+        
+    - name: Restore dependencies cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          deps
+          _build
+        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+        restore-keys: ${{ runner.os }}-mix-
+        
+    - name: Install dependencies
+      run: |
+        mix local.hex --force
+        mix local.rebar --force
+        mix deps.get
+        
+    - name: Compile dependencies
+      run: mix deps.compile
+      
+    - name: Compile project
+      run: mix compile --warnings-as-errors
+      
+    - name: Run tests with coverage
+      run: mix coveralls.json --exclude slow
+      
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        file: ./cover/excoveralls.json
+        flags: unittests
+        name: mana-coverage
+        fail_ci_if_error: false
+        verbose: true

@@ -1,6 +1,6 @@
 # Mana-Ethereum
 
-[![GitHub Actions](https://github.com/Hydepwns/mana/workflows/CI/badge.svg)](https://github.com/Hydepwns/mana/actions) [![CodeQL](https://github.com/Hydepwns/mana/workflows/CodeQL/badge.svg)](https://github.com/Hydepwns/mana/security/code-scanning)
+[![GitHub Actions](https://github.com/Hydepwns/mana/workflows/CI/badge.svg)](https://github.com/Hydepwns/mana/actions) [![codecov](https://codecov.io/gh/Hydepwns/mana/branch/master/graph/badge.svg)](https://codecov.io/gh/Hydepwns/mana)
 
 Distributed Ethereum client with multi-datacenter operation and universal Layer 2 support.
 
