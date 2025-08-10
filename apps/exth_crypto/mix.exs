@@ -31,6 +31,8 @@ defmodule ExthCrypto.Mixfile do
       # External deps
       {:logger_file_backend, "~> 0.0.10"},
       {:libsecp256k1, "~> 0.1.10"},
+      # Pure Elixir Keccak implementation (Erlang 27 compatible)
+      {:ex_sha3, "~> 0.1.4"},
       # {:keccakf1600, "~> 2.1", hex: :keccakf1600_orig},  # Temporarily disabled due to Erlang 27 compatibility issues
       {:binary, "~> 0.0.4"},
       # For HSM configuration JSON handling

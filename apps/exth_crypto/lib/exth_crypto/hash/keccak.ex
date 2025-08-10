@@ -6,43 +6,31 @@ defmodule ExthCrypto.Hash.Keccak do
   than that assigned as the new SHA-3 variant. For SHA-3, a few constants have
   been changed prior to adoption by NIST, but after adoption by Ethereum.
 
-  TODO: Currently using crypto:hash/2 as fallback when keccakf1600 is not available.
-  This is not the exact Keccak implementation but provides compatibility for compilation.
+  Using ExSha3 pure Elixir implementation for Erlang 27 compatibility.
+  This provides proper Keccak-256/512 hashing without native dependencies.
   """
 
   @type keccak_hash :: ExthCrypto.Hash.hash()
   @type keccak_mac :: {atom(), binary()}
 
-  # Check if keccakf1600 is available at compile time
-  @keccakf1600_available :erlang.function_exported(:keccakf1600, :sha3_256, 1)
+  # Use keccak_ex pure Elixir implementation
 
   @doc """
   Returns the keccak sha256 of a given input.
 
   ## Examples
 
-      # TODO: These are SHA-256 values, not Keccak-256, due to keccakf1600 being unavailable
-      # When keccakf1600 is re-enabled, these doctests will need to be updated with actual Keccak values
       iex> ExthCrypto.Hash.Keccak.kec("hello world")
-      <<185, 77, 39, 185, 147, 77, 62, 8, 165, 46, 82, 215, 218, 125, 171, 250, 196,
-        132, 239, 227, 122, 83, 128, 238, 144, 136, 247, 172, 226, 239, 205, 233>>
+      <<71, 23, 50, 133, 168, 215, 52, 30, 94, 151, 47, 198, 119, 40, 99, 132, 248, 2,
+        248, 239, 66, 165, 236, 95, 3, 187, 250, 37, 76, 176, 31, 173>>
 
       iex> ExthCrypto.Hash.Keccak.kec(<<0x01, 0x02, 0x03>>)
-      <<3, 144, 88, 198, 242, 192, 203, 73, 44, 83, 59, 10, 77, 20, 239,
-        119, 204, 15, 120, 171, 204, 206, 213, 40, 125, 132,
-        161, 162, 1, 28, 251, 129>>
+      <<241, 136, 94, 218, 84, 183, 160, 83, 49, 140, 212, 30, 32, 147, 34, 13, 171, 21,
+        214, 83, 129, 177, 21, 122, 54, 51, 168, 59, 253, 92, 146, 57>>
   """
   @spec kec(binary()) :: keccak_hash
-  if @keccakf1600_available do
-    def kec(data) do
-      :keccakf1600.sha3_256(data)
-    end
-  else
-    def kec(data) do
-      # Fallback to crypto:hash/2 for compilation compatibility
-      # TODO: This is not the exact Keccak implementation
-      :crypto.hash(:sha256, data)
-    end
+  def kec(data) do
+    ExSha3.keccak_256(data)
   end
 
   @doc """
@@ -50,25 +38,12 @@ defmodule ExthCrypto.Hash.Keccak do
 
   ## Examples
 
-      # TODO: This is SHA-512, not Keccak-512, due to keccakf1600 being unavailable
-      # When keccakf1600 is re-enabled, this doctest will need to be updated with actual Keccak value
       iex> ExthCrypto.Hash.Keccak.kec512("hello world")
-      <<48, 158, 204, 72, 156, 18, 214, 235, 76, 196, 15, 80, 201, 2, 242, 180, 208,
-        237, 119, 238, 81, 26, 124, 122, 155, 205, 60, 168, 109, 76, 216, 111, 152,
-        157, 211, 91, 197, 255, 73, 150, 112, 218, 52, 37, 91, 69, 176, 207, 216, 48,
-        232, 31, 96, 93, 207, 125, 197, 84, 46, 147, 174, 156, 215, 111>>
+      <<62, 226, 180, 0, 71, 184, 6, 15, 104, 198, 114, 66, 23, 86, 96, 244, 23, 77, 10, 245, 192, 29, 71, 22, 142, 194, 14, 214, 25, 176, 183, 196, 33, 129, 244, 10, 161, 4, 111, 57, 226, 239, 158, 252, 105, 16, 120, 42, 153, 142, 0, 19, 209, 114, 69, 137, 87, 149, 127, 172, 148, 5, 182, 125>>
   """
   @spec kec512(binary()) :: keccak_hash
-  if @keccakf1600_available do
-    def kec512(data) do
-      :keccakf1600.sha3_512(data)
-    end
-  else
-    def kec512(data) do
-      # Fallback to crypto:hash/2 for compilation compatibility
-      # TODO: This is not the exact Keccak implementation
-      :crypto.hash(:sha512, data)
-    end
+  def kec512(data) do
+    ExSha3.keccak_512(data)
   end
 
   @doc """
@@ -81,15 +56,9 @@ defmodule ExthCrypto.Hash.Keccak do
       false
   """
   @spec init_mac() :: keccak_mac
-  if @keccakf1600_available do
-    def init_mac() do
-      :keccakf1600.init(:sha3_256)
-    end
-  else
-    def init_mac() do
-      # Fallback implementation
-      {:sha256, <<>>}
-    end
+  def init_mac() do
+    # Simple implementation using keccak accumulation
+    {:keccak256, <<>>}
   end
 
   @doc """
@@ -104,18 +73,8 @@ defmodule ExthCrypto.Hash.Keccak do
       false
   """
   @spec update_mac(keccak_mac, binary()) :: keccak_mac
-  if @keccakf1600_available do
-    def update_mac(mac, data) do
-      :keccakf1600.update(mac, data)
-    end
-  else
-    def update_mac(mac, data) do
-      # Fallback implementation - accumulate data
-      case mac do
-        {:sha256, acc} -> {:sha256, acc <> data}
-        {:sha512, acc} -> {:sha512, acc <> data}
-      end
-    end
+  def update_mac({:keccak256, acc}, data) do
+    {:keccak256, acc <> data}
   end
 
   @doc """
@@ -123,25 +82,14 @@ defmodule ExthCrypto.Hash.Keccak do
 
   ## Examples
 
-      # TODO: This is SHA-256, not Keccak-256, due to keccakf1600 being unavailable
       iex> ExthCrypto.Hash.Keccak.init_mac()
       ...> |> ExthCrypto.Hash.Keccak.update_mac("data")
       ...> |> ExthCrypto.Hash.Keccak.final_mac()
       ...> |> ExthCrypto.Math.bin_to_hex
-      "3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7"
+      "8f54f1c2d0eb5771cd5bf67a6689fcd6eed9444d91a39e5ef32a9b4ae5ca14ff"
   """
   @spec final_mac(keccak_mac) :: keccak_hash
-  if @keccakf1600_available do
-    def final_mac(mac) do
-      :keccakf1600.final(mac)
-    end
-  else
-    def final_mac(mac) do
-      # Fallback implementation - hash accumulated data
-      case mac do
-        {:sha256, data} -> :crypto.hash(:sha256, data)
-        {:sha512, data} -> :crypto.hash(:sha512, data)
-      end
-    end
+  def final_mac({:keccak256, data}) do
+    ExSha3.keccak_256(data)
   end
 end
