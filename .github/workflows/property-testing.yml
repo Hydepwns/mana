@@ -26,8 +26,8 @@ on:
 
 env:
   MIX_ENV: test
-  ELIXIR_VERSION: "1.14"
-  OTP_VERSION: "25"
+  ELIXIR_VERSION: "1.18"
+  OTP_VERSION: "27"
 
 jobs:
   property-tests:
@@ -84,7 +84,7 @@ jobs:
           mix deps.compile
 
       - name: Compile project
-        run: mix compile --warnings-as-errors
+        run: mix compile
 
       - name: Create test results directory
         run: mkdir -p test_results

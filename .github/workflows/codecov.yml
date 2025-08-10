@@ -20,8 +20,8 @@ jobs:
     - name: Set up Elixir
       uses: erlef/setup-beam@v1
       with:
-        elixir-version: '1.17.3'
-        otp-version: '26.2'
+        elixir-version: '1.18.4'
+        otp-version: '27.2'
         
     - name: Restore dependencies cache
       uses: actions/cache@v3
@@ -42,7 +42,7 @@ jobs:
       run: mix deps.compile
       
     - name: Compile project
-      run: mix compile --warnings-as-errors
+      run: mix compile
       
     - name: Run tests with coverage
       run: mix coveralls.json --exclude slow

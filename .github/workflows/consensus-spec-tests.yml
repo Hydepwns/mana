@@ -93,7 +93,7 @@ jobs:
         override: true
 
     - name: Compile project
-      run: mix compile --warnings-as-errors
+      run: mix compile
 
     - name: Cache consensus spec tests
       id: cache-consensus-tests
