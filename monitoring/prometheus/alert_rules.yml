@@ -1,0 +1,184 @@
+groups:
+  - name: mana-ethereum-alerts
+    rules:
+      # High-level service alerts
+      - alert: ManaEthereumDown
+        expr: up{job="mana-ethereum"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Mana-Ethereum client is down"
+          description: "The Mana-Ethereum client has been down for more than 30 seconds."
+
+      - alert: ManaEthereumSyncStalled
+        expr: increase(mana_blockchain_height[5m]) == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blockchain sync appears stalled"
+          description: "No new blocks have been processed in the last 5 minutes."
+
+      # Performance alerts
+      - alert: HighBlockProcessingTime
+        expr: histogram_quantile(0.95, rate(mana_block_processing_seconds_bucket[5m])) > 2.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High block processing time"
+          description: "95th percentile block processing time is {{ $value }}s, above 2s threshold."
+
+      - alert: HighAttestationProcessingTime
+        expr: histogram_quantile(0.95, rate(mana_attestation_processing_seconds_bucket[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High attestation processing time"
+          description: "95th percentile attestation processing time is {{ $value }}s, above 100ms threshold."
+
+      # Resource alerts
+      - alert: HighMemoryUsage
+        expr: mana_memory_usage_bytes{type="total"} / (1024*1024*1024) > 16
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Mana-Ethereum is using {{ $value }}GB of memory, above 16GB threshold."
+
+      - alert: HighDiskUsage
+        expr: mana_disk_usage_ratio > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is at {{ $value | humanizePercentage }}, above 90% threshold."
+
+      # P2P network alerts
+      - alert: LowPeerCount
+        expr: mana_p2p_peers_connected < 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low peer count"
+          description: "Only {{ $value }} peers connected, below 5 peer threshold."
+
+      - alert: NoPeersConnected
+        expr: sum(mana_p2p_peers_connected) == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No peers connected"
+          description: "No P2P peers are currently connected."
+
+      # Consensus layer alerts
+      - alert: AttestationProcessingErrors
+        expr: rate(mana_attestations_processed_total{status!="success"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High attestation error rate"
+          description: "Attestation error rate is {{ $value }} errors/second."
+
+      - alert: ForkChoicePerformanceDegraded
+        expr: histogram_quantile(0.95, rate(mana_fork_choice_seconds_bucket[5m])) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Fork choice performance degraded"
+          description: "95th percentile fork choice time is {{ $value }}s, above 50ms threshold."
+
+      # JSON-RPC alerts
+      - alert: HighJSONRPCErrorRate
+        expr: rate(mana_jsonrpc_requests_total{status!="success"}[5m]) / rate(mana_jsonrpc_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JSON-RPC error rate"
+          description: "JSON-RPC error rate is {{ $value | humanizePercentage }}."
+
+      - alert: HighJSONRPCLatency
+        expr: histogram_quantile(0.95, rate(mana_jsonrpc_request_seconds_bucket[5m])) > 1.0
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JSON-RPC latency"
+          description: "95th percentile JSON-RPC response time is {{ $value }}s."
+
+      # Storage alerts
+      - alert: StorageOperationErrors
+        expr: rate(mana_storage_operations_total{status!="success"}[5m]) > 1.0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Storage operation errors"
+          description: "Storage error rate is {{ $value }} errors/second."
+
+      - alert: SlowStorageOperations
+        expr: histogram_quantile(0.95, rate(mana_storage_operation_seconds_bucket[5m])) > 0.5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow storage operations"
+          description: "95th percentile storage operation time is {{ $value }}s."
+
+      # Pruning alerts
+      - alert: PruningOperationFailed
+        expr: increase(mana_pruning_operations_total{status="failed"}[1h]) > 0
+        for: 0s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pruning operation failed"
+          description: "{{ $value }} pruning operations have failed in the last hour."
+
+      - alert: PruningTooSlow
+        expr: histogram_quantile(0.95, rate(mana_pruning_duration_seconds_bucket[1h])) > 1800
+        for: 0s
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pruning operations taking too long"
+          description: "95th percentile pruning time is {{ $value }}s ({{ $value | humanizeDuration }})."
+
+  - name: system-alerts
+    rules:
+      # System resource alerts from node-exporter
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: HighSystemMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High system memory usage"
+          description: "System memory usage is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+
+      - alert: HighSystemDiskUsage
+        expr: (node_filesystem_size_bytes{fstype!="tmpfs"} - node_filesystem_avail_bytes{fstype!="tmpfs"}) / node_filesystem_size_bytes{fstype!="tmpfs"} > 0.9
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High system disk usage"
+          description: "Disk usage is {{ $value | humanizePercentage }} on {{ $labels.instance }} {{ $labels.mountpoint }}."

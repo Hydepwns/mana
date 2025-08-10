@@ -1,0 +1,159 @@
+# Mana-Ethereum Configuration File
+# This is the main configuration file for the Mana-Ethereum client
+
+# Blockchain Configuration
+blockchain:
+  # Network to connect to: mainnet, goerli, sepolia
+  network: mainnet
+  # Chain ID for transaction signing
+  chain_id: 1
+  # Enable EIP-1559 transaction support
+  eip1559: true
+
+# P2P Networking Configuration
+p2p:
+  # Maximum number of peers to connect to
+  max_peers: 50
+  # Port to listen on for P2P connections
+  port: 30303
+  # Enable peer discovery
+  discovery: true
+  # Ethereum wire protocol version
+  protocol_version: 67
+  # P2P protocol version
+  p2p_version: 5
+  # Supported protocol capabilities
+  capabilities:
+    - eth/66
+    - eth/67
+  # Public IP address (auto-detected if not specified)
+  # public_ip: 1.2.3.4
+  # Bootstrap nodes (uses network defaults if not specified)
+  # bootnodes:
+  #   - enode://...@ip:port
+
+# Synchronization Configuration  
+sync:
+  # Enable blockchain synchronization
+  enabled: true
+  # Sync mode: full, fast, warp
+  mode: fast
+  # Enable checkpoint sync for faster initial sync
+  checkpoint_sync: true
+  # Enable warp sync (experimental)
+  warp: false
+  # Number of parallel block downloads
+  parallel_downloads: 10
+
+# Storage Configuration
+storage:
+  # Database root directory
+  db_path: ./db
+  # Enable state pruning to reduce disk usage
+  pruning: true
+  # Pruning mode: conservative, balanced, aggressive
+  pruning_mode: balanced
+  # Cache size in MB
+  cache_size: 1024
+  # Target disk usage in GB (for automatic pruning)
+  target_disk_usage: 500
+
+# Consensus Configuration
+consensus:
+  # Number of peer confirmations before trusting a block
+  commitment_count: 1
+  # Fork choice algorithm
+  fork_choice_algorithm: lmd_ghost
+  # Attestation processing mode: serial, parallel
+  attestation_processing: parallel
+  # Maximum parallel attestations to process
+  max_parallel_attestations: 100
+
+# Monitoring Configuration
+monitoring:
+  # Enable Prometheus metrics collection
+  metrics_enabled: true
+  # Metrics server port
+  metrics_port: 9090
+  # Enable Grafana dashboards
+  grafana_enabled: true
+  # Prometheus scrape interval in seconds
+  scrape_interval: 15
+  # Alert manager configuration
+  alerting:
+    enabled: true
+    # Alert notification channels
+    channels:
+      - type: email
+        enabled: false
+        recipients: []
+      - type: slack
+        enabled: false
+        webhook_url: ""
+      - type: pagerduty
+        enabled: false
+        service_key: ""
+
+# Security Configuration
+security:
+  # Private key handling: random, file:<path>, env:<var>
+  private_key: random
+  # Enable BLS signature verification
+  bls_signatures: true
+  # Enable slashing protection database
+  slashing_protection: true
+  # Enable rate limiting for RPC/P2P
+  rate_limiting: true
+  # Maximum RPC requests per second
+  rpc_rate_limit: 100
+  # Enable HSM support for key management
+  hsm_enabled: false
+
+# JSON-RPC Configuration
+jsonrpc:
+  # Enable JSON-RPC server
+  enabled: true
+  # RPC server port
+  port: 8545
+  # Allowed RPC methods (empty = all allowed)
+  allowed_methods: []
+  # CORS settings
+  cors:
+    enabled: true
+    allowed_origins:
+      - "*"
+  # WebSocket support
+  websocket:
+    enabled: true
+    port: 8546
+
+# Performance Tuning
+performance:
+  # Number of worker processes for parallel operations
+  worker_processes: 4
+  # Enable performance profiling
+  profiling_enabled: false
+  # Memory limit in GB (0 = unlimited)
+  memory_limit: 0
+  # CPU affinity (comma-separated CPU cores)
+  # cpu_affinity: "0,1,2,3"
+
+# Developer Settings
+developer:
+  # Enable debug logging
+  debug: false
+  # Enable transaction tracing
+  trace_transactions: false
+  # Enable EVM tracing
+  evm_trace: false
+  # Test mode (relaxes some validations)
+  test_mode: false
+
+# Runtime Configuration
+runtime:
+  # Mana version (auto-detected)
+  mana_version: "1.0.0"
+  # Runtime environment
+  environment: production
+  # Node name for identification
+  # node_name: mana-node-1
