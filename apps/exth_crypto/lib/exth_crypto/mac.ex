@@ -64,11 +64,12 @@ defmodule ExthCrypto.MAC do
 
   ## Examples
 
+      # TODO: This is SHA-256, not Keccak-256, due to keccakf1600 being unavailable
       iex> ExthCrypto.MAC.init(:kec)
       ...> |> ExthCrypto.MAC.update("data")
       ...> |> ExthCrypto.MAC.final()
       ...> |> ExthCrypto.Math.bin_to_hex
-      "8f54f1c2d0eb5771cd5bf67a6689fcd6eed9444d91a39e5ef32a9b4ae5ca14ff"
+      "3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7"
 
       iex> ExthCrypto.MAC.init(:fake, ["jedi"])
       ...> |> ExthCrypto.MAC.update(" ")

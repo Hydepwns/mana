@@ -31,3 +31,4 @@ apps/merkle_patricia_tree/log/
 .claude/
 .elixir_ls/
 logs/
+CI_RECOVERY_PLAN.md
