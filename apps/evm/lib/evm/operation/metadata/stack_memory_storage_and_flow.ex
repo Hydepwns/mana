@@ -97,6 +97,24 @@ defmodule EVM.Operation.Metadata.StackMemoryStorageAndFlow do
                       input_count: 0,
                       output_count: 0,
                       group: :stack_memory_storage_and_flow
+                    },
+                    %{
+                      id: 0x5C,
+                      description: "Load word from transient storage",
+                      sym: :tload,
+                      input_count: 1,
+                      output_count: 1,
+                      group: :stack_memory_storage_and_flow,
+                      hardfork_introduced: :shanghai
+                    },
+                    %{
+                      id: 0x5D,
+                      description: "Save word to transient storage",
+                      sym: :tstore,
+                      input_count: 2,
+                      output_count: 0,
+                      group: :stack_memory_storage_and_flow,
+                      hardfork_introduced: :shanghai
                     }
                   ],
                   do: struct(EVM.Operation.Metadata, operation)

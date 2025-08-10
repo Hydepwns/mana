@@ -121,7 +121,11 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
 
     def init(req, state) do
       try do
-        metrics = PrometheusExporter.get_metrics()
+        # Update system metrics before serving
+        Blockchain.Monitoring.PrometheusMetrics.update_system_metrics()
+        
+        # Get metrics in Prometheus format
+        metrics = Blockchain.Monitoring.PrometheusMetrics.get_prometheus_metrics()
         
         req = :cowboy_req.reply(200, %{
           "content-type" => "text/plain; version=0.0.4; charset=utf-8",

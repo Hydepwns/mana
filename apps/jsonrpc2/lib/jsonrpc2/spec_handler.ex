@@ -363,6 +363,32 @@ defmodule JSONRPC2.SpecHandler do
   def handle_request("shh_uninstallFilter", _), do: {:error, :not_supported}
   def handle_request("shh_getFilterChanges", _), do: {:error, :not_supported}
   def handle_request("shh_getMessages", _), do: {:error, :not_supported}
+  
+  # Verkle Tree Methods
+  def handle_request("verkle_getWitness", params) do
+    alias JSONRPC2.SpecHandler.Verkle
+    Verkle.get_witness(params)
+  end
+  
+  def handle_request("verkle_verifyProof", params) do
+    alias JSONRPC2.SpecHandler.Verkle
+    Verkle.verify_proof(params)
+  end
+  
+  def handle_request("verkle_getMigrationStatus", params) do
+    alias JSONRPC2.SpecHandler.Verkle
+    Verkle.get_migration_status(params)
+  end
+  
+  def handle_request("verkle_getStateMode", params) do
+    alias JSONRPC2.SpecHandler.Verkle
+    Verkle.get_state_mode(params)
+  end
+  
+  def handle_request("verkle_getTreeStats", params) do
+    alias JSONRPC2.SpecHandler.Verkle
+    Verkle.get_tree_stats(params)
+  end
 
   defp decode_block_number(hex_block_number_or_tag) do
     case hex_block_number_or_tag do

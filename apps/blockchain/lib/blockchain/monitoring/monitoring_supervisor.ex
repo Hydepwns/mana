@@ -30,12 +30,21 @@ defmodule Blockchain.Monitoring.MonitoringSupervisor do
       telemetry_config = Keyword.get(opts, :telemetry, [])
       
       children = [
+        # Start Prometheus metrics registry
+        {Blockchain.Monitoring.PrometheusMetrics, []},
+        
         # Start Prometheus metrics exporter
         {Blockchain.Monitoring.PrometheusExporter, prometheus_config},
         
         # Start HTTP metrics endpoint
         {Blockchain.Monitoring.MetricsEndpoint, metrics_endpoint_config}
       ]
+      
+      # Initialize Prometheus metrics
+      Task.start(fn ->
+        Process.sleep(500)  # Wait for registry setup
+        Blockchain.Monitoring.PrometheusMetrics.setup()
+      end)
       
       # Initialize telemetry integration
       Task.start(fn ->

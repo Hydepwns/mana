@@ -26,6 +26,12 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec emit_block_processed(non_neg_integer(), non_neg_integer(), map()) :: :ok
   def emit_block_processed(block_number, processing_time_microseconds, metadata \\ %{}) do
+    # Update Prometheus metrics directly
+    Blockchain.Monitoring.PrometheusMetrics.set_gauge("mana_blockchain_height", block_number)
+    Blockchain.Monitoring.PrometheusMetrics.inc_counter("mana_blocks_processed_total")
+    Blockchain.Monitoring.PrometheusMetrics.observe_histogram("mana_block_processing_seconds", processing_time_microseconds / 1_000_000)
+    
+    # Also emit telemetry event for other handlers
     :telemetry.execute(@block_processed_event, %{
       duration: processing_time_microseconds
     }, Map.merge(%{
@@ -48,6 +54,11 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec emit_p2p_message(String.t(), String.t(), map()) :: :ok
   def emit_p2p_message(message_type, direction, metadata \\ %{}) do
+    # Update Prometheus metrics
+    Blockchain.Monitoring.PrometheusMetrics.inc_counter("mana_p2p_messages_total", 1, 
+      %{"message_type" => message_type, "direction" => direction})
+    
+    # Emit telemetry event
     :telemetry.execute(@p2p_message_event, %{}, Map.merge(%{
       message_type: message_type,
       direction: direction
@@ -93,6 +104,12 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec emit_peer_count_update(non_neg_integer(), map()) :: :ok
   def emit_peer_count_update(peer_count, metadata \\ %{}) do
+    # Update Prometheus metrics
+    protocol = Map.get(metadata, :protocol, "eth")
+    Blockchain.Monitoring.PrometheusMetrics.set_gauge("mana_p2p_peers_connected", peer_count, 
+      %{"protocol" => protocol})
+    
+    # Emit telemetry event
     :telemetry.execute(@peer_count_event, %{
       count: peer_count
     }, metadata)

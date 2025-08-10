@@ -78,4 +78,17 @@ defmodule EVM.Builtin do
   def ec_pairing(gas, exec_env) do
     EVM.Builtin.EcPairing.exec(gas, exec_env)
   end
+  
+  @doc """
+  Verkle proof verification (EIP-7545)
+  
+  Verifies a verkle proof for stateless execution.
+  This precompile enables smart contracts to verify verkle proofs,
+  supporting light clients and stateless validation.
+  """
+  @spec verkle_proof_verify(EVM.Gas.t(), EVM.ExecEnv.t()) ::
+          {EVM.Gas.t(), EVM.SubState.t(), EVM.ExecEnv.t(), EVM.VM.output()}
+  def verkle_proof_verify(gas, exec_env) do
+    EVM.Builtin.VerkleProof.exec(gas, exec_env)
+  end
 end

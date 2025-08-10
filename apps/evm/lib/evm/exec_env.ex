@@ -25,7 +25,9 @@ defmodule EVM.ExecEnv do
             account_repo: nil,
             block_header_info: nil,
             config: Configuration.Frontier.new(),
-            static: false
+            static: false,
+            transient_storage: %{},
+            created_contracts: MapSet.new()
 
   @typedoc """
   Terms from Yellow Paper:
@@ -53,7 +55,9 @@ defmodule EVM.ExecEnv do
           block_header_info: BlockHeaderInfo.t(),
           account_repo: AccountRepo.t() | nil,
           config: Configuration.t(),
-          static: boolean()
+          static: boolean(),
+          transient_storage: %{EVM.address() => %{integer() => integer()}},
+          created_contracts: MapSet.t(EVM.address())
         }
 
   @doc """
@@ -124,6 +128,33 @@ defmodule EVM.ExecEnv do
     account_repo = AccountRepo.repo(account_repo).remove_storage(account_repo, address, key)
 
     Map.put(exec_env, :account_repo, account_repo)
+  end
+
+  @doc """
+  Put a value into transient storage for the current contract.
+  Transient storage is discarded at the end of the transaction.
+  """
+  @spec put_transient_storage(t(), integer(), integer()) :: t()
+  def put_transient_storage(exec_env = %{address: address, transient_storage: transient_storage}, key, value) do
+    contract_storage = Map.get(transient_storage, address, %{})
+    updated_contract_storage = Map.put(contract_storage, key, value)
+    updated_transient_storage = Map.put(transient_storage, address, updated_contract_storage)
+    
+    %{exec_env | transient_storage: updated_transient_storage}
+  end
+
+  @doc """
+  Get a value from transient storage for the current contract.
+  Returns 0 if the key doesn't exist.
+  """
+  @spec get_transient_storage(t(), integer()) :: {t(), integer()}
+  def get_transient_storage(exec_env = %{address: address, transient_storage: transient_storage}, key) do
+    value = 
+      transient_storage
+      |> Map.get(address, %{})
+      |> Map.get(key, 0)
+    
+    {exec_env, value}
   end
 
   @spec clear_account_balance(t()) :: t()

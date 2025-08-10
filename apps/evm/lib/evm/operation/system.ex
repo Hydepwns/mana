@@ -230,20 +230,46 @@ defmodule EVM.Operation.System do
   http://martin.swende.se/blog/Ethereum_quirks_and_vulns.html). There is one
   test case witnessing the current consensus
   `GeneralStateTests/stSystemOperationsTest/suicideSendEtherPostDeath.json`.
+
+  EIP-6780 (Shanghai): SELFDESTRUCT only deletes the account if called
+  in the same transaction as contract creation. Otherwise, it only
+  transfers the balance.
   """
   @spec selfdestruct(Operation.stack_args(), Operation.vm_map()) :: Operation.op_result()
   def selfdestruct([refund_address], %{exec_env: exec_env, sub_state: sub_state}) do
     to = Address.new(refund_address)
 
+    # Check if Shanghai+ and if contract was created in this transaction
+    should_delete = 
+      if Map.get(exec_env.config, :has_modified_selfdestruct, false) do
+        # EIP-6780: Only delete if created in same transaction
+        MapSet.member?(exec_env.created_contracts, exec_env.address)
+      else
+        # Pre-Shanghai: always delete
+        true
+      end
+
     new_exec_env =
-      exec_env
-      |> ExecEnv.transfer_balance_to(to)
-      |> ExecEnv.clear_account_balance()
+      if should_delete do
+        # Traditional behavior: transfer balance and clear it
+        exec_env
+        |> ExecEnv.transfer_balance_to(to)
+        |> ExecEnv.clear_account_balance()
+      else
+        # EIP-6780: Only transfer balance, don't clear
+        ExecEnv.transfer_balance_to(exec_env, to)
+      end
 
     new_substate =
-      sub_state
-      |> SubState.mark_account_for_destruction(exec_env.address)
-      |> SubState.add_touched_account(to)
+      if should_delete do
+        # Mark for destruction only if we're actually deleting
+        sub_state
+        |> SubState.mark_account_for_destruction(exec_env.address)
+        |> SubState.add_touched_account(to)
+      else
+        # Just mark as touched
+        SubState.add_touched_account(sub_state, to)
+      end
 
     %{exec_env: new_exec_env, sub_state: new_substate}
   end
@@ -301,6 +327,14 @@ defmodule EVM.Operation.System do
     }
 
     exec_env = %{exec_env | account_repo: updated_account_repo}
+
+    # Track created contracts for EIP-6780 SELFDESTRUCT behavior
+    exec_env = 
+      if status == :ok do
+        %{exec_env | created_contracts: MapSet.put(exec_env.created_contracts, new_account_address)}
+      else
+        exec_env
+      end
 
     sub_state =
       sub_state

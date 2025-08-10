@@ -39,7 +39,8 @@ defmodule Blockchain.Mixfile do
       # Monitoring dependencies
       {:jason, "~> 1.1"},
       {:cowboy, "~> 2.5"},
-      {:telemetry, "~> 1.0"}
+      {:telemetry, "~> 1.0"},
+      {:prometheus_ex, "~> 3.0"}
     ]
   end
 end

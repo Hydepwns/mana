@@ -162,6 +162,54 @@ defmodule EVM.Operation.StackMemoryStorageAndFlow do
   end
 
   @doc """
+  Load word from transient storage.
+  
+  Transient storage behaves like regular storage but is discarded after the transaction.
+  Gas cost is fixed at 100 (same as warm SLOAD).
+  
+  ## Examples
+  
+      iex> address = 0x0000000000000000000000000000000000000001
+      iex> key = 0x11223344556677889900
+      iex> value = 0x111222333444555
+      iex> exec_env = %EVM.ExecEnv{address: address, transient_storage: %{}}
+      iex> exec_env = EVM.ExecEnv.put_transient_storage(exec_env, key, value)
+      iex> result = EVM.Operation.StackMemoryStorageAndFlow.tload([key], %{exec_env: exec_env, machine_state: %EVM.MachineState{}})
+      iex> result[:stack]
+      [0x111222333444555]
+  """
+  @spec tload(Operation.stack_args(), Operation.vm_map()) :: Operation.op_result()
+  def tload([key], %{exec_env: exec_env, machine_state: machine_state}) do
+    {updated_exec_env, value} = ExecEnv.get_transient_storage(exec_env, key)
+    
+    %{exec_env: updated_exec_env, stack: Stack.push(machine_state.stack, value)}
+  end
+
+  @doc """
+  Save word to transient storage.
+  
+  Transient storage behaves like regular storage but is discarded after the transaction.
+  Gas cost is fixed at 100 (same as warm SSTORE).
+  
+  ## Examples
+  
+      iex> address = 0x0000000000000000000000000000000000000001
+      iex> key = 0x11223344556677889900
+      iex> value = 0x111222333444555
+      iex> exec_env = %EVM.ExecEnv{address: address, transient_storage: %{}}
+      iex> result = EVM.Operation.StackMemoryStorageAndFlow.tstore([key, value], %{exec_env: exec_env})
+      iex> {_updated_exec_env, stored_value} = EVM.ExecEnv.get_transient_storage(result[:exec_env], key)
+      iex> stored_value
+      0x111222333444555
+  """
+  @spec tstore(Operation.stack_args(), Operation.vm_map()) :: Operation.op_result()
+  def tstore([key, value], %{exec_env: exec_env}) do
+    updated_exec_env = ExecEnv.put_transient_storage(exec_env, key, value)
+    
+    %{exec_env: updated_exec_env}
+  end
+
+  @doc """
   Jumps are handled by `EVM.ProgramCounter.next`. This is a noop.
 
   """
