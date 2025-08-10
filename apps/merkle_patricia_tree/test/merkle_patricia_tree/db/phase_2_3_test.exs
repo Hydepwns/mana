@@ -20,7 +20,7 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       # Use clearly unavailable ports to ensure connection fails
       nodes = [
         {"nonexistent.host", 9999},
-        {"invalid.node", 9998}, 
+        {"invalid.node", 9998},
         {"fake.server", 9997}
       ]
 
@@ -28,7 +28,8 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
       result = AntidoteOptimized.connect(nodes, pool_size: 5)
 
       # Verify it handles connection failures gracefully  
-      assert match?({:error, _}, result) or match?({:ok, %{connections: connections}} when map_size(connections) >= 0, result)
+      assert match?({:error, _}, result) or
+               match?({:ok, %{connections: connections}} when map_size(connections) >= 0, result)
     end
 
     test "handles batch transactions efficiently" do
@@ -52,7 +53,7 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
         batch_size: 100,
         cache_size: 100
       }
-      
+
       # This will test the grouping logic internally
       result = AntidoteOptimized.batch_transaction(client, operations)
 
@@ -85,9 +86,18 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
         batch_size: 100,
         cache_size: 100
       }
-      
+
       # Test CRDT operation - this will likely fail due to empty connections, but should not crash
-      result = AntidoteOptimized.crdt_operation(client, "bucket", "key", :counter, {:increment, 5}, "tx123")
+      result =
+        AntidoteOptimized.crdt_operation(
+          client,
+          "bucket",
+          "key",
+          :counter,
+          {:increment, 5},
+          "tx123"
+        )
+
       assert match?({:error, _}, result) || result == :ok
     end
 

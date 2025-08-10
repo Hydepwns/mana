@@ -309,7 +309,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
         # Simple round-robin from pool
         connection = Enum.random(pool)
         {:ok, connection}
-        
+
       _empty_pool ->
         {:error, "Connection pool is empty"}
     end
