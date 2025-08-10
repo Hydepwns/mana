@@ -30,7 +30,7 @@ on:
 env:
   MIX_ENV: test
   ELIXIR_VERSION: '1.18.4'
-  OTP_VERSION: '27.2'
+  OTP_VERSION: '26.2'
 
 jobs:
   consensus-spec-tests:
