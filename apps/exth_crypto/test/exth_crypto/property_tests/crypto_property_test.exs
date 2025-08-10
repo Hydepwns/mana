@@ -12,6 +12,7 @@ defmodule ExthCrypto.PropertyTests.CryptoPropertyTest do
   use ExUnit.Case, async: true
   use ExUnitProperties
   import StreamData
+  import Bitwise
   # TODO: Re-enable when Blockchain.PropertyTesting.Properties module is implemented
   # import Blockchain.PropertyTesting.Properties
 
