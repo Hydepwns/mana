@@ -3,7 +3,7 @@ defmodule MerklePatriciaTree.DB.RocksDBTest do
 
   alias MerklePatriciaTree.DB
   alias MerklePatriciaTree.DB.RocksDB
-  
+
   # Skip all RocksDB tests if rocksdb is not available (like in CI)
   @moduletag :rocksdb_required
 

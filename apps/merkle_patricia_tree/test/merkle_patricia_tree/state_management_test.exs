@@ -48,7 +48,7 @@ defmodule MerklePatriciaTree.StateManagementTest do
     test "fast mode keeps only recent blocks", %{db: db} do
       # Set current block number so pruning logic works correctly with our test data
       DB.put!(db, "current_block_number", <<200::64>>)
-      
+
       # Test fast mode with 50 blocks to keep  
       {nodes_pruned, bytes_freed} = PruningPolicy.prune_fast_mode(db, 50)
 

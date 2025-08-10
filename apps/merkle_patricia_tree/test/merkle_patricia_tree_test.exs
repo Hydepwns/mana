@@ -15,25 +15,25 @@ defmodule MerklePatriciaTreeTest do
       for {test_type, test_group} <- @passing_tests do
         for {test_name, test} <- read_test_file(test_type),
             test_group == :all or Enum.member?(test_group, String.to_atom(test_name)) do
-        db = MerklePatriciaTree.Test.random_ets_db()
-        test_in = test["in"]
+          db = MerklePatriciaTree.Test.random_ets_db()
+          test_in = test["in"]
 
-        input =
-          if is_map(test_in) do
-            test_in
-            |> Enum.into([])
-            |> Enum.map(fn {a, b} -> [a, b] end)
-            |> Enum.shuffle()
-          else
-            test_in
-          end
+          input =
+            if is_map(test_in) do
+              test_in
+              |> Enum.into([])
+              |> Enum.map(fn {a, b} -> [a, b] end)
+              |> Enum.shuffle()
+            else
+              test_in
+            end
 
-        trie =
-          Enum.reduce(input, Trie.new(db), fn [k, v], trie ->
-            Trie.update_key(trie, hex_to_bin(k), hex_to_bin(v))
-          end)
+          trie =
+            Enum.reduce(input, Trie.new(db), fn [k, v], trie ->
+              Trie.update_key(trie, hex_to_bin(k), hex_to_bin(v))
+            end)
 
-        assert trie.root_hash == hex_to_bin(test["root"])
+          assert trie.root_hash == hex_to_bin(test["root"])
         end
       end
     else

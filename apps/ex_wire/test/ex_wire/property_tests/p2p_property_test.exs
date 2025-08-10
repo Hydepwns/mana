@@ -494,7 +494,7 @@ defmodule ExWire.PropertyTests.P2PPropertyTest do
       {2, {:successful_message, integer(1..10)}},
       {1, {:failed_message, integer(-5..-1)}},
       {1, {:timeout, -20}},
-      {1, {:protocol_violation, integer(-50..-20)}}
+      {1, {:protocol_violation, integer(-50..-20//-1)}}
     ])
   end
 

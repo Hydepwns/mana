@@ -125,6 +125,7 @@ defmodule ExthCrypto.Math do
   """
   @spec int_to_hex(non_neg_integer()) :: String.t()
   def int_to_hex(0), do: "0"
+
   def int_to_hex(n) when n > 0 do
     n
     |> :binary.encode_unsigned()

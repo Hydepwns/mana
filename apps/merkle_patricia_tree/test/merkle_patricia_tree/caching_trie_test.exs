@@ -7,7 +7,8 @@ defmodule MerklePatriciaTree.CachingTrieTest do
   setup do
     # Use ETS for testing instead of RocksDB (which isn't available in CI)
     # ETS requires atom table names
-    table_name = String.to_atom("test_table_#{:rand.uniform(1000000)}")
+    table_name = String.to_atom("test_table_#{:rand.uniform(1_000_000)}")
+
     disk_trie =
       table_name
       |> MerklePatriciaTree.DB.ETS.init()

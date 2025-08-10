@@ -16,8 +16,10 @@ defmodule MerklePatriciaTree.DB.ByzantineFaultTest do
   alias MerklePatriciaTree.DB.Antidote
   alias MerklePatriciaTree.CRDTs.{AccountBalance, TransactionPool, StateTree}
 
+  # Skip Byzantine fault tests in CI - require full AntidoteDB cluster
   @moduletag :byzantine_fault
   @moduletag :distributed
+  @moduletag :skip_ci
   # 5 minutes for complex scenarios
   @moduletag timeout: 300_000
 
