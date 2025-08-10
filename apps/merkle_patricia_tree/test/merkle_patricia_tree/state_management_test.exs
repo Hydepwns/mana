@@ -20,10 +20,10 @@ defmodule MerklePatriciaTree.StateManagementTest do
         block_hash = :crypto.hash(:sha256, <<i::64>>)
         state_root = :crypto.hash(:sha256, <<"state_#{i}">>)
 
-        # Store block data
+        # Store block data - key by hash so pruning policy can find it
         DB.put!(
           db,
-          "block_#{i}",
+          block_hash,
           %{
             number: i,
             hash: block_hash,
@@ -46,7 +46,10 @@ defmodule MerklePatriciaTree.StateManagementTest do
 
   describe "State Pruning Modes" do
     test "fast mode keeps only recent blocks", %{db: db} do
-      # Test fast mode with 50 blocks to keep
+      # Set current block number so pruning logic works correctly with our test data
+      DB.put!(db, "current_block_number", <<200::64>>)
+      
+      # Test fast mode with 50 blocks to keep  
       {nodes_pruned, bytes_freed} = PruningPolicy.prune_fast_mode(db, 50)
 
       # Should prune old blocks
