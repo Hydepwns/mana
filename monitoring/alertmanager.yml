@@ -1,0 +1,191 @@
+global:
+  # The smarthost and SMTP sender used for mail notifications.
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'mana-ethereum-alerts@your-domain.com'
+  smtp_auth_username: 'your-email@your-domain.com'
+  smtp_auth_password: 'your-smtp-password'
+  
+  # Optional: Slack webhook URL for notifications
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  
+  # Optional: PagerDuty integration key
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+# Templates for customizing notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# The root route on which each incoming alert enters.
+route:
+  # Group alerts by alertname and instance
+  group_by: ['alertname', 'instance']
+  
+  # How long to wait before sending a notification for new alerts
+  group_wait: 30s
+  
+  # How long to wait before sending another notification for a group
+  group_interval: 5m
+  
+  # How long to wait before resending a notification
+  repeat_interval: 2h
+  
+  # Default receiver
+  receiver: 'default-notifications'
+  
+  # Sub-routes for specific alert handling
+  routes:
+    # Critical alerts - immediate notification via multiple channels
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 10s
+      repeat_interval: 30m
+    
+    # Warning alerts - standard notification
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      group_wait: 1m
+      repeat_interval: 4h
+    
+    # Info alerts - low priority
+    - match:
+        severity: info
+      receiver: 'info-alerts'
+      group_wait: 5m
+      repeat_interval: 24h
+    
+    # Mute alerts during maintenance (example)
+    # - match:
+    #     alertname: 'ManaClientDown'
+    #   receiver: 'null'
+    #   group_wait: 0s
+    #   active_time_intervals:
+    #     - maintenance_window
+
+# Inhibition rules - suppress alerts based on other alerts
+inhibit_rules:
+  # If a client is down, suppress all other alerts for that instance
+  - source_match:
+      alertname: 'ManaClientDown'
+    target_match_re:
+      instance: '.*'
+    equal: ['instance']
+  
+  # If critical memory usage is firing, suppress warning memory usage
+  - source_match:
+      alertname: 'CriticalMemoryUsage'
+    target_match:
+      alertname: 'HighMemoryUsage'
+    equal: ['instance']
+  
+  # If critical disk usage is firing, suppress warning disk usage
+  - source_match:
+      alertname: 'CriticalDiskUsage'
+    target_match:
+      alertname: 'HighDiskUsage'
+    equal: ['instance']
+
+# Notification receivers
+receivers:
+  # Default receiver - basic email notifications
+  - name: 'default-notifications'
+    email_configs:
+      - to: 'mana-ops@your-domain.com'
+        subject: 'Mana-Ethereum Alert: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          Severity: {{ .Labels.severity }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+  
+  # Critical alerts - multiple notification channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'mana-critical@your-domain.com'
+        subject: '🚨 CRITICAL: Mana-Ethereum Alert'
+        body: |
+          ⚠️  CRITICAL ALERT ⚠️ 
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          Time: {{ .StartsAt }}
+          
+          This requires immediate attention!
+          {{ end }}
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#mana-critical-alerts'
+        title: '🚨 Critical Mana-Ethereum Alert'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          {{ end }}
+        color: 'danger'
+    
+    # Optional: PagerDuty for critical alerts
+    # pagerduty_configs:
+    #   - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+    #     description: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+  # Warning alerts - standard notifications
+  - name: 'warning-alerts'
+    email_configs:
+      - to: 'mana-warnings@your-domain.com'
+        subject: '⚠️  WARNING: Mana-Ethereum Alert'
+        body: |
+          Warning Alert:
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+    
+    slack_configs:
+      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+        channel: '#mana-alerts'
+        title: '⚠️  Mana-Ethereum Warning'
+        text: |
+          {{ range .Alerts }}
+          *{{ .Annotations.summary }}*
+          {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          {{ end }}
+        color: 'warning'
+
+  # Info alerts - low priority notifications
+  - name: 'info-alerts'
+    email_configs:
+      - to: 'mana-info@your-domain.com'
+        subject: 'ℹ️  INFO: Mana-Ethereum Alert'
+        body: |
+          Informational Alert:
+          
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          Instance: {{ .Labels.instance }}
+          Time: {{ .StartsAt }}
+          {{ end }}
+
+  # Null receiver for muted alerts
+  - name: 'null'
+
+# Optional: Time intervals for maintenance windows
+# time_intervals:
+#   - name: 'maintenance_window'
+#     time_intervals:
+#       - times:
+#           - start_time: '02:00'
+#             end_time: '04:00'
+#         weekdays: ['saturday', 'sunday']

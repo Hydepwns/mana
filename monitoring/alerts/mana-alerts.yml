@@ -1,0 +1,194 @@
+groups:
+  - name: mana-ethereum-critical
+    rules:
+      - alert: ManaClientDown
+        expr: mana_up == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Mana-Ethereum client is down"
+          description: "Mana-Ethereum client on {{ $labels.instance }} has been down for more than 30 seconds."
+      
+      - alert: HighMemoryUsage
+        expr: mana_memory_usage_bytes{type="total"} > 2147483648  # 2GB
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Mana client on {{ $labels.instance }} is using {{ $value | humanizeBytes }} of memory."
+      
+      - alert: CriticalMemoryUsage
+        expr: mana_memory_usage_bytes{type="total"} > 4294967296  # 4GB
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical memory usage detected"
+          description: "Mana client on {{ $labels.instance }} is using {{ $value | humanizeBytes }} of memory."
+      
+      - alert: HighDiskUsage
+        expr: mana_disk_usage_ratio > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage on {{ $labels.instance }} is {{ $value | humanizePercentage }}."
+      
+      - alert: CriticalDiskUsage
+        expr: mana_disk_usage_ratio > 0.95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk usage detected"
+          description: "Disk usage on {{ $labels.instance }} is {{ $value | humanizePercentage }}."
+
+  - name: mana-ethereum-performance
+    rules:
+      - alert: SlowBlockProcessing
+        expr: rate(mana_block_processing_seconds_sum[5m]) / rate(mana_block_processing_seconds_count[5m]) > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow block processing detected"
+          description: "Average block processing time on {{ $labels.instance }} is {{ $value }}s."
+      
+      - alert: VerySlowBlockProcessing
+        expr: rate(mana_block_processing_seconds_sum[5m]) / rate(mana_block_processing_seconds_count[5m]) > 15
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very slow block processing detected"
+          description: "Average block processing time on {{ $labels.instance }} is {{ $value }}s."
+      
+      - alert: HighErlangProcessCount
+        expr: mana_erlang_processes > 100000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Erlang process count"
+          description: "Erlang process count on {{ $labels.instance }} is {{ $value }}."
+      
+      - alert: LowBlockProcessingRate
+        expr: rate(mana_blocks_processed_total[5m]) < 0.01  # Less than 1 block per 100 seconds
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low block processing rate"
+          description: "Block processing rate on {{ $labels.instance }} is {{ $value }} blocks/sec."
+
+  - name: mana-ethereum-network
+    rules:
+      - alert: LowPeerCount
+        expr: sum by (instance) (mana_p2p_peers_connected) < 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low peer count detected"
+          description: "{{ $labels.instance }} has only {{ $value }} connected peers."
+      
+      - alert: NoPeersConnected
+        expr: sum by (instance) (mana_p2p_peers_connected) == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No peers connected"
+          description: "{{ $labels.instance }} has no connected peers."
+      
+      - alert: HighP2PMessageRate
+        expr: rate(mana_p2p_messages_total[1m]) > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P2P message rate"
+          description: "P2P message rate on {{ $labels.instance }} is {{ $value }} msgs/sec."
+
+  - name: mana-ethereum-storage
+    rules:
+      - alert: SlowStorageOperations
+        expr: rate(mana_storage_operation_seconds_sum[5m]) / rate(mana_storage_operation_seconds_count[5m]) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow storage operations detected"
+          description: "Average {{ $labels.operation }} operation time on {{ $labels.instance }} is {{ $value }}s."
+      
+      - alert: VerySlowStorageOperations
+        expr: rate(mana_storage_operation_seconds_sum[5m]) / rate(mana_storage_operation_seconds_count[5m]) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very slow storage operations detected"
+          description: "Average {{ $labels.operation }} operation time on {{ $labels.instance }} is {{ $value }}s."
+
+  - name: mana-ethereum-sync
+    rules:
+      - alert: SyncStalled
+        expr: increase(mana_blockchain_height[10m]) == 0 and mana_sync_progress_ratio < 1.0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Blockchain sync appears stalled"
+          description: "{{ $labels.instance }} blockchain height has not increased in 10 minutes and sync is at {{ $value | humanizePercentage }}."
+      
+      - alert: SyncProgressSlow
+        expr: rate(mana_blockchain_height[1h]) < 100  # Less than 100 blocks per hour
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow sync progress"
+          description: "{{ $labels.instance }} is syncing at {{ $value }} blocks/hour."
+
+  - name: mana-ethereum-transaction-pool
+    rules:
+      - alert: LargeTransactionPool
+        expr: mana_transaction_pool_size > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Large transaction pool detected"
+          description: "Transaction pool on {{ $labels.instance }} has {{ $value }} pending transactions."
+      
+      - alert: VeryLargeTransactionPool
+        expr: mana_transaction_pool_size > 10000
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very large transaction pool detected"
+          description: "Transaction pool on {{ $labels.instance }} has {{ $value }} pending transactions."
+
+  - name: mana-ethereum-evm
+    rules:
+      - alert: SlowEVMExecution
+        expr: rate(mana_evm_execution_seconds_sum[5m]) / rate(mana_evm_execution_seconds_count[5m]) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow EVM execution detected"
+          description: "Average EVM execution time on {{ $labels.instance }} is {{ $value }}s."
+      
+      - alert: HighGasUsage
+        expr: rate(mana_evm_gas_used_total[5m]) > 1000000000  # 1B gas per second
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "High EVM gas usage"
+          description: "EVM gas usage rate on {{ $labels.instance }} is {{ $value }} gas/sec."

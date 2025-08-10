@@ -1,0 +1,170 @@
+# zkSync Era Mainnet Layer 2 Configuration
+# Production configuration for connecting Mana-Ethereum to zkSync Era
+name: "zksync_era_mainnet"
+network_type: "zk_rollup"
+chain_id: 324
+enabled: true
+
+# Network Connection
+l1_network:
+  endpoint: "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
+  chain_id: 1
+  confirmation_blocks: 12
+
+l2_network:
+  endpoint: "https://mainnet.era.zksync.io"
+  chain_id: 324
+  confirmation_blocks: 1
+  websocket_endpoint: "wss://mainnet.era.zksync.io/ws"
+
+# Contract Addresses (zkSync Era on Ethereum)
+contracts:
+  # L1 Contracts
+  diamond_proxy: "0x32400084c286cf3e17e7b677ea9583e60a000324"
+  validator_timelock: "0xa8cb082a5a689e0d594d7da1e2d72a3d63adc1bd"
+  governance: "0x0b622a2061eaccae1c664ebc3e868b8438e03f61"
+  l1_shared_bridge: "0xd7f9f54194c633f36ccd5f3da84ad4a1c38cb2cb"
+  bridgehub: "0x303a465b659cbb0ab36ee643ea362c509eeb5213"
+  state_transition_manager: "0xc2ee6b6af7d616f6e27ce7f4a451aedc2b0f5f5c"
+  
+  # L2 Contracts
+  bootloader: "0x0000000000000000000000000000000000008001"
+  account_code_storage: "0x0000000000000000000000000000000000008002"
+  nonce_holder: "0x0000000000000000000000000000000000008003"
+  known_code_storage: "0x0000000000000000000000000000000000008004"
+  immutable_simulator: "0x0000000000000000000000000000000000008005"
+  contract_deployer: "0x0000000000000000000000000000000000008006"
+  l1_messenger: "0x0000000000000000000000000000000000008008"
+  msg_value_simulator: "0x0000000000000000000000000000000000008009"
+  l2_eth_token: "0x000000000000000000000000000000000000800a"
+  system_context: "0x000000000000000000000000000000000000800b"
+  pubdata_chunk_publisher: "0x000000000000000000000000000000000000800e"
+  compressor: "0x000000000000000000000000000000000000800f"
+
+# ZK Rollup Configuration
+rollup_config:
+  type: "zk_rollup"
+  proof_system: "plonk"  # Primary proof system
+  fallback_proof_systems: ["groth16", "stark"]  # Backup systems
+  batch_commitment_mode: "state_diff"
+  commitment_mode: "rollup"
+  
+# Proof System Configuration
+proof_system:
+  primary: "plonk"
+  verification_key_hash: "0x14628525c227822148e3a059b81c1bf6c0b9c0c0fe59a83704febd48bcb9c3c7"
+  setup_powers_of_tau: 26  # 2^26 constraints
+  proof_generation_timeout: 1800  # 30 minutes
+  batch_proof_generation: true
+  parallel_proving: true
+  
+# State Management
+state_management:
+  state_keeper_enabled: true
+  state_diff_hash_key: "0x18ac48c9b58b2f62e4b3c6d68e1c4e1c7c5d6b8a9e2f3c4d5e6f789abcdef012"
+  virtual_blocks_enabled: true
+  virtual_blocks_interval: 1  # seconds
+  seal_criteria:
+    timeout_criteria:
+      timeout_ms: 6000
+      max_tx_slots: 750
+    tx_encoding_size: 1000000
+    bootloader_memory_for_txs: 1900000000
+    max_pubdata_per_batch: 120000
+
+# Transaction Processing
+transaction_processing:
+  fair_l2_gas_price: 1500000  # 0.0015 gwei
+  max_allowed_l2_tx_gas_limit: 300000000
+  max_tx_size: 1000000
+  bootloader_tx_encoding_space: 272000
+  validation_computational_gas_limit: 300000
+  
+# Fee Model
+fee_model:
+  version: "V2"
+  batch_overhead_l1_gas: 800000
+  max_gas_per_batch: 200000000
+  max_pubdata_per_batch: 120000
+  fee_model_config:
+    minimal_l2_gas_price: 250000000  # 0.25 gwei
+    compute_overhead_part: 0.0
+    pubdata_overhead_part: 1.0
+    batch_overhead_part: 0.0
+    l1_gas_price_scale_factor: 1.2
+
+# Proof Generation
+proof_generation:
+  generation_timeout: 900  # 15 minutes
+  max_attempts: 3
+  specialized_group_id: 0
+  queue_capacity: 10
+  witness_vector_generator_threads: 2
+  max_circuits_in_flight: 10
+  
+# Data Availability
+data_availability:
+  mode: "calldata"  # or "blobs" when EIP-4844 is used
+  pubdata_sending_mode: "calldata"
+  max_pubdata_per_l1_batch: 120000
+  
+# Cross-chain Communication  
+cross_chain:
+  l1_batch_commit_data_generator_mode: "validium"
+  protective_reads_persistence: true
+  l1_batches_per_iter: 20
+  max_l1_batches_per_iter: 20
+
+# Monitoring and Observability
+monitoring:
+  enabled: true
+  metrics_port: 7302
+  health_check_port: 8549
+  log_level: "info"
+  
+  # zkSync-specific metrics
+  track_proof_generation: true
+  track_state_keeper: true
+  track_batch_sealing: true
+  track_commitment_generation: true
+
+metrics:
+  collect_interval: 30
+  retention_period: "7d"
+  prometheus_pushgateway: ""
+  custom_metrics:
+    - batch_seal_time
+    - proof_generation_time
+    - state_diff_application_time
+    - l1_gas_price_tracking
+
+# Security Configuration
+security:
+  priority_tree_recovery_parallel_jobs: 10
+  merkle_tree_fast_ssd_path: ""
+  merkle_tree_backup_path: ""
+  max_l1_batches_per_iteration: 20
+  l1_batch_min_age_before_execute: 10
+
+# Performance Tuning
+performance:
+  mempool_cache_size: 10000
+  mempool_cache_update_interval: 50
+  state_cache_size: 128000000  # 128MB
+  storage_caching_enabled: true
+  merkle_tree_mode: "lightweight"
+  
+# Experimental Features
+experimental:
+  vm_playground: false
+  snapshots_recovery_enabled: false
+  pruning_enabled: false  
+  protective_reads_writer_enabled: false
+
+# Development/Testing (disabled in production)
+development:
+  enabled: false
+  dummy_verifier: false
+  genesis_root: ""
+  dev_system_contracts: false
+  test_mode: false

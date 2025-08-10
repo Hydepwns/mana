@@ -1,0 +1,31 @@
+# Development Environment Configuration Overrides
+
+# Use smaller values for development
+p2p:
+  max_peers: 10
+  discovery: false  # Disable discovery in dev
+
+# Use test database path
+storage:
+  db_path: ./dev_db
+  cache_size: 256
+
+# Enable all developer features
+developer:
+  debug: true
+  trace_transactions: true
+  evm_trace: true
+  test_mode: true
+
+# Disable production features
+monitoring:
+  metrics_enabled: false
+  grafana_enabled: false
+
+security:
+  rate_limiting: false
+  slashing_protection: false
+
+# Use development environment
+runtime:
+  environment: development

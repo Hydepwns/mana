@@ -1,0 +1,34 @@
+/_build
+/cover
+/deps
+/doc
+/.idea
+
+erl_crash.dump
+*.ez
+*.beam
+apps/*/config/dev.exs
+
+/db/*
+apps/*/db
+
+# Ignore generated code from yecc and leex
+*_lexer.erl
+*_parser.erl
+
+# Ignore secret files
+apps/blockchain/config/dev.secret.exs
+
+.erlang_cookie
+
+!/**/.gitkeep
+/log/*
+#release testing tool
+/priv/itest/_build
+/priv/itest/_build/itest
+/priv/itest/itest
+apps/merkle_patricia_tree/log/
+.claude/
+.elixir_ls/
+logs/
+CI_RECOVERY_PLAN.md

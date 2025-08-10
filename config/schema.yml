@@ -1,0 +1,249 @@
+# Configuration Schema Definition
+# Defines validation rules for the Mana configuration
+
+blockchain:
+  network:
+    type: string
+    required: true
+    enum: [mainnet, goerli, sepolia, holesky]
+    description: "Ethereum network to connect to"
+  chain_id:
+    type: integer
+    required: true
+    min: 1
+    description: "Chain ID for transaction signing"
+  eip1559:
+    type: boolean
+    default: true
+    description: "Enable EIP-1559 transaction support"
+
+p2p:
+  max_peers:
+    type: integer
+    min: 1
+    max: 200
+    default: 50
+    description: "Maximum number of peer connections"
+  port:
+    type: integer
+    min: 1024
+    max: 65535
+    default: 30303
+    description: "P2P listening port"
+  discovery:
+    type: boolean
+    default: true
+    description: "Enable peer discovery"
+  protocol_version:
+    type: integer
+    min: 1
+    default: 67
+    description: "Ethereum wire protocol version"
+  p2p_version:
+    type: integer
+    min: 1
+    default: 5
+    description: "P2P protocol version"
+  capabilities:
+    type: list
+    item_type: string
+    description: "Supported protocol capabilities"
+  public_ip:
+    type: string
+    format: ip_address
+    description: "Public IP address for P2P"
+  bootnodes:
+    type: list
+    item_type: string
+    description: "Bootstrap node ENRs"
+
+sync:
+  enabled:
+    type: boolean
+    default: true
+    description: "Enable blockchain synchronization"
+  mode:
+    type: string
+    enum: [full, fast, warp]
+    default: fast
+    description: "Synchronization mode"
+  checkpoint_sync:
+    type: boolean
+    default: true
+    description: "Enable checkpoint sync"
+  warp:
+    type: boolean
+    default: false
+    description: "Enable warp sync (experimental)"
+  parallel_downloads:
+    type: integer
+    min: 1
+    max: 50
+    default: 10
+    description: "Parallel block downloads"
+
+storage:
+  db_path:
+    type: string
+    required: true
+    default: "./db"
+    description: "Database directory path"
+  pruning:
+    type: boolean
+    default: true
+    description: "Enable state pruning"
+  pruning_mode:
+    type: string
+    enum: [conservative, balanced, aggressive, archive]
+    default: balanced
+    description: "Pruning strategy"
+  cache_size:
+    type: integer
+    min: 64
+    max: 16384
+    default: 1024
+    description: "Cache size in MB"
+  target_disk_usage:
+    type: integer
+    min: 100
+    max: 10000
+    default: 500
+    description: "Target disk usage in GB"
+
+consensus:
+  commitment_count:
+    type: integer
+    min: 1
+    max: 100
+    default: 1
+    description: "Peer confirmations before trusting"
+  fork_choice_algorithm:
+    type: string
+    enum: [lmd_ghost, casper_ffg]
+    default: lmd_ghost
+    description: "Fork choice algorithm"
+  attestation_processing:
+    type: string
+    enum: [serial, parallel]
+    default: parallel
+    description: "Attestation processing mode"
+  max_parallel_attestations:
+    type: integer
+    min: 1
+    max: 1000
+    default: 100
+    description: "Max parallel attestations"
+
+monitoring:
+  metrics_enabled:
+    type: boolean
+    default: true
+    description: "Enable metrics collection"
+  metrics_port:
+    type: integer
+    min: 1024
+    max: 65535
+    default: 9090
+    description: "Metrics server port"
+  grafana_enabled:
+    type: boolean
+    default: false
+    description: "Enable Grafana dashboards"
+  scrape_interval:
+    type: integer
+    min: 5
+    max: 300
+    default: 15
+    description: "Metrics scrape interval (seconds)"
+
+security:
+  private_key:
+    type: string
+    default: random
+    description: "Private key source"
+  bls_signatures:
+    type: boolean
+    default: true
+    description: "Enable BLS signatures"
+  slashing_protection:
+    type: boolean
+    default: true
+    description: "Enable slashing protection"
+  rate_limiting:
+    type: boolean
+    default: true
+    description: "Enable rate limiting"
+  rpc_rate_limit:
+    type: integer
+    min: 1
+    max: 10000
+    default: 100
+    description: "RPC requests per second"
+  hsm_enabled:
+    type: boolean
+    default: false
+    description: "Enable HSM support"
+
+jsonrpc:
+  enabled:
+    type: boolean
+    default: true
+    description: "Enable JSON-RPC server"
+  port:
+    type: integer
+    min: 1024
+    max: 65535
+    default: 8545
+    description: "RPC server port"
+  allowed_methods:
+    type: list
+    item_type: string
+    description: "Allowed RPC methods"
+
+performance:
+  worker_processes:
+    type: integer
+    min: 1
+    max: 64
+    default: 4
+    description: "Worker process count"
+  profiling_enabled:
+    type: boolean
+    default: false
+    description: "Enable performance profiling"
+  memory_limit:
+    type: integer
+    min: 0
+    default: 0
+    description: "Memory limit in GB (0=unlimited)"
+
+developer:
+  debug:
+    type: boolean
+    default: false
+    description: "Enable debug logging"
+  trace_transactions:
+    type: boolean
+    default: false
+    description: "Enable transaction tracing"
+  evm_trace:
+    type: boolean
+    default: false
+    description: "Enable EVM tracing"
+  test_mode:
+    type: boolean
+    default: false
+    description: "Enable test mode"
+
+runtime:
+  mana_version:
+    type: string
+    description: "Mana version"
+  environment:
+    type: string
+    enum: [development, test, staging, production]
+    default: production
+    description: "Runtime environment"
+  node_name:
+    type: string
+    description: "Node identifier"

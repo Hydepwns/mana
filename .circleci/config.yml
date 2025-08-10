@@ -1,0 +1,434 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+    working_directory: ~/app
+
+    steps:
+      - checkout
+      - run: git submodule sync --recursive
+      - run: git submodule update --recursive --init
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: echo 'export PATH=~/.cargo/bin:$PATH' >> $BASH_ENV
+
+      - run:
+          command: ./bin/setup
+          no_output_timeout: 2400
+
+      - save_cache:
+          key: v14-mix-cache-{{ checksum "mix.lock" }}
+          paths: "deps"
+
+      - run:
+          name: Compile
+          command: mix compile
+
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .circleci
+            - .dialyzer.ignore-warnings
+            - .formatter.exs
+            - .git
+            - .gitignore
+            - _build
+            - .credo.exs
+            - apps
+            - bin
+            - config
+            - db/.gitkeep
+            - deps
+            - doc
+            - mix.exs
+            - mix.lock
+            - chains
+            - ethereum_common_tests
+            - rel
+            - MANA_VERSION
+            - priv
+
+  test:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: mix test --exclude pending
+
+  network:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: EXT_IP_ADDRESS=$(curl ifconfig.co) mix test --only network
+
+  Frontier:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: mix cmd --app blockchain mix test --exclude test --include Frontier
+
+  Homestead:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: mix cmd --app blockchain mix test --exclude test --include Homestead
+
+  HomesteadToDaoAt5:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: mix cmd --app blockchain mix test --exclude test --include HomesteadToDaoAt5
+
+  TangerineWhistle:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: mix cmd --app blockchain mix test --exclude test --include TangerineWhistle
+
+  SpuriousDragon:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: mix cmd --app blockchain mix test --exclude test --include SpuriousDragon
+
+  Byzantium:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - run:
+          command: mix cmd --app blockchain mix test --exclude test --include Byzantium
+          no_output_timeout: 2400
+
+  Constantinople:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{ checksum "mix.lock" }}
+
+      - run:
+          command: mix cmd --app blockchain mix test --exclude test --include Constantinople
+          no_output_timeout: 2400
+
+  Ethash:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v13-mix-cache-{{ checksum "mix.lock" }}
+
+      - run: mix cmd --app blockchain mix test --exclude test --include Ethash
+
+  dialyzer:
+    docker:
+      # Ensure .tool-versions matches
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+
+      - restore_cache:
+          keys:
+            - v14-mix-cache-{{ checksum "mix.lock" }}
+
+      - restore_cache:
+          keys:
+            - v14-plt-cache-{{ ".tool-versions" }}-{{ checksum "mix.lock" }}
+            - v14-plt-cache-{{ ".tool-versions" }}-{{ checksum "mix.exs" }}
+            - v14-plt-cache-{{ ".tool-versions" }}
+
+      - run:
+          name: Unpack PLT cache
+          command: |
+            mkdir -p _build/test
+            cp plts/dialyxir*.plt _build/test/ || true
+            mkdir -p ~/.mix
+            cp plts/dialyxir*.plt ~/.mix/ || true
+
+      - run: mix dialyzer --plt
+
+      - run:
+          name: Pack PLT cache
+          command: |
+            mkdir -p plts
+            cp _build/test/dialyxir*.plt plts/
+            cp ~/.mix/dialyxir*.plt plts/
+
+      - save_cache:
+          key: v14-plt-cache-{{ ".tool-versions" }}-{{ checksum "mix.lock" }}
+          paths:
+            - plts
+
+      - save_cache:
+          key: v14-plt-cache-{{ ".tool-versions" }}-{{ checksum "mix.exs" }}
+          paths:
+            - plts
+
+      - save_cache:
+          key: v14-plt-cache-{{ ".tool-versions" }}
+          paths:
+            - plts
+
+      - run: mix dialyzer --format short --halt-exit-status
+
+
+  check_formatted:
+    docker:
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+
+      - run: mix format --check-formatted
+
+  credo:
+    docker:
+      # Ensure .tool-versions matches
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: test
+
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+          at: .
+
+      - run: mix local.hex --force
+
+      - run: mix credo --only readability,consistency,warning,refactor
+
+  release:
+    docker:
+      # Ensure .tool-versions matches
+      - image: circleci/elixir:1.8.1
+        environment:
+          MIX_ENV: dev
+    working_directory: ~/app
+
+    steps:
+      - attach_workspace:
+           at: .
+      - run:
+          command: ./bin/setup
+          no_output_timeout: 2400
+      - run: mix local.hex --force
+      - run: mix local.rebar --force
+      - run: mix compile
+      - run: mix release --verbose --env prod
+      - run:
+          name: Collecting artifacts
+          command: |
+            find -name 'mana.tar.gz' -exec sh -c 'mkdir -p ci_artifact && cp "$@" ci_artifact/ci_artifact_mana.tar.gz' _ {} +
+          when: always
+      - run:
+          name: Build and run tests
+          command: |
+            cd priv/itest/
+            mix escript.build
+            ./itest
+
+      - store_artifacts:
+          name: Uploading CI artifacts
+          path: ci_artifact/ci_artifact_mana.tar.gz
+          destination: ci_artifact_mana.tar.gz
+
+workflows:
+  version: 2
+  primary:
+    jobs:
+      - build
+      - credo:
+          requires: [build]
+      - check_formatted:
+          requires: [build]
+      - dialyzer:
+          requires: [build]
+      - test:
+          requires: [build]
+      - release:
+          requires: [build]
+      - Frontier:
+          requires: [build]
+      - Homestead:
+          requires: [build]
+      - HomesteadToDaoAt5:
+          requires: [build]
+      - TangerineWhistle:
+          requires: [build]
+      - SpuriousDragon:
+          requires: [build]
+      - Byzantium:
+          requires: [build]
+      - Constantinople:
+          requires: [build]
+      - Ethash:
+          requires: [build]
+      - network:
+          requires: [build]
+          filters:
+            branches:
+              only:
+                - /.*network$/

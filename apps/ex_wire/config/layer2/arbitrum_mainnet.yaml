@@ -1,0 +1,142 @@
+# Arbitrum One Mainnet Layer 2 Configuration  
+# Production configuration for connecting Mana-Ethereum to Arbitrum One
+name: "arbitrum_mainnet"
+network_type: "optimistic_rollup"
+chain_id: 42161
+enabled: true
+
+# Network Connection
+l1_network:
+  endpoint: "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
+  chain_id: 1
+  confirmation_blocks: 12
+
+l2_network:
+  endpoint: "https://arb1.arbitrum.io/rpc"
+  chain_id: 42161
+  confirmation_blocks: 1
+
+# Contract Addresses (Arbitrum One on Ethereum)
+contracts:
+  # L1 Contracts
+  rollup_core: "0x5ef0d09d1e6204141b4d37175cce6b31de8e8e8c"
+  bridge: "0x8315177ab297ba92a06054ce80a67ed4dbd7ed3a"
+  inbox: "0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f"
+  sequencer_inbox: "0x1c479675ad559dc151f6ec7ed3fbf8cee79582b6"
+  outbox: "0x0b9857ae2d4a3dbe74ffe1d7df045bb7f96e4840"
+  rollup_event_inbox: "0x4c6f947ae67f572afa4ae0730947de7c874f95ef"
+  challenge_manager: "0xe5896783a2f463446e1f624e64aa6836be4c6f58"
+  upgrade_executor: "0x3ffffe22d6dcc69b1df2cb07c9676c65e7d55b3b"
+  
+  # L2 Contracts  
+  arbos_precompiles:
+    arb_info: "0x0000000000000000000000000000000000000065"
+    arb_gas_info: "0x000000000000000000000000000000000000006c"
+    arb_retryable_tx: "0x000000000000000000000000000000000000006e"
+    arb_sys: "0x0000000000000000000000000000000000000064"
+
+# Rollup Configuration
+rollup_config:
+  type: "arbitrum_rollup"
+  challenge_period: 604800  # 7 days
+  stake_requirement: "3200000000000000000000"  # 3200 ETH
+  min_assertion_period: 75  # ~15 minutes
+  confirmation_period: 45818  # ~7 days in blocks
+  extra_challenge_time_blocks: 200
+  arbos_version: 20
+  
+# Challenge System
+challenge_system:
+  enabled: true
+  challenge_manager_enabled: true
+  old_challenge_manager: "0x1d901dd7a5ebb5a5872c5b2b5c67a82731b85e9a"
+  wavm_module_root: "0x6b94a7fc388fd8ef3def759297828dc311761e88d8179c7ee8d3887dc554f3c3"
+  stake_token: "0x912ce59144191c1204e64559fe8253a0e49e6548"  # ARB token
+
+# Arbitrum-Specific Features
+arbitrum_features:
+  nitro_enabled: true
+  classic_compatibility: false
+  retryable_tickets: true
+  arb_gas_info: true
+  delayed_inbox: true
+  
+# Gas Configuration (Arbitrum-specific)
+gas_config:
+  l1_pricing_enabled: true
+  l1_base_fee_estimate_inertia: 10
+  l1_base_fee_estimate: 1000000000  # 1 gwei
+  l2_base_fee: 100000000  # 0.1 gwei
+  speed_limit_per_second: 7000000
+  max_tx_gas_limit: 32000000
+
+# Sequencer Configuration  
+sequencer:
+  enabled: false  # Set to true only if running as sequencer
+  feed_url: "wss://arb1.arbitrum.io/feed"
+  enable_coordinator: false
+  max_block_speed: 250  # milliseconds
+  max_tx_data_size: 117964  # ~115KB
+  
+# State Synchronization
+state_sync:
+  genesis_block_num: 22207817  # L1 block when Arbitrum One deployed
+  initial_machine_hash: "0xf4389b835497a910d7ba3ebfb77aa93da985634f3c052de1290360635be40c4a"
+  sync_monitor_enabled: true
+  validate_sequencer_msg: true
+
+# Data Availability
+data_availability:
+  das_enabled: false  # Disabled for Arbitrum One (uses L1 DA)
+  l1_reader_enabled: true
+  l1_reader_oldest_message_block: 15447158
+  parent_chain_reader_poll_only: false
+
+# Monitoring and Metrics
+monitoring:
+  enabled: true
+  metrics_port: 7301
+  health_check_port: 8547
+  log_level: "info"
+  block_validator_enabled: true
+
+metrics:
+  collect_interval: 30
+  retention_period: "7d"
+  track_assertions: true
+  track_challenges: true
+  track_retryables: true
+  track_cross_chain_messages: true
+
+# Security Settings
+security:
+  max_reorg_depth: 64
+  assertion_confirmations: 12
+  node_staker_enabled: false  # Enable only for validators
+  validator_strategy: "Watchtower"  # or "Defensive", "StakeLatest"
+  batch_poster_enabled: false
+
+# Performance Tuning
+performance:
+  cache_size_mb: 2048
+  bloom_bits: 64
+  bloom_confirms: 256
+  execution_mode: "full"  # or "archive" for full history
+  tx_lookup_limit: 2350000
+  rpc_gas_cap: 50000000
+  
+# Advanced Configuration
+advanced:
+  enable_l1_block_bound: true
+  inbox_reader_hard_reorg: false
+  dangerous_l1_deadlines: false
+  parent_chain_reader_connection_attempts: 15
+  parent_chain_reader_connection_wait: "20s"
+
+# Development/Testing Overrides (disabled in production)  
+development:
+  enabled: false
+  mock_sequencer: false
+  skip_l1_verification: false
+  fast_confirmation: false
+  dev_wallet_enabled: false

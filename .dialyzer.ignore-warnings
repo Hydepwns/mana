@@ -1,0 +1,63 @@
+------------------------------
+# operations/system.ex
+------------------------------
+apps/evm/lib/evm/operation/system.ex:29: Function create2/2 has no local return
+
+--------------------------------
+-# AccountRepo
+--------------------------------
+apps/blockchain/lib/blockchain/account/repo.ex:492: The inferred return type of create_contract/11 ({'error',{#{'__struct__':='Elixir.Blockchain.Account.Repo', 'cache':=map(), 'state':=map()},integer(),#{'__struct__':='Elixir.EVM.SubState', 'logs':=[], 'refund':=0, 'selfdestruct_list':='Elixir.MapSet':t(_), 'touched_accounts':='Elixir.MapSet':t(_)},binary()}} | {'ok',{#{'__struct__':='Elixir.Blockchain.Account.Repo', 'cache':=map(), 'state':=map()},integer(),#{'__struct__':='Elixir.EVM.SubState', 'logs':=[any()], 'refund':=integer(), 'selfdestruct_list':='Elixir.MapSet':t(_), 'touched_accounts':='Elixir.MapSet':t(_)},<<>>}}) has nothing in common with {'error',{#{'__struct__':=atom(), atom()=>_},integer(),#{'__struct__':='Elixir.EVM.SubState', 'logs':=[#{'__struct__':='Elixir.EVM.LogEntry', 'address':=<<_:160>>, 'data':=binary(), 'topics':=[binary()]}], 'refund':=integer(), 'selfdestruct_list':='Elixir.MapSet':t(_), 'touched_accounts':='Elixir.MapSet':t(_)}},binary()} | {'ok',{#{'__struct__':=atom(), atom()=>_},integer(),#{'__struct__':='Elixir.EVM.SubState', 'logs':=[#{'__struct__':='Elixir.EVM.LogEntry', 'address':=<<_:160>>, 'data':=binary(), 'topics':=[binary()]}], 'refund':=integer(), 'selfdestruct_list':='Elixir.MapSet':t(_), 'touched_accounts':='Elixir.MapSet':t(_)}},<<>>}, which is the expected return type for the callback of the 'Elixir.EVM.AccountRepo' behaviour
+apps/evm/lib/evm/mock/mock_account_repo.ex:182: The inferred return type of create_contract/11 ({'ok',{atom() | #{'contract_result':='nil' | [any()] | map(), _=>_},_,_,_}}) has nothing in common with {'error',{#{'__struct__':=atom(), atom()=>_},integer(),#{'__struct__':='Elixir.EVM.SubState', 'logs':=[#{'__struct__':='Elixir.EVM.LogEntry', 'address':=<<_:160>>, 'data':=binary(), 'topics':=[binary()]}], 'refund':=integer(), 'selfdestruct_list':='Elixir.MapSet':t(_), 'touched_accounts':='Elixir.MapSet':t(_)}},binary()} | {'ok',{#{'__struct__':=atom(), atom()=>_},integer(),#{'__struct__':='Elixir.EVM.SubState', 'logs':=[#{'__struct__':='Elixir.EVM.LogEntry', 'address':=<<_:160>>, 'data':=binary(), 'topics':=[binary()]}], 'refund':=integer(), 'selfdestruct_list':='Elixir.MapSet':t(_), 'touched_accounts':='Elixir.MapSet':t(_)}},<<>>}, which is the expected return type for the callback of the 'Elixir.EVM.AccountRepo' behaviour
+
+-------------------------------
+# blockchain/block.ex warnings
+-------------------------------
+
+
+apps/blockchain/lib/blockchain/block.ex:724: Function add_transactions/3 has no local return
+apps/blockchain/lib/blockchain/block.ex:724: The call 'Elixir.Blockchain.Block':add_transactions(_@1
+::any(),_@2::any(),_@3::any(),#{'__struct__':='Elixir.EVM.Configuration.Frontier', 'contract_creatio
+n_cost':=21000, 'has_delegate_call':='false'}) will never return since the success typing is (#{'__s
+truct__':='Elixir.Blockchain.Block', 'block_hash':='nil' | <<_:256>>, 'header':=#{'__struct__':='Eli
+xir.Block.Header', 'beneficiary':='nil' | <<_:160>>, 'difficulty':='nil' | integer(), 'extra_data':=
+binary(), 'gas_limit':=integer(), 'gas_used':=integer(), 'logs_bloom':=binary(), 'mix_hash':='nil' |
+ <<_:256>>, 'nonce':='nil' | <<_:64>>, 'number':='nil' | integer(), 'ommers_hash':=binary(), 'parent
+_hash':=<<_:256>>, 'receipts_root':=binary(), 'state_root':=binary(), 'timestamp':='nil' | integer()
+, 'transactions_root':=binary()}, 'ommers':=[#{'__struct__':='Elixir.Block.Header', 'beneficiary':='
+nil' | <<_:160>>, 'difficulty':='nil' | integer(), 'extra_data':=binary(), 'gas_limit':=integer(), '
+gas_used':=integer(), 'logs_bloom':=binary(), 'mix_hash':='nil' | <<_:256>>, 'nonce':='nil' | <<_:64
+>>, 'number':='nil' | integer(), 'ommers_hash':=binary(), 'parent_hash':=<<_:256>>, 'receipts_root':
+=binary(), 'state_root':=binary(), 'timestamp':='nil' | integer(), 'transactions_root':=binary()}],
+'transactions':=[#{'__struct__':='Elixir.Blockchain.Transaction', 'data':=binary(), 'gas_limit':=int
+eger(), 'gas_price':=integer(), 'init':=binary(), 'nonce':=integer(), 'r':=integer(), 's':=integer()
+, 'to':=<<_:_*160>>, 'v':=integer(), 'value':=integer()}]},[],{atom(),_},atom()) -> #{'__struct__':=
+'Elixir.Blockchain.Block', 'block_hash':='nil' | <<_:256>>, 'header':=#{'__struct__':='Elixir.Block.
+Header', 'beneficiary':='nil' | <<_:160>>, 'difficulty':='nil' | integer(), 'extra_data':=binary(),
+'gas_limit':=integer(), 'gas_used':=integer(), 'logs_bloom':=binary(), 'mix_hash':='nil' | <<_:256>>
+, 'nonce':='nil' | <<_:64>>, 'number':='nil' | integer(), 'ommers_hash':=binary(), 'parent_hash':=<<
+_:256>>, 'receipts_root':=binary(), 'state_root':=binary(), 'timestamp':='nil' | integer(), 'transac
+tions_root':=binary()}, 'ommers':=[#{'__struct__':='Elixir.Block.Header', 'beneficiary':='nil' | <<_
+:160>>, 'difficulty':='nil' | integer(), 'extra_data':=binary(), 'gas_limit':=integer(), 'gas_used':
+=integer(), 'logs_bloom':=binary(), 'mix_hash':='nil' | <<_:256>>, 'nonce':='nil' | <<_:64>>, 'numbe
+r':='nil' | integer(), 'ommers_hash':=binary(), 'parent_hash':=<<_:256>>, 'receipts_root':=binary(),
+ 'state_root':=binary(), 'timestamp':='nil' | integer(), 'transactions_root':=binary()}], 'transacti
+ons':=[#{'__struct__':='Elixir.Blockchain.Transaction', 'data':=binary(), 'gas_limit':=integer(), 'g
+as_price':=integer(), 'init':=binary(), 'nonce':=integer(), 'r':=integer(), 's':=integer(), 'to':=<<
+_:_*160>>, 'v':=integer(), 'value':=integer()}]} and the contract is (t(),['Elixir.Blockchain.Transa
+ction':t()],'Elixir.MerklePatriciaTree.DB':db(),'Elixir.EVM.Configuration':t()) -> t()
+apps/blockchain/lib/blockchain/block.ex:715: Invalid type specification for function 'Elixir.Blockch
+ain.Block':put_state/2. The success typing is (#{'__struct__':='Elixir.Blockchain.Block', 'header':=
+#{'__struct__':='Elixir.Block.Header', 'state_root':=_, _=>_}, _=>_},atom() | #{'root_hash':=_, _=>_
+}) -> #{'__struct__':='Elixir.Blockchain.Block', 'header':=#{'__struct__':='Elixir.Block.Header', 's
+tate_root':=_, _=>_}, _=>_}
+
+-------------------------------
+apps/blockchain/lib/mix/tasks/sync/from_file.ex
+
+-------------------------------
+apps/blockchain/lib/eth_common_test/blockchain_test_runner.ex
+apps/blockchain/lib/eth_common_test/state_test_runner.ex
+
+apps/jsonrpc2/lib/jsonrpc2/spec_handler.ex:131
+apps/jsonrpc2/lib/jsonrpc2/spec_handler/gas_estimater.ex:42
+apps/jsonrpc2/lib/jsonrpc2/spec_handler/gas_estimater.ex:66

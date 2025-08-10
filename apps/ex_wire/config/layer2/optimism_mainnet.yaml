@@ -1,0 +1,119 @@
+# Optimism Mainnet Layer 2 Configuration
+# Production configuration for connecting Mana-Ethereum to Optimism mainnet
+name: "optimism_mainnet"
+network_type: "optimistic_rollup"
+chain_id: 10
+enabled: true
+
+# Network Connection
+l1_network:
+  endpoint: "https://mainnet.infura.io/v3/${INFURA_API_KEY}"
+  chain_id: 1
+  confirmation_blocks: 12
+  
+l2_network:
+  endpoint: "https://mainnet.optimism.io"
+  chain_id: 10
+  confirmation_blocks: 1
+
+# Contract Addresses
+contracts:
+  # L1 Contracts (Ethereum Mainnet)
+  l2_output_oracle: "0xdfe97868233d1aa22e815a266982f2cf17685a27"
+  optimism_portal: "0xbeb5fc579115071764c7423a4f12edde41f106ed" 
+  l1_cross_domain_messenger: "0x25ace71c97b33cc4729cf772ae268934f7ab5fa1"
+  l1_standard_bridge: "0x99c9fc46f92e8a1c0dec1b1747d010903e884be1"
+  system_config: "0x229047fed2591dbec1ef1118d64f7af3db9eb290"
+  
+  # L2 Contracts (Optimism)
+  l2_cross_domain_messenger: "0x4200000000000000000000000000000000000007"
+  l2_standard_bridge: "0x4200000000000000000000000000000000000010"
+  l2_to_l1_message_passer: "0x4200000000000000000000000000000000000016"
+  gas_price_oracle: "0x420000000000000000000000000000000000000f"
+
+# Rollup Configuration
+rollup_config:
+  type: "optimistic"
+  challenge_period: 604800  # 7 days in seconds
+  finalization_period: 1800  # 30 minutes
+  batch_submission_frequency: 600  # 10 minutes
+  max_batch_size: 1000
+  max_sequencer_drift: 600  # 10 minutes
+  seq_window_size: 3600  # 1 hour
+  
+# Fraud Proof System
+fraud_proof:
+  enabled: true
+  challenger_bond: "1000000000000000000"  # 1 ETH
+  dispute_game_type: 0  # Fault dispute game
+  max_game_depth: 73
+  split_depth: 30
+  clock_extension: 10800  # 3 hours
+  max_clock_duration: 604800  # 7 days
+
+# Gas Configuration  
+gas_config:
+  l1_base_fee_scalar: 1368
+  l1_blob_base_fee_scalar: 659851
+  overhead: 188
+  scalar: 684000
+  decimals: 6
+
+# Sequencer Configuration
+sequencer:
+  enabled: false  # Set to true only if running as sequencer
+  batch_inbox_address: "0xff00000000000000000000000000000000000010"
+  max_channel_duration: 300  # 5 minutes
+  sub_safety_margin: 10
+  max_tx_size: 131072  # 128KB
+  target_l1_tx_size_bytes: 100000
+  target_num_frames: 1
+  approx_compr_ratio: 0.4
+
+# State Synchronization
+state_sync:
+  l2_genesis_hash: "0xdbf6a80fef073de06add9b0d14026d6e5a86c85f6d102c36d3d8e9cf89c2afd3"
+  l2_genesis_number: 105235063
+  sync_mode: "execution_layer"  # or "consensus_layer"
+  batch_sync_enabled: true
+  safe_head_lag: 1024
+
+# Monitoring and Metrics
+monitoring:
+  enabled: true
+  metrics_port: 7300
+  health_check_port: 8545
+  log_level: "info"
+  
+metrics:
+  collect_interval: 30
+  retention_period: "7d"
+  track_batch_submissions: true
+  track_state_root_proposals: true
+  track_withdrawal_finalizations: true
+
+# Security Settings
+security:
+  max_reorg_depth: 64
+  safe_block_confirmations: 12
+  withdrawal_delay_seconds: 604800  # 7 days
+  trusted_l1_rpc_providers:
+    - "mainnet.infura.io"
+    - "eth-mainnet.alchemyapi.io"
+    - "mainnet.gateway.tenderly.co"
+
+# Performance Tuning
+performance:
+  max_concurrent_l1_requests: 10
+  l1_polling_interval: 12000  # 12 seconds
+  l2_polling_interval: 2000   # 2 seconds
+  batch_cache_size: 1000
+  state_cache_size: 10000
+  connection_pool_size: 20
+
+# Development/Testing Overrides (disabled in production)
+development:
+  enabled: false
+  mock_l1_confirmations: false
+  skip_l1_verification: false
+  fast_withdrawal_period: false

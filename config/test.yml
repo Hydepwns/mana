@@ -1,0 +1,42 @@
+# Test Environment Configuration Overrides
+
+# Minimal configuration for testing
+p2p:
+  max_peers: 5
+  port: 30304  # Different port for test
+  discovery: false
+
+# Use test database
+storage:
+  db_path: ./test_db
+  pruning: false  # Disable pruning in tests
+  cache_size: 128
+
+# Fast sync for tests
+sync:
+  mode: fast
+  checkpoint_sync: false
+  parallel_downloads: 2
+
+# Disable monitoring in tests
+monitoring:
+  metrics_enabled: false
+  grafana_enabled: false
+
+# Minimal security for tests
+security:
+  rate_limiting: false
+  slashing_protection: false
+  bls_signatures: false
+
+# Test RPC configuration
+jsonrpc:
+  port: 8546  # Different port for test
+
+# Enable test features
+developer:
+  debug: false
+  test_mode: true
+
+runtime:
+  environment: test

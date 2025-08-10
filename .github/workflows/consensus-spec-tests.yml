@@ -1,0 +1,323 @@
+name: Ethereum Consensus Spec Tests
+
+on:
+  push:
+    branches: [ master, develop ]
+    paths:
+      - 'apps/ex_wire/lib/ex_wire/eth2/**'
+      - 'apps/ex_wire/test/ex_wire/eth2/**'
+      - '.github/workflows/consensus-spec-tests.yml'
+  pull_request:
+    branches: [ master ]
+    paths:
+      - 'apps/ex_wire/lib/ex_wire/eth2/**'
+      - 'apps/ex_wire/test/ex_wire/eth2/**'
+      - '.github/workflows/consensus-spec-tests.yml'
+  schedule:
+    # Run nightly to catch consensus spec updates
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      fork:
+        description: 'Specific fork to test (phase0, altair, bellatrix, capella, deneb, or all)'
+        required: false
+        default: 'all'
+      config:
+        description: 'Configuration to test (mainnet, minimal, or both)'
+        required: false
+        default: 'both'
+
+env:
+  MIX_ENV: test
+  ELIXIR_VERSION: '1.18.4'
+  OTP_VERSION: '27.2'
+
+jobs:
+  consensus-spec-tests:
+    name: Consensus Spec Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Test different fork/config combinations
+          - fork: 'phase0'
+            config: 'minimal'
+            suite: 'finality,fork_choice'
+          - fork: 'altair'  
+            config: 'minimal'
+            suite: 'finality,fork_choice,blocks'
+          - fork: 'bellatrix'
+            config: 'minimal' 
+            suite: 'finality,fork_choice'
+          # Add mainnet tests for critical components
+          - fork: 'phase0'
+            config: 'mainnet'
+            suite: 'finality'
+          - fork: 'altair'
+            config: 'mainnet'
+            suite: 'fork_choice'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ env.ELIXIR_VERSION }}
+        otp-version: ${{ env.OTP_VERSION }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          deps
+          _build
+        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-mix-
+
+    - name: Install dependencies
+      run: |
+        mix deps.get
+        mix deps.compile
+
+    - name: Setup Rust for BLS NIF
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Compile project
+      run: mix compile --warnings-as-errors
+
+    - name: Cache consensus spec tests
+      id: cache-consensus-tests
+      uses: actions/cache@v4
+      with:
+        path: test/fixtures/consensus_spec_tests
+        key: consensus-spec-tests-${{ hashFiles('.github/workflows/consensus-spec-tests.yml') }}
+        restore-keys: |
+          consensus-spec-tests-
+
+    - name: Download consensus spec tests
+      if: steps.cache-consensus-tests.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p test/fixtures
+        git clone --depth 1 https://github.com/ethereum/consensus-spec-tests.git test/fixtures/consensus_spec_tests
+        
+        # Remove .git to reduce cache size
+        rm -rf test/fixtures/consensus_spec_tests/.git
+
+    - name: Run consensus spec tests
+      run: |
+        FORK="${{ matrix.fork }}"
+        CONFIG="${{ matrix.config }}"
+        SUITES="${{ matrix.suite }}"
+        
+        # Override with workflow dispatch inputs if provided
+        if [ "${{ github.event.inputs.fork }}" != "" ] && [ "${{ github.event.inputs.fork }}" != "all" ]; then
+          FORK="${{ github.event.inputs.fork }}"
+        fi
+        
+        if [ "${{ github.event.inputs.config }}" == "both" ]; then
+          CONFIG="mainnet,minimal"
+        elif [ "${{ github.event.inputs.config }}" != "" ]; then
+          CONFIG="${{ github.event.inputs.config }}"
+        fi
+        
+        echo "Running consensus spec tests: fork=$FORK, config=$CONFIG, suites=$SUITES"
+        
+        # Create results directory
+        mkdir -p test/results
+        
+        # Run the consensus spec tests
+        mix consensus_spec \
+          --fork "$FORK" \
+          --config "$CONFIG" \
+          --suite "$SUITES" \
+          --report junit \
+          --output test/results \
+          --verbose
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: consensus-spec-results-${{ matrix.fork }}-${{ matrix.config }}
+        path: |
+          test/results/
+          
+    - name: Publish test results
+      uses: dorny/test-reporter@v1
+      if: always()
+      with:
+        name: Consensus Spec Tests (${{ matrix.fork }}/${{ matrix.config }})
+        path: test/results/consensus_spec_junit.xml
+        reporter: java-junit
+        fail-on-error: false
+
+  integration-tests:
+    name: Integration Test Framework
+    runs-on: ubuntu-latest
+    needs: []  # Run in parallel with consensus-spec-tests
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ env.ELIXIR_VERSION }}
+        otp-version: ${{ env.OTP_VERSION }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          deps
+          _build
+        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-mix-
+
+    - name: Install dependencies
+      run: |
+        mix deps.get
+        mix deps.compile
+
+    - name: Setup Rust for BLS NIF
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Compile project
+      run: mix compile
+
+    - name: Test consensus spec integration framework
+      run: |
+        # Run the integration tests without requiring full consensus spec data
+        mix test apps/ex_wire/test/ex_wire/eth2/consensus_spec_test.exs --exclude slow
+        
+    - name: Test existing Ethereum 2.0 functionality  
+      run: |
+        # Run existing Eth2 tests to ensure no regressions
+        mix test apps/ex_wire/test/ex_wire/eth2/ --exclude slow --exclude network
+
+  nightly-full-tests:
+    name: Nightly Full Consensus Spec Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        fork: ['phase0', 'altair', 'bellatrix', 'capella', 'deneb']
+        config: ['mainnet', 'minimal']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: ${{ env.ELIXIR_VERSION }}
+        otp-version: ${{ env.OTP_VERSION }}
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          deps
+          _build
+        key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-mix-
+
+    - name: Install dependencies
+      run: |
+        mix deps.get
+        mix deps.compile
+
+    - name: Setup Rust for BLS NIF
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Compile project
+      run: mix compile
+
+    - name: Download latest consensus spec tests
+      run: |
+        mkdir -p test/fixtures
+        git clone https://github.com/ethereum/consensus-spec-tests.git test/fixtures/consensus_spec_tests
+
+    - name: Run full consensus spec test suite
+      run: |
+        mkdir -p test/results
+        
+        # Run all test suites for this fork/config combination
+        mix consensus_spec \
+          --fork "${{ matrix.fork }}" \
+          --config "${{ matrix.config }}" \
+          --report detailed \
+          --output test/results \
+          --verbose
+
+    - name: Upload nightly results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: nightly-consensus-results-${{ matrix.fork }}-${{ matrix.config }}
+        path: test/results/
+        retention-days: 7
+
+    - name: Generate compliance report
+      if: always()
+      run: |
+        # Generate a compliance summary
+        echo "# Consensus Spec Compliance Report" > compliance-report.md
+        echo "Fork: ${{ matrix.fork }}" >> compliance-report.md
+        echo "Config: ${{ matrix.config }}" >> compliance-report.md
+        echo "Date: $(date -u)" >> compliance-report.md
+        echo "" >> compliance-report.md
+        
+        if [ -f test/results/consensus_spec_detailed_report.txt ]; then
+          echo "## Test Results" >> compliance-report.md
+          echo '```' >> compliance-report.md
+          head -20 test/results/consensus_spec_detailed_report.txt >> compliance-report.md
+          echo '```' >> compliance-report.md
+        fi
+
+    - name: Post compliance results (on failure)
+      if: failure() && github.event_name == 'schedule'
+      run: |
+        echo "Consensus spec tests failed for ${{ matrix.fork }}/${{ matrix.config }}"
+        echo "This indicates potential compliance issues that need investigation"
+        # In a real setup, you might post to Slack, create GitHub issues, etc.
+
+  summary:
+    name: Test Summary  
+    runs-on: ubuntu-latest
+    needs: [consensus-spec-tests, integration-tests]
+    if: always()
+    
+    steps:
+    - name: Check results
+      run: |
+        if [ "${{ needs.consensus-spec-tests.result }}" == "success" ] && [ "${{ needs.integration-tests.result }}" == "success" ]; then
+          echo "✅ All consensus spec tests passed"
+        else
+          echo "❌ Some consensus spec tests failed"
+          echo "Integration tests: ${{ needs.integration-tests.result }}"
+          echo "Consensus spec tests: ${{ needs.consensus-spec-tests.result }}"
+          exit 1
+        fi
