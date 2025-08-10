@@ -1,5 +1,5 @@
 defmodule Blockchain.Ethash.FNV do
-  use Bitwise
+  import Bitwise
 
   @mod round(:math.pow(2, 32))
   @prime 0x01000193

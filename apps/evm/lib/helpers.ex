@@ -4,7 +4,7 @@ defmodule EVM.Helpers do
   """
 
   require Logger
-  use Bitwise
+  import Bitwise
   alias EVM.Address
 
   @max_uint_255 round(:math.pow(2, 255)) - 1

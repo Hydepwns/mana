@@ -2,7 +2,7 @@ defmodule EVM.Operation.StopAndArithmetic do
   alias EVM.Helpers
   alias EVM.Operation
   alias MathHelper
-  use Bitwise
+  import Bitwise
 
   @doc """
   Halts execution.

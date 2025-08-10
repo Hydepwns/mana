@@ -2,7 +2,7 @@ defmodule Blockchain.Ethash.RandMemoHash do
   alias Blockchain.Ethash
   alias ExthCrypto.Hash.Keccak
 
-  use Bitwise
+  import Bitwise
 
   @type optimized_cache :: %{non_neg_integer() => <<_::512>>}
 

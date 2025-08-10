@@ -4,7 +4,7 @@ defmodule Blockchain.Ethash do
   yellow paper concerning the Ethash implementation for POW.
   """
 
-  use Bitwise
+  import Bitwise
 
   alias Blockchain.Ethash.{FNV, RandMemoHash}
   alias ExthCrypto.Hash.Keccak

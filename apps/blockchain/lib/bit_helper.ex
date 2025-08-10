@@ -3,7 +3,7 @@ defmodule BitHelper do
   Helpers for common operations on the blockchain.
   """
 
-  use Bitwise
+  import Bitwise
 
   @doc """
   Simply returns the rightmost n bits of a binary.

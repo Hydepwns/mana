@@ -2,7 +2,7 @@ defmodule EVM.Operation.StackMemoryStorageAndFlow do
   alias EVM.{ExecEnv, Helpers, Memory, Operation, Stack}
   alias MathHelper
 
-  use Bitwise
+  import Bitwise
 
   @doc """
   Remove item from stack.
