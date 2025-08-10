@@ -78,19 +78,22 @@ defmodule ExWire.DEVp2p.Session do
   """
   @spec hello_received(t, Hello.t()) :: t
   def hello_received(session, hello) do
-    matching_caps = Capability.get_matching_capabilities(hello.caps, Mana.get_our_capabilities_map())
+    matching_caps =
+      Capability.get_matching_capabilities(hello.caps, Mana.get_our_capabilities_map())
+
     packet_id_map = PacketIdMap.new(matching_caps)
-    
+
     # Find the highest negotiated eth protocol version
     negotiated_version = find_negotiated_eth_version(matching_caps)
 
-    %{session | 
-      hello_received: hello, 
-      packet_id_map: packet_id_map,
-      negotiated_version: negotiated_version
+    %{
+      session
+      | hello_received: hello,
+        packet_id_map: packet_id_map,
+        negotiated_version: negotiated_version
     }
   end
-  
+
   # Find the highest mutually supported eth protocol version
   defp find_negotiated_eth_version(capabilities) do
     capabilities

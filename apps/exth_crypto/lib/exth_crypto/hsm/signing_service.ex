@@ -1,11 +1,11 @@
 defmodule ExthCrypto.HSM.SigningService do
   @moduledoc """
   Enterprise transaction signing service with HSM integration.
-  
+
   This module provides a drop-in replacement for the existing transaction signing
   infrastructure, automatically routing signing operations to HSM or software
   backends based on configuration and key availability.
-  
+
   Features:
   - Seamless integration with existing Blockchain.Transaction.Signature
   - Automatic backend selection (HSM preferred, software fallback)
@@ -24,21 +24,21 @@ defmodule ExthCrypto.HSM.SigningService do
   alias Blockchain.Transaction
 
   @type signing_context :: %{
-    chain_id: non_neg_integer() | nil,
-    key_id: String.t() | nil,
-    key_role: atom() | nil,
-    audit_metadata: map()
-  }
+          chain_id: non_neg_integer() | nil,
+          key_id: String.t() | nil,
+          key_role: atom() | nil,
+          audit_metadata: map()
+        }
 
   @type signing_result :: %{
-    v: non_neg_integer(),
-    r: non_neg_integer(),
-    s: non_neg_integer(),
-    signature: binary(),
-    recovery_id: non_neg_integer(),
-    backend_used: atom(),
-    timestamp: DateTime.t()
-  }
+          v: non_neg_integer(),
+          r: non_neg_integer(),
+          s: non_neg_integer(),
+          signature: binary(),
+          recovery_id: non_neg_integer(),
+          backend_used: atom(),
+          timestamp: DateTime.t()
+        }
 
   # EIP-155 constants
   @base_recovery_id 27
@@ -61,7 +61,7 @@ defmodule ExthCrypto.HSM.SigningService do
 
   def init(config) do
     full_config = Map.merge(@default_config, config)
-    
+
     state = %{
       config: full_config,
       active_operations: %{},
@@ -73,7 +73,7 @@ defmodule ExthCrypto.HSM.SigningService do
         errors: 0
       }
     }
-    
+
     Logger.info("HSM Signing Service initialized")
     {:ok, state}
   end
@@ -83,23 +83,24 @@ defmodule ExthCrypto.HSM.SigningService do
       {:reply, {:error, "Maximum concurrent operations exceeded"}, state}
     else
       operation_id = generate_operation_id()
-      
+
       # Track active operation
       new_state = %{
-        state | 
-        active_operations: Map.put(state.active_operations, operation_id, %{
-          from: from,
-          started_at: DateTime.utc_now(),
-          context: context
-        })
+        state
+        | active_operations:
+            Map.put(state.active_operations, operation_id, %{
+              from: from,
+              started_at: DateTime.utc_now(),
+              context: context
+            })
       }
-      
+
       # Perform async signing
       Task.start_link(fn ->
         result = perform_signing(hash, context)
         GenServer.cast(__MODULE__, {:signing_complete, operation_id, result})
       end)
-      
+
       {:noreply, new_state}
     end
   end
@@ -115,30 +116,30 @@ defmodule ExthCrypto.HSM.SigningService do
         legacy_signing: true
       }
     }
-    
+
     hash = Transaction.Signature.transaction_hash(tx, chain_id)
-    
+
     case sign_hash_with_private_key(hash, private_key, chain_id) do
       {:ok, result} ->
         # Update transaction with signature
         signed_tx = %{tx | v: result.v, r: result.r, s: result.s}
-        
+
         # Update stats
         new_stats = Map.update(state.stats, :software_signatures, 1, &(&1 + 1))
         new_stats = Map.update(new_stats, :total_signatures, 1, &(&1 + 1))
-        
+
         new_state = %{state | stats: new_stats}
-        
+
         if state.config.audit_enabled do
           audit_transaction_signing(signed_tx, context, result)
         end
-        
+
         {:reply, {:ok, signed_tx}, new_state}
-      
+
       {:error, reason} ->
         new_stats = Map.update(state.stats, :errors, 1, &(&1 + 1))
         new_state = %{state | stats: new_stats}
-        
+
         {:reply, {:error, reason}, new_state}
     end
   end
@@ -156,54 +157,56 @@ defmodule ExthCrypto.HSM.SigningService do
         gas_limit: tx.gas_limit
       }
     }
-    
+
     hash = Transaction.Signature.transaction_hash(tx, chain_id)
-    
+
     case perform_signing(hash, context) do
       {:ok, result} ->
         # Update transaction with signature
         signed_tx = %{tx | v: result.v, r: result.r, s: result.s}
-        
+
         # Update stats
-        new_stats = case result.backend_used do
-          :hsm -> 
-            state.stats
-            |> Map.update(:hsm_signatures, 1, &(&1 + 1))
-            |> Map.update(:total_signatures, 1, &(&1 + 1))
-          
-          :software ->
-            state.stats
-            |> Map.update(:software_signatures, 1, &(&1 + 1))
-            |> Map.update(:total_signatures, 1, &(&1 + 1))
-        end
-        
+        new_stats =
+          case result.backend_used do
+            :hsm ->
+              state.stats
+              |> Map.update(:hsm_signatures, 1, &(&1 + 1))
+              |> Map.update(:total_signatures, 1, &(&1 + 1))
+
+            :software ->
+              state.stats
+              |> Map.update(:software_signatures, 1, &(&1 + 1))
+              |> Map.update(:total_signatures, 1, &(&1 + 1))
+          end
+
         new_state = %{state | stats: new_stats}
-        
+
         if state.config.audit_enabled do
           audit_transaction_signing(signed_tx, context, result)
         end
-        
+
         {:reply, {:ok, signed_tx}, new_state}
-      
+
       {:error, reason} ->
         new_stats = Map.update(state.stats, :errors, 1, &(&1 + 1))
         new_state = %{state | stats: new_stats}
-        
+
         if state.config.audit_enabled do
           audit_signing_failure(hash, context, reason)
         end
-        
+
         {:reply, {:error, reason}, new_state}
     end
   end
 
   def handle_call(:get_stats, _from, state) do
-    enhanced_stats = Map.merge(state.stats, %{
-      active_operations: map_size(state.active_operations),
-      uptime: get_uptime(),
-      config: state.config
-    })
-    
+    enhanced_stats =
+      Map.merge(state.stats, %{
+        active_operations: map_size(state.active_operations),
+        uptime: get_uptime(),
+        config: state.config
+      })
+
     {:reply, {:ok, enhanced_stats}, state}
   end
 
@@ -212,30 +215,31 @@ defmodule ExthCrypto.HSM.SigningService do
       {nil, _} ->
         Logger.warn("Received completion for unknown operation: #{operation_id}")
         {:noreply, state}
-      
+
       {operation, new_operations} ->
         GenServer.reply(operation.from, result)
-        
+
         # Update stats
-        new_stats = case result do
-          {:ok, signing_result} ->
-            stats = Map.update(state.stats, :total_signatures, 1, &(&1 + 1))
-            
-            case signing_result.backend_used do
-              :hsm -> Map.update(stats, :hsm_signatures, 1, &(&1 + 1))
-              :software -> Map.update(stats, :software_signatures, 1, &(&1 + 1))
-            end
-          
-          {:error, _} ->
-            Map.update(state.stats, :errors, 1, &(&1 + 1))
-        end
-        
+        new_stats =
+          case result do
+            {:ok, signing_result} ->
+              stats = Map.update(state.stats, :total_signatures, 1, &(&1 + 1))
+
+              case signing_result.backend_used do
+                :hsm -> Map.update(stats, :hsm_signatures, 1, &(&1 + 1))
+                :software -> Map.update(stats, :software_signatures, 1, &(&1 + 1))
+              end
+
+            {:error, _} ->
+              Map.update(state.stats, :errors, 1, &(&1 + 1))
+          end
+
         new_state = %{
-          state | 
-          active_operations: new_operations,
-          stats: new_stats
+          state
+          | active_operations: new_operations,
+            stats: new_stats
         }
-        
+
         {:noreply, new_state}
     end
   end
@@ -244,7 +248,7 @@ defmodule ExthCrypto.HSM.SigningService do
 
   @doc """
   Sign a hash using the best available backend.
-  
+
   This is the primary interface for hash signing operations.
   """
   @spec sign_hash(binary(), signing_context()) :: {:ok, signing_result()} | {:error, String.t()}
@@ -255,7 +259,8 @@ defmodule ExthCrypto.HSM.SigningService do
   @doc """
   Sign a transaction using a direct private key (legacy compatibility).
   """
-  @spec sign_transaction(Transaction.t(), binary(), non_neg_integer() | nil) :: {:ok, Transaction.t()} | {:error, String.t()}
+  @spec sign_transaction(Transaction.t(), binary(), non_neg_integer() | nil) ::
+          {:ok, Transaction.t()} | {:error, String.t()}
   def sign_transaction(tx, private_key, chain_id \\ nil) do
     GenServer.call(__MODULE__, {:sign_transaction, tx, private_key, chain_id}, 15_000)
   end
@@ -263,7 +268,8 @@ defmodule ExthCrypto.HSM.SigningService do
   @doc """
   Sign a transaction using a managed key ID (preferred method).
   """
-  @spec sign_transaction_with_key(Transaction.t(), String.t(), non_neg_integer() | nil) :: {:ok, Transaction.t()} | {:error, String.t()}
+  @spec sign_transaction_with_key(Transaction.t(), String.t(), non_neg_integer() | nil) ::
+          {:ok, Transaction.t()} | {:error, String.t()}
   def sign_transaction_with_key(tx, key_id, chain_id \\ nil) do
     GenServer.call(__MODULE__, {:sign_transaction_with_key, tx, key_id, chain_id}, 15_000)
   end
@@ -283,12 +289,14 @@ defmodule ExthCrypto.HSM.SigningService do
   def get_address_from_key(key_id) do
     case KeyManager.get_public_key(key_id) do
       {:ok, public_key} ->
-        address = public_key
-                  |> Keccak.kec()
-                  |> Binary.drop(12)  # Take last 20 bytes
-        
+        address =
+          public_key
+          |> Keccak.kec()
+          # Take last 20 bytes
+          |> Binary.drop(12)
+
         {:ok, address}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -300,10 +308,10 @@ defmodule ExthCrypto.HSM.SigningService do
     case determine_signing_strategy(context) do
       {:key_manager, key_id} ->
         sign_with_key_manager(hash, key_id, context)
-      
+
       {:direct_software, private_key} ->
         sign_hash_with_private_key(hash, private_key, context.chain_id)
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -313,10 +321,10 @@ defmodule ExthCrypto.HSM.SigningService do
     case context do
       %{key_id: key_id} when not is_nil(key_id) ->
         {:key_manager, key_id}
-      
+
       %{private_key: private_key} when not is_nil(private_key) ->
         {:direct_software, private_key}
-      
+
       _ ->
         # Try to find a default key for the role
         case find_default_key(context.key_role || :transaction_signer) do
@@ -333,12 +341,12 @@ defmodule ExthCrypto.HSM.SigningService do
           {:ok, result} ->
             Logger.debug("Successfully signed with key #{key_id} using #{result.backend_used}")
             {:ok, result}
-          
+
           {:error, reason} ->
             Logger.error("Failed to convert signature for key #{key_id}: #{reason}")
             {:error, reason}
         end
-      
+
       {:error, reason} ->
         Logger.error("Key manager signing failed for key #{key_id}: #{reason}")
         {:error, reason}
@@ -349,16 +357,17 @@ defmodule ExthCrypto.HSM.SigningService do
     try do
       {:ok, <<r::size(256), s::size(256)>>, recovery_id} =
         :libsecp256k1.ecdsa_sign_compact(hash, private_key, :default, <<>>)
-      
+
       # Apply EIP-155 recovery ID adjustment
-      v = if chain_id do
-        chain_id * 2 + @base_recovery_id_eip_155 + recovery_id
-      else
-        @base_recovery_id + recovery_id
-      end
-      
+      v =
+        if chain_id do
+          chain_id * 2 + @base_recovery_id_eip_155 + recovery_id
+        else
+          @base_recovery_id + recovery_id
+        end
+
       signature = <<r::size(256), s::size(256)>>
-      
+
       result = %{
         v: v,
         r: r,
@@ -368,7 +377,7 @@ defmodule ExthCrypto.HSM.SigningService do
         backend_used: :software,
         timestamp: DateTime.utc_now()
       }
-      
+
       {:ok, result}
     rescue
       error ->
@@ -379,17 +388,18 @@ defmodule ExthCrypto.HSM.SigningService do
   defp convert_to_ethereum_signature(der_signature, original_hash, context) do
     with {:ok, r, s} <- parse_der_signature(der_signature),
          {:ok, recovery_id} <- calculate_recovery_id(r, s, original_hash, context) do
-      
       # Apply EIP-155 recovery ID adjustment
-      v = if context.chain_id do
-        context.chain_id * 2 + @base_recovery_id_eip_155 + recovery_id
-      else
-        @base_recovery_id + recovery_id
-      end
-      
-      signature = pad_to_32_bytes(:binary.encode_unsigned(r)) <>
-                  pad_to_32_bytes(:binary.encode_unsigned(s))
-      
+      v =
+        if context.chain_id do
+          context.chain_id * 2 + @base_recovery_id_eip_155 + recovery_id
+        else
+          @base_recovery_id + recovery_id
+        end
+
+      signature =
+        pad_to_32_bytes(:binary.encode_unsigned(r)) <>
+          pad_to_32_bytes(:binary.encode_unsigned(s))
+
       result = %{
         v: v,
         r: r,
@@ -399,7 +409,7 @@ defmodule ExthCrypto.HSM.SigningService do
         backend_used: :hsm,
         timestamp: DateTime.utc_now()
       }
-      
+
       {:ok, result}
     else
       {:error, reason} -> {:error, reason}
@@ -410,14 +420,13 @@ defmodule ExthCrypto.HSM.SigningService do
     try do
       # Simple DER parsing for ECDSA signature
       case der_signature do
-        <<0x30, _length, 0x02, r_length, r::binary-size(r_length), 
-          0x02, s_length, s::binary-size(s_length), _rest::binary>> ->
-          
+        <<0x30, _length, 0x02, r_length, r::binary-size(r_length), 0x02, s_length,
+          s::binary-size(s_length), _rest::binary>> ->
           r_int = :binary.decode_unsigned(r)
           s_int = :binary.decode_unsigned(s)
-          
+
           {:ok, r_int, s_int}
-        
+
         _ ->
           {:error, "Invalid DER signature format"}
       end
@@ -429,16 +438,16 @@ defmodule ExthCrypto.HSM.SigningService do
   defp calculate_recovery_id(r, s, hash, context) do
     # For HSM signatures, we need to determine the recovery ID by testing
     # This is computationally expensive but necessary for HSM integration
-    
+
     case context.key_id do
       nil ->
         {:error, "Cannot calculate recovery ID without key information"}
-      
+
       key_id ->
         case KeyManager.get_public_key(key_id) do
           {:ok, expected_public_key} ->
             find_recovery_id(r, s, hash, expected_public_key)
-          
+
           {:error, reason} ->
             {:error, "Failed to get public key: #{reason}"}
         end
@@ -446,9 +455,10 @@ defmodule ExthCrypto.HSM.SigningService do
   end
 
   defp find_recovery_id(r, s, hash, expected_public_key) do
-    signature = pad_to_32_bytes(:binary.encode_unsigned(r)) <>
-                pad_to_32_bytes(:binary.encode_unsigned(s))
-    
+    signature =
+      pad_to_32_bytes(:binary.encode_unsigned(r)) <>
+        pad_to_32_bytes(:binary.encode_unsigned(s))
+
     # Try each possible recovery ID (0-3)
     Enum.reduce_while(0..3, {:error, "No valid recovery ID found"}, fn recovery_id, acc ->
       case :libsecp256k1.ecdsa_recover_compact(hash, signature, :uncompressed, recovery_id) do
@@ -458,7 +468,7 @@ defmodule ExthCrypto.HSM.SigningService do
           else
             {:cont, acc}
           end
-        
+
         {:error, _} ->
           {:cont, acc}
       end
@@ -469,10 +479,10 @@ defmodule ExthCrypto.HSM.SigningService do
     case KeyManager.list_keys(%{role: role}) do
       {:ok, []} ->
         {:error, "No keys found for role: #{role}"}
-      
+
       {:ok, [key | _]} ->
         {:ok, key.id}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -491,7 +501,7 @@ defmodule ExthCrypto.HSM.SigningService do
     padding = 32 - byte_size(binary)
     <<0::size(padding * 8)>> <> binary
   end
-  
+
   defp pad_to_32_bytes(binary), do: binary
 
   defp generate_operation_id() do
@@ -509,7 +519,10 @@ defmodule ExthCrypto.HSM.SigningService do
     audit_data = %{
       event: "transaction_signed",
       transaction: %{
-        hash: tx |> Transaction.Signature.transaction_hash(context.chain_id) |> Base.encode16(case: :lower),
+        hash:
+          tx
+          |> Transaction.Signature.transaction_hash(context.chain_id)
+          |> Base.encode16(case: :lower),
         to: format_address(tx.to),
         value: tx.value,
         gas_limit: tx.gas_limit,
@@ -525,7 +538,7 @@ defmodule ExthCrypto.HSM.SigningService do
       context: context,
       timestamp: DateTime.utc_now()
     }
-    
+
     Logger.info("SIGNING_AUDIT: #{Jason.encode!(audit_data)}")
   end
 
@@ -537,12 +550,13 @@ defmodule ExthCrypto.HSM.SigningService do
       context: context,
       timestamp: DateTime.utc_now()
     }
-    
+
     Logger.warn("SIGNING_AUDIT: #{Jason.encode!(audit_data)}")
   end
 
   defp format_address(<<>>), do: "contract_creation"
   defp format_address(""), do: "contract_creation"
+
   defp format_address(address) when is_binary(address) do
     "0x" <> Base.encode16(address, case: :lower)
   end

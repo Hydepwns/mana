@@ -13,7 +13,7 @@ defmodule JSONRPC2.SpecHandler.EthCall do
 
   @doc """
   Executes a message call immediately without creating a transaction on the blockchain.
-  
+
   ## Parameters
     - state: The blockchain state trie
     - call_request: The call request parameters
@@ -42,13 +42,13 @@ defmodule JSONRPC2.SpecHandler.EthCall do
   defp execute_call(state, call_request, block, chain) do
     # Get the block state
     block_state = TrieStorage.set_root_hash(state, block.header.state_root)
-    
+
     # Get the sender account (or use zero address if not specified)
     sender_address = call_request.from || <<0::160>>
-    
+
     # Get the configuration for the block
     config = Configuration.for_block_number(block.header.number, chain)
-    
+
     # Set up the message call
     message_call = %MessageCall{
       account_repo: block_state,
@@ -65,18 +65,18 @@ defmodule JSONRPC2.SpecHandler.EthCall do
       block_header: block.header,
       config: config
     }
-    
+
     # Execute the call
     case MessageCall.execute(message_call) do
       {:ok, {_gas_remaining, _sub_state, _exec_env, output}} ->
         {:ok, output}
-        
+
       {_gas_remaining, _sub_state, _exec_env, output} ->
         {:ok, output}
-        
+
       {:error, _reason} = error ->
         error
-        
+
       _ ->
         {:error, :execution_failed}
     end

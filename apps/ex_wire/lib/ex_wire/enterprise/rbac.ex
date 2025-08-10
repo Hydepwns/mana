@@ -19,41 +19,41 @@ defmodule ExWire.Enterprise.RBAC do
   ]
 
   @type role :: %{
-    id: String.t(),
-    name: String.t(),
-    description: String.t(),
-    permissions: list(permission()),
-    parent_role: String.t() | nil,
-    metadata: map(),
-    created_at: DateTime.t()
-  }
+          id: String.t(),
+          name: String.t(),
+          description: String.t(),
+          permissions: list(permission()),
+          parent_role: String.t() | nil,
+          metadata: map(),
+          created_at: DateTime.t()
+        }
 
   @type user :: %{
-    id: String.t(),
-    username: String.t(),
-    roles: list(String.t()),
-    direct_permissions: list(permission()),
-    attributes: map(),
-    status: :active | :suspended | :locked,
-    last_login: DateTime.t() | nil,
-    mfa_enabled: boolean()
-  }
+          id: String.t(),
+          username: String.t(),
+          roles: list(String.t()),
+          direct_permissions: list(permission()),
+          attributes: map(),
+          status: :active | :suspended | :locked,
+          last_login: DateTime.t() | nil,
+          mfa_enabled: boolean()
+        }
 
   @type permission :: %{
-    resource: String.t(),
-    action: atom(),
-    conditions: map()
-  }
+          resource: String.t(),
+          action: atom(),
+          conditions: map()
+        }
 
   @type policy :: %{
-    id: String.t(),
-    name: String.t(),
-    effect: :allow | :deny,
-    principals: list(String.t()),
-    resources: list(String.t()),
-    actions: list(atom()),
-    conditions: map()
-  }
+          id: String.t(),
+          name: String.t(),
+          effect: :allow | :deny,
+          principals: list(String.t()),
+          resources: list(String.t()),
+          actions: list(atom()),
+          conditions: map()
+        }
 
   # Predefined permissions
   @permissions %{
@@ -61,27 +61,27 @@ defmodule ExWire.Enterprise.RBAC do
     send_transaction: %{resource: "blockchain", action: :send_transaction},
     approve_transaction: %{resource: "blockchain", action: :approve_transaction},
     cancel_transaction: %{resource: "blockchain", action: :cancel_transaction},
-    
+
     # Node management
     manage_node: %{resource: "node", action: :manage},
     view_node_status: %{resource: "node", action: :view_status},
     configure_node: %{resource: "node", action: :configure},
-    
+
     # Wallet operations
     create_wallet: %{resource: "wallet", action: :create},
     manage_wallet: %{resource: "wallet", action: :manage},
     view_wallet: %{resource: "wallet", action: :view},
-    
+
     # Compliance operations
     generate_reports: %{resource: "compliance", action: :generate_reports},
     review_alerts: %{resource: "compliance", action: :review_alerts},
     submit_sar: %{resource: "compliance", action: :submit_sar},
-    
+
     # Admin operations
     manage_users: %{resource: "admin", action: :manage_users},
     manage_roles: %{resource: "admin", action: :manage_roles},
     view_audit_logs: %{resource: "admin", action: :view_audit_logs},
-    
+
     # HSM operations
     manage_hsm_keys: %{resource: "hsm", action: :manage_keys},
     use_hsm_keys: %{resource: "hsm", action: :use_keys}
@@ -243,7 +243,7 @@ defmodule ExWire.Enterprise.RBAC do
   @impl true
   def init(opts) do
     Logger.info("Starting RBAC system")
-    
+
     state = %__MODULE__{
       roles: initialize_roles(),
       users: %{},
@@ -252,14 +252,15 @@ defmodule ExWire.Enterprise.RBAC do
       policies: [],
       config: build_config(opts)
     }
-    
+
     # Create default admin user if specified
-    state = if opts[:default_admin] do
-      create_default_admin(state, opts[:default_admin])
-    else
-      state
-    end
-    
+    state =
+      if opts[:default_admin] do
+        create_default_admin(state, opts[:default_admin])
+      else
+        state
+      end
+
     schedule_session_cleanup()
     {:ok, state}
   end
@@ -267,7 +268,7 @@ defmodule ExWire.Enterprise.RBAC do
   @impl true
   def handle_call({:create_user, username, roles, attributes}, _from, state) do
     user_id = generate_user_id()
-    
+
     user = %{
       id: user_id,
       username: username,
@@ -279,15 +280,15 @@ defmodule ExWire.Enterprise.RBAC do
       mfa_enabled: false,
       created_at: DateTime.utc_now()
     }
-    
+
     state = put_in(state.users[user_id], user)
-    
+
     AuditLogger.log(:user_created, %{
       user_id: user_id,
       username: username,
       roles: roles
     })
-    
+
     {:reply, {:ok, user}, state}
   end
 
@@ -296,18 +297,18 @@ defmodule ExWire.Enterprise.RBAC do
     case Map.get(state.users, user_id) do
       nil ->
         {:reply, {:error, :user_not_found}, state}
-      
+
       user ->
         old_roles = user.roles
         updated_user = %{user | roles: validate_roles(new_roles, state.roles)}
         state = put_in(state.users[user_id], updated_user)
-        
+
         AuditLogger.log(:user_roles_updated, %{
           user_id: user_id,
           old_roles: old_roles,
           new_roles: new_roles
         })
-        
+
         {:reply, {:ok, updated_user}, state}
     end
   end
@@ -315,7 +316,7 @@ defmodule ExWire.Enterprise.RBAC do
   @impl true
   def handle_call({:create_role, name, description, permissions, opts}, _from, state) do
     role_id = generate_role_id()
-    
+
     role = %{
       id: role_id,
       name: name,
@@ -325,15 +326,15 @@ defmodule ExWire.Enterprise.RBAC do
       metadata: Keyword.get(opts, :metadata, %{}),
       created_at: DateTime.utc_now()
     }
-    
+
     state = put_in(state.roles[role_id], role)
-    
+
     AuditLogger.log(:role_created, %{
       role_id: role_id,
       name: name,
       permissions_count: length(permissions)
     })
-    
+
     {:reply, {:ok, role}, state}
   end
 
@@ -342,10 +343,10 @@ defmodule ExWire.Enterprise.RBAC do
     case Map.get(state.users, user_id) do
       nil ->
         {:reply, false, state}
-      
+
       user ->
         has_permission = check_user_permission(user, resource, action, context, state)
-        
+
         if has_permission do
           AuditLogger.log(:permission_granted, %{
             user_id: user_id,
@@ -359,7 +360,7 @@ defmodule ExWire.Enterprise.RBAC do
             action: action
           })
         end
-        
+
         {:reply, has_permission, state}
     end
   end
@@ -369,7 +370,7 @@ defmodule ExWire.Enterprise.RBAC do
     case Map.get(state.users, user_id) do
       nil ->
         {:reply, {:error, :unauthorized}, state}
-      
+
       user ->
         case authorize_operation(user, operation, params, state) do
           :ok ->
@@ -378,16 +379,16 @@ defmodule ExWire.Enterprise.RBAC do
               operation: operation,
               params: sanitize_params(params)
             })
-            
+
             {:reply, :ok, state}
-          
+
           {:error, reason} ->
             AuditLogger.log(:operation_denied, %{
               user_id: user_id,
               operation: operation,
               reason: reason
             })
-            
+
             {:reply, {:error, reason}, state}
         end
     end
@@ -398,13 +399,13 @@ defmodule ExWire.Enterprise.RBAC do
     case Map.get(state.users, user_id) do
       nil ->
         {:reply, {:error, :user_not_found}, state}
-      
+
       user ->
         if user.status != :active do
           {:reply, {:error, :user_not_active}, state}
         else
           session_id = generate_session_id()
-          
+
           session = %{
             id: session_id,
             user_id: user_id,
@@ -413,18 +414,18 @@ defmodule ExWire.Enterprise.RBAC do
             metadata: metadata,
             permissions_cache: compute_user_permissions(user, state)
           }
-          
+
           state = put_in(state.sessions[session_id], session)
-          
+
           # Update last login
           updated_user = %{user | last_login: DateTime.utc_now()}
           state = put_in(state.users[user_id], updated_user)
-          
+
           AuditLogger.log(:session_created, %{
             session_id: session_id,
             user_id: user_id
           })
-          
+
           {:reply, {:ok, session}, state}
         end
     end
@@ -435,15 +436,15 @@ defmodule ExWire.Enterprise.RBAC do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :session_not_found}, state}
-      
+
       session ->
         state = update_in(state.sessions, &Map.delete(&1, session_id))
-        
+
         AuditLogger.log(:session_revoked, %{
           session_id: session_id,
           user_id: session.user_id
         })
-        
+
         {:reply, :ok, state}
     end
   end
@@ -472,13 +473,13 @@ defmodule ExWire.Enterprise.RBAC do
   def handle_call({:add_policy, policy}, _from, state) do
     policy = Map.put(policy, :id, generate_policy_id())
     state = update_in(state.policies, &[policy | &1])
-    
+
     AuditLogger.log(:policy_added, %{
       policy_id: policy.id,
       name: policy.name,
       effect: policy.effect
     })
-    
+
     {:reply, {:ok, policy}, state}
   end
 
@@ -487,17 +488,18 @@ defmodule ExWire.Enterprise.RBAC do
     case Map.get(state.users, user_id) do
       nil ->
         {:reply, {:error, :user_not_found}, state}
-      
+
       user ->
-        updated_user = %{user | 
-          mfa_enabled: true,
-          attributes: Map.put(user.attributes, :mfa_secret, secret)
+        updated_user = %{
+          user
+          | mfa_enabled: true,
+            attributes: Map.put(user.attributes, :mfa_secret, secret)
         }
-        
+
         state = put_in(state.users[user_id], updated_user)
-        
+
         AuditLogger.log(:mfa_enabled, %{user_id: user_id})
-        
+
         {:reply, :ok, state}
     end
   end
@@ -507,18 +509,18 @@ defmodule ExWire.Enterprise.RBAC do
     case Map.get(state.users, user_id) do
       nil ->
         {:reply, {:error, :user_not_found}, state}
-      
+
       user ->
         if user.mfa_enabled do
           secret = user.attributes[:mfa_secret]
           valid = verify_totp(secret, token)
-          
+
           if valid do
             AuditLogger.log(:mfa_verified, %{user_id: user_id})
           else
             AuditLogger.log(:mfa_failed, %{user_id: user_id})
           end
-          
+
           {:reply, valid, state}
         else
           {:reply, {:error, :mfa_not_enabled}, state}
@@ -529,18 +531,19 @@ defmodule ExWire.Enterprise.RBAC do
   @impl true
   def handle_info(:cleanup_sessions, state) do
     now = DateTime.utc_now()
-    
-    active_sessions = Enum.filter(state.sessions, fn {_id, session} ->
-      DateTime.compare(session.expires_at, now) == :gt
-    end)
-    |> Enum.into(%{})
-    
+
+    active_sessions =
+      Enum.filter(state.sessions, fn {_id, session} ->
+        DateTime.compare(session.expires_at, now) == :gt
+      end)
+      |> Enum.into(%{})
+
     expired_count = map_size(state.sessions) - map_size(active_sessions)
-    
+
     if expired_count > 0 do
       Logger.info("Cleaned up #{expired_count} expired sessions")
     end
-    
+
     schedule_session_cleanup()
     {:noreply, %{state | sessions: active_sessions}}
   end
@@ -554,16 +557,17 @@ defmodule ExWire.Enterprise.RBAC do
     else
       # Collect all permissions from roles
       role_permissions = collect_role_permissions(user.roles, state.roles)
-      
+
       # Add direct permissions
       all_permissions = role_permissions ++ user.direct_permissions
-      
+
       # Check permissions
-      has_permission = Enum.any?(all_permissions, fn perm ->
-        perm.resource == resource && perm.action == action &&
-        check_conditions(perm.conditions, context)
-      end)
-      
+      has_permission =
+        Enum.any?(all_permissions, fn perm ->
+          perm.resource == resource && perm.action == action &&
+            check_conditions(perm.conditions, context)
+        end)
+
       # Check policies
       if not has_permission do
         check_policies(user.id, resource, action, context, state.policies)
@@ -576,14 +580,17 @@ defmodule ExWire.Enterprise.RBAC do
   defp collect_role_permissions(role_ids, all_roles) do
     Enum.flat_map(role_ids, fn role_id ->
       case Map.get(all_roles, role_id) do
-        nil -> []
-        role -> 
-          parent_perms = if role.parent_role do
-            collect_role_permissions([role.parent_role], all_roles)
-          else
-            []
-          end
-          
+        nil ->
+          []
+
+        role ->
+          parent_perms =
+            if role.parent_role do
+              collect_role_permissions([role.parent_role], all_roles)
+            else
+              []
+            end
+
           role.permissions ++ parent_perms
       end
     end)
@@ -591,6 +598,7 @@ defmodule ExWire.Enterprise.RBAC do
   end
 
   defp check_conditions(conditions, context) when map_size(conditions) == 0, do: true
+
   defp check_conditions(conditions, context) do
     Enum.all?(conditions, fn {key, expected} ->
       Map.get(context, key) == expected
@@ -600,10 +608,10 @@ defmodule ExWire.Enterprise.RBAC do
   defp check_policies(user_id, resource, action, context, policies) do
     Enum.any?(policies, fn policy ->
       user_id in policy.principals &&
-      resource_matches?(resource, policy.resources) &&
-      action in policy.actions &&
-      check_conditions(policy.conditions, context) &&
-      policy.effect == :allow
+        resource_matches?(resource, policy.resources) &&
+        action in policy.actions &&
+        check_conditions(policy.conditions, context) &&
+        policy.effect == :allow
     end)
   end
 
@@ -626,14 +634,14 @@ defmodule ExWire.Enterprise.RBAC do
         else
           {:error, :insufficient_permissions}
         end
-      
+
       :create_wallet ->
         if check_user_permission(user, "wallet", :create, params, state) do
           :ok
         else
           {:error, :insufficient_permissions}
         end
-      
+
       _ ->
         {:error, :unknown_operation}
     end
@@ -642,7 +650,7 @@ defmodule ExWire.Enterprise.RBAC do
   defp check_transaction_limits(user, params) do
     # Check daily limits, value thresholds, etc.
     max_value = get_user_limit(user, :max_transaction_value)
-    
+
     if params[:value] && params[:value] > max_value do
       {:error, :exceeds_limit}
     else
@@ -653,7 +661,8 @@ defmodule ExWire.Enterprise.RBAC do
   defp get_user_limit(user, limit_type) do
     # Get limit from user attributes or role
     case limit_type do
-      :max_transaction_value -> 100_000_000_000_000_000_000 # 100 ETH default
+      # 100 ETH default
+      :max_transaction_value -> 100_000_000_000_000_000_000
       _ -> nil
     end
   end
@@ -671,10 +680,11 @@ defmodule ExWire.Enterprise.RBAC do
 
   defp initialize_roles do
     Enum.map(@default_roles, fn {id, role_data} ->
-      {id, Map.merge(role_data, %{
-        id: id,
-        created_at: DateTime.utc_now()
-      })}
+      {id,
+       Map.merge(role_data, %{
+         id: id,
+         created_at: DateTime.utc_now()
+       })}
     end)
     |> Enum.into(%{})
   end
@@ -697,7 +707,7 @@ defmodule ExWire.Enterprise.RBAC do
 
   defp create_default_admin(state, admin_config) do
     user_id = "admin"
-    
+
     user = %{
       id: user_id,
       username: admin_config[:username] || "admin",
@@ -709,7 +719,7 @@ defmodule ExWire.Enterprise.RBAC do
       mfa_enabled: admin_config[:require_mfa] || false,
       created_at: DateTime.utc_now()
     }
-    
+
     put_in(state.users[user_id], user)
   end
 

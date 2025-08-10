@@ -20,35 +20,35 @@ defmodule ExWire.Enterprise.SLAMonitor do
   ]
 
   @type sla_definition :: %{
-    id: String.t(),
-    name: String.t(),
-    customer: String.t(),
-    metrics: list(sla_metric()),
-    reporting_period: :daily | :weekly | :monthly,
-    penalties: map(),
-    start_date: Date.t(),
-    end_date: Date.t() | nil
-  }
+          id: String.t(),
+          name: String.t(),
+          customer: String.t(),
+          metrics: list(sla_metric()),
+          reporting_period: :daily | :weekly | :monthly,
+          penalties: map(),
+          start_date: Date.t(),
+          end_date: Date.t() | nil
+        }
 
   @type sla_metric :: %{
-    name: String.t(),
-    type: :availability | :response_time | :throughput | :error_rate,
-    target: number(),
-    measurement: String.t(),
-    calculation: :average | :percentile | :minimum | :maximum
-  }
+          name: String.t(),
+          type: :availability | :response_time | :throughput | :error_rate,
+          target: number(),
+          measurement: String.t(),
+          calculation: :average | :percentile | :minimum | :maximum
+        }
 
   @type incident :: %{
-    id: String.t(),
-    sla_id: String.t(),
-    metric: String.t(),
-    severity: :low | :medium | :high | :critical,
-    started_at: DateTime.t(),
-    ended_at: DateTime.t() | nil,
-    duration: non_neg_integer() | nil,
-    impact: String.t(),
-    resolution: String.t() | nil
-  }
+          id: String.t(),
+          sla_id: String.t(),
+          metric: String.t(),
+          severity: :low | :medium | :high | :critical,
+          started_at: DateTime.t(),
+          ended_at: DateTime.t() | nil,
+          duration: non_neg_integer() | nil,
+          impact: String.t(),
+          resolution: String.t() | nil
+        }
 
   # Client API
 
@@ -131,7 +131,7 @@ defmodule ExWire.Enterprise.SLAMonitor do
   @impl true
   def init(opts) do
     Logger.info("Starting SLA Monitor")
-    
+
     state = %__MODULE__{
       sla_definitions: %{},
       metrics: initialize_metrics_store(),
@@ -141,19 +141,19 @@ defmodule ExWire.Enterprise.SLAMonitor do
       notification_channels: [],
       config: build_config(opts)
     }
-    
+
     # Schedule periodic tasks
     schedule_metric_collection()
     schedule_compliance_check()
     schedule_report_generation()
-    
+
     {:ok, state}
   end
 
   @impl true
   def handle_call({:define_sla, name, customer, metrics, opts}, _from, state) do
     sla_id = generate_sla_id()
-    
+
     sla = %{
       id: sla_id,
       name: name,
@@ -165,19 +165,19 @@ defmodule ExWire.Enterprise.SLAMonitor do
       end_date: Keyword.get(opts, :end_date),
       created_at: DateTime.utc_now()
     }
-    
+
     state = put_in(state.sla_definitions[sla_id], sla)
-    
+
     # Initialize metrics tracking for this SLA
     state = initialize_sla_metrics(state, sla)
-    
+
     AuditLogger.log(:sla_defined, %{
       sla_id: sla_id,
       name: name,
       customer: customer,
       metrics_count: length(metrics)
     })
-    
+
     {:reply, {:ok, sla}, state}
   end
 
@@ -195,21 +195,21 @@ defmodule ExWire.Enterprise.SLAMonitor do
       resolution: nil,
       status: :active
     }
-    
+
     state = update_in(state.incidents, &[incident | &1])
-    
+
     # Send notifications
     notify_incident(incident, state.notification_channels)
-    
+
     # Update SLA compliance
     state = update_sla_compliance(state, sla_id, incident)
-    
+
     AuditLogger.log(:incident_reported, %{
       incident_id: incident.id,
       sla_id: sla_id,
       severity: severity
     })
-    
+
     {:reply, {:ok, incident}, state}
   end
 
@@ -218,30 +218,32 @@ defmodule ExWire.Enterprise.SLAMonitor do
     case Enum.find_index(state.incidents, &(&1.id == incident_id)) do
       nil ->
         {:reply, {:error, :incident_not_found}, state}
-      
+
       index ->
         incident = Enum.at(state.incidents, index)
         ended_at = DateTime.utc_now()
         duration = DateTime.diff(ended_at, incident.started_at, :second)
-        
-        resolved_incident = %{incident | 
-          ended_at: ended_at,
-          duration: duration,
-          resolution: resolution,
-          status: :resolved
+
+        resolved_incident = %{
+          incident
+          | ended_at: ended_at,
+            duration: duration,
+            resolution: resolution,
+            status: :resolved
         }
-        
-        state = put_in(state.incidents, List.replace_at(state.incidents, index, resolved_incident))
-        
+
+        state =
+          put_in(state.incidents, List.replace_at(state.incidents, index, resolved_incident))
+
         # Update metrics
         state = update_incident_metrics(state, resolved_incident)
-        
+
         AuditLogger.log(:incident_resolved, %{
           incident_id: incident_id,
           duration: duration,
           resolution: resolution
         })
-        
+
         {:reply, {:ok, resolved_incident}, state}
     end
   end
@@ -251,7 +253,7 @@ defmodule ExWire.Enterprise.SLAMonitor do
     case Map.get(state.sla_definitions, sla_id) do
       nil ->
         {:reply, {:error, :sla_not_found}, state}
-      
+
       sla ->
         compliance = calculate_compliance(sla, state.metrics, time_range)
         {:reply, {:ok, compliance}, state}
@@ -263,13 +265,13 @@ defmodule ExWire.Enterprise.SLAMonitor do
     case Map.get(state.sla_definitions, sla_id) do
       nil ->
         {:reply, {:error, :sla_not_found}, state}
-      
+
       sla ->
         report = generate_sla_report(sla, state, time_range)
-        
+
         report_id = generate_report_id()
         state = put_in(state.reports[report_id], report)
-        
+
         {:reply, {:ok, report}, state}
     end
   end
@@ -283,7 +285,7 @@ defmodule ExWire.Enterprise.SLAMonitor do
       error_rate: get_current_error_rate(state),
       active_incidents: count_active_incidents(state)
     }
-    
+
     {:reply, {:ok, metrics}, state}
   end
 
@@ -295,9 +297,9 @@ defmodule ExWire.Enterprise.SLAMonitor do
       action: action,
       enabled: true
     }
-    
+
     state = put_in(state.alert_thresholds[metric], threshold_config)
-    
+
     {:reply, :ok, state}
   end
 
@@ -309,9 +311,9 @@ defmodule ExWire.Enterprise.SLAMonitor do
       config: config,
       active: true
     }
-    
+
     state = update_in(state.notification_channels, &[channel | &1])
-    
+
     {:reply, {:ok, channel}, state}
   end
 
@@ -325,26 +327,26 @@ defmodule ExWire.Enterprise.SLAMonitor do
       recent_incidents: get_recent_incidents(state, 10),
       compliance_trends: calculate_compliance_trends(state)
     }
-    
+
     {:reply, {:ok, dashboard}, state}
   end
 
   @impl true
   def handle_cast({:record_metric, metric_name, value, metadata}, state) do
     timestamp = DateTime.utc_now()
-    
+
     metric_entry = %{
       name: metric_name,
       value: value,
       timestamp: timestamp,
       metadata: metadata
     }
-    
+
     state = store_metric(state, metric_entry)
-    
+
     # Check thresholds
     state = check_alert_thresholds(state, metric_name, value)
-    
+
     {:noreply, state}
   end
 
@@ -395,20 +397,20 @@ defmodule ExWire.Enterprise.SLAMonitor do
 
   defp store_metric(state, metric_entry) do
     metric_type = determine_metric_type(metric_entry.name)
-    
+
     case metric_type do
       :availability ->
         update_in(state.metrics.availability, &[metric_entry | &1])
-      
+
       :response_time ->
         update_in(state.metrics.response_time, &[metric_entry | &1])
-      
+
       :throughput ->
         update_in(state.metrics.throughput, &[metric_entry | &1])
-      
+
       :error_rate ->
         update_in(state.metrics.error_rate, &[metric_entry | &1])
-      
+
       :custom ->
         update_in(state.metrics.custom[metric_entry.name], &[metric_entry | &1])
     end
@@ -417,33 +419,40 @@ defmodule ExWire.Enterprise.SLAMonitor do
   defp collect_system_metrics(state) do
     # Collect availability
     availability = measure_availability()
-    state = store_metric(state, %{
-      name: "system.availability",
-      value: availability,
-      timestamp: DateTime.utc_now(),
-      metadata: %{}
-    })
-    
+
+    state =
+      store_metric(state, %{
+        name: "system.availability",
+        value: availability,
+        timestamp: DateTime.utc_now(),
+        metadata: %{}
+      })
+
     # Collect response time
     response_time = measure_response_time()
-    state = store_metric(state, %{
-      name: "api.response_time",
-      value: response_time,
-      timestamp: DateTime.utc_now(),
-      metadata: %{}
-    })
-    
+
+    state =
+      store_metric(state, %{
+        name: "api.response_time",
+        value: response_time,
+        timestamp: DateTime.utc_now(),
+        metadata: %{}
+      })
+
     # Collect throughput
     throughput = measure_throughput()
-    state = store_metric(state, %{
-      name: "system.throughput",
-      value: throughput,
-      timestamp: DateTime.utc_now(),
-      metadata: %{}
-    })
-    
+
+    state =
+      store_metric(state, %{
+        name: "system.throughput",
+        value: throughput,
+        timestamp: DateTime.utc_now(),
+        metadata: %{}
+      })
+
     # Collect error rate
     error_rate = measure_error_rate()
+
     store_metric(state, %{
       name: "system.error_rate",
       value: error_rate,
@@ -476,17 +485,18 @@ defmodule ExWire.Enterprise.SLAMonitor do
 
   defp calculate_compliance(sla, metrics, time_range) do
     {start_time, end_time} = get_time_range(time_range, sla.reporting_period)
-    
+
     Enum.map(sla.metrics, fn sla_metric ->
-      actual_value = calculate_metric_value(
-        sla_metric,
-        metrics,
-        start_time,
-        end_time
-      )
-      
+      actual_value =
+        calculate_metric_value(
+          sla_metric,
+          metrics,
+          start_time,
+          end_time
+        )
+
       compliance = calculate_metric_compliance(sla_metric, actual_value)
-      
+
       %{
         metric: sla_metric.name,
         target: sla_metric.target,
@@ -498,23 +508,24 @@ defmodule ExWire.Enterprise.SLAMonitor do
   end
 
   defp calculate_metric_value(sla_metric, metrics, start_time, end_time) do
-    relevant_metrics = get_metrics_in_range(
-      metrics,
-      sla_metric.type,
-      start_time,
-      end_time
-    )
-    
+    relevant_metrics =
+      get_metrics_in_range(
+        metrics,
+        sla_metric.type,
+        start_time,
+        end_time
+      )
+
     case sla_metric.calculation do
       :average ->
         calculate_average(relevant_metrics)
-      
+
       :percentile ->
         calculate_percentile(relevant_metrics, 95)
-      
+
       :minimum ->
         calculate_minimum(relevant_metrics)
-      
+
       :maximum ->
         calculate_maximum(relevant_metrics)
     end
@@ -524,13 +535,13 @@ defmodule ExWire.Enterprise.SLAMonitor do
     case sla_metric.type do
       :availability ->
         min(actual_value / sla_metric.target * 100, 100)
-      
+
       :response_time ->
         min(sla_metric.target / actual_value * 100, 100)
-      
+
       :throughput ->
         min(actual_value / sla_metric.target * 100, 100)
-      
+
       :error_rate ->
         min(sla_metric.target / actual_value * 100, 100)
     end
@@ -539,10 +550,10 @@ defmodule ExWire.Enterprise.SLAMonitor do
   defp check_all_sla_compliance(state) do
     Enum.reduce(state.sla_definitions, state, fn {sla_id, sla}, acc_state ->
       compliance = calculate_compliance(sla, acc_state.metrics, :current_period)
-      
+
       # Check for violations
       violations = Enum.filter(compliance, &(&1.status == :missed))
-      
+
       if length(violations) > 0 do
         handle_sla_violations(acc_state, sla, violations)
       else
@@ -564,7 +575,7 @@ defmodule ExWire.Enterprise.SLAMonitor do
           impact: "SLA target missed: #{violation.actual} vs #{violation.target}",
           status: :active
         }
-        
+
         update_in(acc_state.incidents, &[incident | &1])
       else
         acc_state
@@ -600,14 +611,15 @@ defmodule ExWire.Enterprise.SLAMonitor do
     if map_size(state.sla_definitions) == 0 do
       100.0
     else
-      compliances = Enum.map(state.sla_definitions, fn {_id, sla} ->
-        compliance = calculate_compliance(sla, state.metrics, :current_period)
-        
-        Enum.reduce(compliance, 0, fn metric, acc ->
-          acc + metric.compliance
-        end) / length(compliance)
-      end)
-      
+      compliances =
+        Enum.map(state.sla_definitions, fn {_id, sla} ->
+          compliance = calculate_compliance(sla, state.metrics, :current_period)
+
+          Enum.reduce(compliance, 0, fn metric, acc ->
+            acc + metric.compliance
+          end) / length(compliance)
+        end)
+
       Enum.sum(compliances) / length(compliances)
     end
   end
@@ -621,10 +633,10 @@ defmodule ExWire.Enterprise.SLAMonitor do
 
   defp generate_sla_report(sla, state, time_range) do
     {start_time, end_time} = get_time_range(time_range, sla.reporting_period)
-    
+
     compliance = calculate_compliance(sla, state.metrics, time_range)
     incidents = get_incidents_for_sla(state.incidents, sla.id, start_time, end_time)
-    
+
     %{
       sla_id: sla.id,
       sla_name: sla.name,
@@ -643,10 +655,10 @@ defmodule ExWire.Enterprise.SLAMonitor do
     Enum.reduce(state.sla_definitions, state, fn {sla_id, sla}, acc_state ->
       if should_generate_report?(sla) do
         report = generate_sla_report(sla, acc_state, :current_period)
-        
+
         # Send report
         send_report(report, sla, acc_state.notification_channels)
-        
+
         # Store report
         report_id = generate_report_id()
         put_in(acc_state.reports[report_id], report)
@@ -711,7 +723,7 @@ defmodule ExWire.Enterprise.SLAMonitor do
     case Map.get(state.alert_thresholds, metric_name) do
       nil ->
         state
-      
+
       threshold ->
         if threshold.enabled && exceeds_threshold?(value, threshold.threshold, metric_name) do
           trigger_alert(metric_name, value, threshold, state.notification_channels)
@@ -740,7 +752,7 @@ defmodule ExWire.Enterprise.SLAMonitor do
       action: threshold.action,
       timestamp: DateTime.utc_now()
     }
-    
+
     notify_alert(alert, channels)
   end
 
@@ -850,29 +862,31 @@ defmodule ExWire.Enterprise.SLAMonitor do
 
   defp get_time_range(:current_period, reporting_period) do
     end_time = DateTime.utc_now()
-    
-    start_time = case reporting_period do
-      :daily -> DateTime.add(end_time, -86400, :second)
-      :weekly -> DateTime.add(end_time, -604800, :second)
-      :monthly -> DateTime.add(end_time, -2592000, :second)
-    end
-    
+
+    start_time =
+      case reporting_period do
+        :daily -> DateTime.add(end_time, -86400, :second)
+        :weekly -> DateTime.add(end_time, -604_800, :second)
+        :monthly -> DateTime.add(end_time, -2_592_000, :second)
+      end
+
     {start_time, end_time}
   end
 
   defp get_time_range({start_time, end_time}, _), do: {start_time, end_time}
 
   defp get_metrics_in_range(metrics, type, start_time, end_time) do
-    metric_list = case type do
-      :availability -> metrics.availability
-      :response_time -> metrics.response_time
-      :throughput -> metrics.throughput
-      :error_rate -> metrics.error_rate
-    end
-    
+    metric_list =
+      case type do
+        :availability -> metrics.availability
+        :response_time -> metrics.response_time
+        :throughput -> metrics.throughput
+        :error_rate -> metrics.error_rate
+      end
+
     Enum.filter(metric_list, fn metric ->
       DateTime.compare(metric.timestamp, start_time) in [:gt, :eq] &&
-      DateTime.compare(metric.timestamp, end_time) in [:lt, :eq]
+        DateTime.compare(metric.timestamp, end_time) in [:lt, :eq]
     end)
   end
 
@@ -914,8 +928,8 @@ defmodule ExWire.Enterprise.SLAMonitor do
   defp get_incidents_for_sla(incidents, sla_id, start_time, end_time) do
     Enum.filter(incidents, fn incident ->
       incident.sla_id == sla_id &&
-      DateTime.compare(incident.started_at, start_time) in [:gt, :eq] &&
-      DateTime.compare(incident.started_at, end_time) in [:lt, :eq]
+        DateTime.compare(incident.started_at, start_time) in [:gt, :eq] &&
+        DateTime.compare(incident.started_at, end_time) in [:lt, :eq]
     end)
   end
 
@@ -942,7 +956,7 @@ defmodule ExWire.Enterprise.SLAMonitor do
 
   defp calculate_mttr(incidents) do
     resolved = Enum.filter(incidents, &(&1.status == :resolved))
-    
+
     if length(resolved) == 0 do
       0
     else

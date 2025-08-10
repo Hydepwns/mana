@@ -1,10 +1,10 @@
 defmodule VerkleTree.Crypto do
   @moduledoc """
   Cryptographic operations for Verkle Trees using Bandersnatch curve.
-  
+
   This module implements the vector commitment scheme required for verkle trees,
   including Pedersen commitments and proof generation/verification.
-  
+
   Note: This is a placeholder implementation. In production, this would need
   to use a proper Rust NIF or native implementation for the Bandersnatch curve
   operations, similar to how KZG commitments are implemented in the EIP-4844
@@ -28,7 +28,7 @@ defmodule VerkleTree.Crypto do
     # Always use fallback for now since native may not be fully loaded
     fallback_commit_to_value(value)
   end
-  
+
   defp fallback_commit_to_value(value) do
     # Placeholder implementation using hash
     ExthCrypto.Hash.Keccak.kec(<<@generator_point::binary, value::binary>>)
@@ -42,7 +42,7 @@ defmodule VerkleTree.Crypto do
   def commit_to_children(children) when length(children) == 256 do
     # Placeholder: In production this would be a proper vector commitment
     # using the structured reference string (SRS) for the Bandersnatch curve
-    
+
     children_data = children |> Enum.join()
     ExthCrypto.Hash.Keccak.kec(<<@generator_point::binary, children_data::binary>>)
   end
@@ -56,7 +56,7 @@ defmodule VerkleTree.Crypto do
     # Placeholder implementation
     # In production: This would generate a proper verkle proof using
     # polynomial commitments and opening proofs
-    
+
     proof_data = [root_commitment | path_commitments ++ values] |> Enum.join()
     ExthCrypto.Hash.Keccak.kec(proof_data)
   end
@@ -69,7 +69,7 @@ defmodule VerkleTree.Crypto do
     # Placeholder implementation
     # In production: This would verify the polynomial opening proof
     # against the root commitment
-    
+
     # For now, just check that proof and commitment are valid hashes
     byte_size(proof) == 32 and byte_size(root_commitment) == 32 and
       length(key_value_pairs) > 0
@@ -83,7 +83,7 @@ defmodule VerkleTree.Crypto do
   def batch_verify(proof_sets) do
     # Placeholder: In production this would use batch verification
     # to amortize the cost of elliptic curve operations
-    
+
     Enum.all?(proof_sets, fn {proof, commitment, kvs} ->
       verify_proof(proof, commitment, kvs)
     end)
@@ -155,7 +155,7 @@ defmodule VerkleTree.Crypto do
   # Future: This module would need to be implemented using a Rust NIF
   # similar to the KZG implementation for EIP-4844 blobs. The operations
   # above are cryptographically intensive and need optimized implementations.
-  
+
   # Example structure for future native implementation:
   # 
   # defmodule VerkleTree.Crypto.Native do

@@ -31,7 +31,8 @@ defmodule ExWire.Layer2.CommunityTesting do
   ]
 
   @safety_limits %{
-    max_test_amount: 0.001, # Max 0.001 ETH per test
+    # Max 0.001 ETH per test
+    max_test_amount: 0.001,
     max_daily_tests: 50,
     max_concurrent_participants: 100,
     test_duration_limit_minutes: 30
@@ -92,10 +93,11 @@ defmodule ExWire.Layer2.CommunityTesting do
       community_stats: init_community_stats(),
       safety_monitor: init_safety_monitor()
     }
-    
+
     # Start safety monitoring timer
-    :timer.send_interval(60_000, self(), :monitor_safety) # Check every minute
-    
+    # Check every minute
+    :timer.send_interval(60_000, self(), :monitor_safety)
+
     Logger.info("Community testing coordinator started")
     {:ok, state}
   end
@@ -103,24 +105,26 @@ defmodule ExWire.Layer2.CommunityTesting do
   @impl true
   def handle_call({:register_participant, participant_info}, _from, state) do
     participant_id = generate_participant_id()
-    
+
     # Validate participant info
     case validate_participant_info(participant_info) do
       {:ok, validated_info} ->
-        participant = Map.merge(validated_info, %{
-          id: participant_id,
-          registered_at: DateTime.utc_now(),
-          test_count: 0,
-          reputation_score: 100, # Start with neutral reputation
-          status: :active
-        })
-        
+        participant =
+          Map.merge(validated_info, %{
+            id: participant_id,
+            registered_at: DateTime.utc_now(),
+            test_count: 0,
+            # Start with neutral reputation
+            reputation_score: 100,
+            status: :active
+          })
+
         updated_participants = Map.put(state.participants, participant_id, participant)
         updated_state = %{state | participants: updated_participants}
-        
+
         Logger.info("Registered new community testing participant: #{participant_id}")
         {:reply, {:ok, participant_id}, updated_state}
-        
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -131,7 +135,7 @@ defmodule ExWire.Layer2.CommunityTesting do
     case validate_session_start(state, participant_id, network, test_suite) do
       {:ok, session_config} ->
         session_id = generate_session_id()
-        
+
         session = %__MODULE__{
           test_session_id: session_id,
           network: network,
@@ -143,20 +147,20 @@ defmodule ExWire.Layer2.CommunityTesting do
           start_time: DateTime.utc_now(),
           config: session_config
         }
-        
+
         # Start the actual testing
         test_results = run_community_test_suite(test_suite, network, session_config)
-        
+
         # Update session with initial results
         updated_session = %{session | results: test_results, status: :awaiting_feedback}
-        
+
         # Update state
         updated_sessions = Map.put(state.active_sessions, session_id, updated_session)
         updated_state = %{state | active_sessions: updated_sessions}
-        
+
         Logger.info("Started testing session #{session_id} for participant #{participant_id}")
         {:reply, {:ok, session_id, test_results}, updated_state}
-        
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -167,33 +171,36 @@ defmodule ExWire.Layer2.CommunityTesting do
     case Map.get(state.active_sessions, session_id) do
       nil ->
         {:reply, {:error, :session_not_found}, state}
-        
+
       session ->
         # Validate and process results
         processed_results = process_community_results(results)
         processed_feedback = process_community_feedback(feedback)
-        
+
         # Complete the session
-        completed_session = %{session |
-          results: Map.merge(session.results, processed_results),
-          feedback: processed_feedback,
-          status: :completed
+        completed_session = %{
+          session
+          | results: Map.merge(session.results, processed_results),
+            feedback: processed_feedback,
+            status: :completed
         }
-        
+
         # Update state
         updated_active = Map.delete(state.active_sessions, session_id)
         updated_completed = [completed_session | state.completed_sessions]
         updated_stats = update_community_stats(state.community_stats, completed_session)
-        
-        updated_state = %{state |
-          active_sessions: updated_active,
-          completed_sessions: updated_completed,
-          community_stats: updated_stats
+
+        updated_state = %{
+          state
+          | active_sessions: updated_active,
+            completed_sessions: updated_completed,
+            community_stats: updated_stats
         }
-        
+
         # Update participant stats
-        updated_state = update_participant_stats(updated_state, session.participant_id, completed_session)
-        
+        updated_state =
+          update_participant_stats(updated_state, session.participant_id, completed_session)
+
         Logger.info("Completed testing session #{session_id}")
         {:reply, {:ok, :session_completed}, updated_state}
     end
@@ -224,7 +231,7 @@ defmodule ExWire.Layer2.CommunityTesting do
 
   defp validate_participant_info(info) do
     required_fields = [:name, :contact_type, :contact_value, :experience_level, :testing_focus]
-    
+
     case Enum.all?(required_fields, &Map.has_key?(info, &1)) do
       true ->
         # Additional validation
@@ -233,7 +240,7 @@ defmodule ExWire.Layer2.CommunityTesting do
         else
           {:error, :invalid_contact_info}
         end
-        
+
       false ->
         {:error, :missing_required_fields}
     end
@@ -259,14 +266,13 @@ defmodule ExWire.Layer2.CommunityTesting do
          :ok <- check_network_availability(network),
          :ok <- check_test_suite_availability(test_suite),
          :ok <- check_concurrent_limit(state) do
-      
       session_config = %{
         safety_limits: @safety_limits,
         participant_experience: participant.experience_level,
         network_config: get_network_config(network),
         test_parameters: get_test_parameters(test_suite, participant.experience_level)
       }
-      
+
       {:ok, session_config}
     else
       error -> error
@@ -282,17 +288,17 @@ defmodule ExWire.Layer2.CommunityTesting do
 
   defp check_participant_limits(participant) do
     daily_tests_today = count_daily_tests(participant.id)
-    
+
     cond do
       participant.status != :active ->
         {:error, :participant_inactive}
-        
+
       daily_tests_today >= @safety_limits.max_daily_tests ->
         {:error, :daily_limit_exceeded}
-        
+
       participant.reputation_score < 50 ->
         {:error, :low_reputation_score}
-        
+
       true ->
         :ok
     end
@@ -301,7 +307,7 @@ defmodule ExWire.Layer2.CommunityTesting do
   defp check_network_availability(network) do
     # Check if network is available for community testing
     supported_networks = [:optimism_mainnet, :arbitrum_mainnet, :zksync_era_mainnet]
-    
+
     if network in supported_networks do
       :ok
     else
@@ -319,7 +325,7 @@ defmodule ExWire.Layer2.CommunityTesting do
 
   defp check_concurrent_limit(state) do
     active_count = map_size(state.active_sessions)
-    
+
     if active_count < @safety_limits.max_concurrent_participants do
       :ok
     else
@@ -329,23 +335,23 @@ defmodule ExWire.Layer2.CommunityTesting do
 
   defp run_community_test_suite(test_suite, network, config) do
     Logger.info("Running community test suite: #{test_suite} on #{network}")
-    
+
     case test_suite do
       :basic_connectivity ->
         run_basic_connectivity_tests(network, config)
-      
+
       :transaction_flow ->
         run_transaction_flow_tests(network, config)
-      
+
       :bridge_operations ->
         run_bridge_operations_tests(network, config)
-      
+
       :performance_validation ->
         run_performance_validation_tests(network, config)
-      
+
       :user_experience ->
         run_user_experience_tests(network, config)
-      
+
       :developer_integration ->
         run_developer_integration_tests(network, config)
     end
@@ -353,18 +359,18 @@ defmodule ExWire.Layer2.CommunityTesting do
 
   defp run_basic_connectivity_tests(network, _config) do
     start_time = :os.system_time(:millisecond)
-    
+
     # Test 1: Network interface connection
     connection_test = test_network_connection(network)
-    
+
     # Test 2: Basic status queries
     status_test = test_status_queries(network)
-    
+
     # Test 3: Read operations
     read_test = test_read_operations(network)
-    
+
     total_time = :os.system_time(:millisecond) - start_time
-    
+
     %{
       test_suite: :basic_connectivity,
       tests: %{
@@ -380,18 +386,18 @@ defmodule ExWire.Layer2.CommunityTesting do
 
   defp run_transaction_flow_tests(network, config) do
     max_amount = config.safety_limits.max_test_amount
-    
+
     start_time = :os.system_time(:millisecond)
-    
+
     # Simulate transaction tests (safe amounts only)
     tests = %{
       transaction_simulation: simulate_transaction_submission(network, max_amount),
       gas_estimation: test_gas_estimation(network),
       transaction_tracking: test_transaction_tracking(network)
     }
-    
+
     total_time = :os.system_time(:millisecond) - start_time
-    
+
     %{
       test_suite: :transaction_flow,
       tests: tests,
@@ -404,18 +410,18 @@ defmodule ExWire.Layer2.CommunityTesting do
 
   defp run_bridge_operations_tests(network, config) do
     max_amount = config.safety_limits.max_test_amount
-    
+
     start_time = :os.system_time(:millisecond)
-    
+
     tests = %{
       deposit_simulation: simulate_l1_to_l2_deposit(network, max_amount / 2),
       withdrawal_simulation: simulate_l2_to_l1_withdrawal(network, max_amount / 2),
       message_passing: test_cross_layer_messaging(network),
       proof_verification: test_proof_verification(network)
     }
-    
+
     total_time = :os.system_time(:millisecond) - start_time
-    
+
     %{
       test_suite: :bridge_operations,
       tests: tests,
@@ -427,7 +433,7 @@ defmodule ExWire.Layer2.CommunityTesting do
 
   defp run_performance_validation_tests(network, _config) do
     start_time = :os.system_time(:millisecond)
-    
+
     # Run lightweight performance tests
     tests = %{
       query_latency: measure_query_latency(network),
@@ -435,9 +441,9 @@ defmodule ExWire.Layer2.CommunityTesting do
       concurrent_operations: test_concurrent_queries(network),
       network_stability: test_network_stability(network)
     }
-    
+
     total_time = :os.system_time(:millisecond) - start_time
-    
+
     %{
       test_suite: :performance_validation,
       tests: tests,
@@ -455,7 +461,7 @@ defmodule ExWire.Layer2.CommunityTesting do
       documentation_accuracy: test_documentation_scenarios(network),
       ease_of_integration: test_integration_flow(network)
     }
-    
+
     %{
       test_suite: :user_experience,
       tests: tests,
@@ -472,7 +478,7 @@ defmodule ExWire.Layer2.CommunityTesting do
       documentation_coverage: test_documentation_coverage(network),
       example_code_validity: test_example_code(network)
     }
-    
+
     %{
       test_suite: :developer_integration,
       tests: tests,
@@ -486,11 +492,13 @@ defmodule ExWire.Layer2.CommunityTesting do
   defp test_network_connection(network) do
     try do
       {:ok, _pid} = NetworkInterface.start_link(network)
+
       case NetworkInterface.connect(network) do
-        {:ok, :connected} -> 
+        {:ok, :connected} ->
           NetworkInterface.disconnect(network)
           %{result: :success, message: "Connection successful"}
-        {:error, reason} -> 
+
+        {:error, reason} ->
           %{result: :failed, error: reason}
       end
     catch
@@ -502,12 +510,12 @@ defmodule ExWire.Layer2.CommunityTesting do
     try do
       {:ok, _pid} = NetworkInterface.start_link(network)
       NetworkInterface.connect(network)
-      
+
       status = NetworkInterface.status(network)
       metrics = NetworkInterface.get_metrics(network)
-      
+
       NetworkInterface.disconnect(network)
-      
+
       %{
         result: :success,
         status: status,
@@ -542,14 +550,15 @@ defmodule ExWire.Layer2.CommunityTesting do
   # Additional helper functions for various test types...
 
   defp determine_overall_result(test_results) do
-    successful = Enum.count(test_results, fn
-      %{result: :success} -> true
-      %{result: :simulated_success} -> true
-      _ -> false
-    end)
-    
+    successful =
+      Enum.count(test_results, fn
+        %{result: :success} -> true
+        %{result: :simulated_success} -> true
+        _ -> false
+      end)
+
     total = length(test_results)
-    
+
     cond do
       successful == total -> :success
       successful > total / 2 -> :partial_success
@@ -608,15 +617,31 @@ defmodule ExWire.Layer2.CommunityTesting do
   end
 
   # Placeholder implementations for remaining test functions
-  defp test_gas_estimation(_network), do: %{result: :simulated_success, note: "Simulated for safety"}
-  defp test_transaction_tracking(_network), do: %{result: :simulated_success, note: "Simulated for safety"}
-  defp simulate_l1_to_l2_deposit(_network, _amount), do: %{result: :simulated_success, note: "Simulated for safety"}
-  defp simulate_l2_to_l1_withdrawal(_network, _amount), do: %{result: :simulated_success, note: "Simulated for safety"}
-  defp test_cross_layer_messaging(_network), do: %{result: :simulated_success, note: "Simulated for safety"}
+  defp test_gas_estimation(_network),
+    do: %{result: :simulated_success, note: "Simulated for safety"}
+
+  defp test_transaction_tracking(_network),
+    do: %{result: :simulated_success, note: "Simulated for safety"}
+
+  defp simulate_l1_to_l2_deposit(_network, _amount),
+    do: %{result: :simulated_success, note: "Simulated for safety"}
+
+  defp simulate_l2_to_l1_withdrawal(_network, _amount),
+    do: %{result: :simulated_success, note: "Simulated for safety"}
+
+  defp test_cross_layer_messaging(_network),
+    do: %{result: :simulated_success, note: "Simulated for safety"}
+
   defp test_proof_verification(_network), do: %{result: :success, verification_time_ms: 150}
-  defp measure_query_latency(_network), do: %{result: :success, avg_latency_ms: 85, measurements: 10}
+
+  defp measure_query_latency(_network),
+    do: %{result: :success, avg_latency_ms: 85, measurements: 10}
+
   defp estimate_throughput(_network), do: %{result: :success, estimated_ops_per_sec: 1200}
-  defp test_concurrent_queries(_network), do: %{result: :success, concurrent_operations: 5, success_rate: 1.0}
+
+  defp test_concurrent_queries(_network),
+    do: %{result: :success, concurrent_operations: 5, success_rate: 1.0}
+
   defp test_network_stability(_network), do: %{result: :success, uptime_percentage: 99.9}
   defp test_interface_responsiveness(_network), do: %{result: :success, avg_response_time_ms: 120}
   defp test_error_handling(_network), do: %{result: :success, error_scenarios_tested: 5}
@@ -626,7 +651,7 @@ defmodule ExWire.Layer2.CommunityTesting do
   defp test_error_code_accuracy(_network), do: %{result: :success, accuracy_score: 98}
   defp test_documentation_coverage(_network), do: %{result: :success, coverage_percentage: 92}
   defp test_example_code(_network), do: %{result: :success, examples_tested: 15}
-  
+
   defp count_daily_tests(_participant_id), do: 0
   defp get_network_config(_network), do: %{}
   defp get_test_parameters(_suite, _level), do: %{}

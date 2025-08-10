@@ -9,31 +9,29 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
 
   @type priority :: :high | :normal | :low
   @type message_status :: :pending | :processing | :completed | :failed
-  
+
   @type queued_message :: %{
-    id: String.t(),
-    message: map(),
-    priority: priority(),
-    status: message_status(),
-    enqueued_at: DateTime.t(),
-    attempts: non_neg_integer()
-  }
+          id: String.t(),
+          message: map(),
+          priority: priority(),
+          status: message_status(),
+          enqueued_at: DateTime.t(),
+          attempts: non_neg_integer()
+        }
 
   @type t :: %__MODULE__{
-    pending: list(queued_message()),
-    processing: map(),
-    completed: list(queued_message()),
-    failed: list(queued_message()),
-    max_retries: non_neg_integer()
-  }
+          pending: list(queued_message()),
+          processing: map(),
+          completed: list(queued_message()),
+          failed: list(queued_message()),
+          max_retries: non_neg_integer()
+        }
 
-  defstruct [
-    pending: [],
-    processing: %{},
-    completed: [],
-    failed: [],
-    max_retries: 3
-  ]
+  defstruct pending: [],
+            processing: %{},
+            completed: [],
+            failed: [],
+            max_retries: 3
 
   @doc """
   Creates a new message queue.
@@ -43,7 +41,7 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
     queue = %__MODULE__{
       max_retries: opts[:max_retries] || 3
     }
-    
+
     {:ok, queue}
   end
 
@@ -53,7 +51,7 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
   @spec enqueue(t(), map(), keyword()) :: {:ok, t()}
   def enqueue(queue, message, opts \\ []) do
     priority = opts[:priority] || :normal
-    
+
     queued_message = %{
       id: message.id || generate_id(),
       message: message,
@@ -62,9 +60,9 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
       enqueued_at: DateTime.utc_now(),
       attempts: 0
     }
-    
+
     new_pending = insert_by_priority(queue.pending, queued_message)
-    
+
     {:ok, %{queue | pending: new_pending}}
   end
 
@@ -76,19 +74,13 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
     case queue.pending do
       [] ->
         {:empty, queue}
-      
+
       [message | rest] ->
-        processing_message = %{message | 
-          status: :processing,
-          attempts: message.attempts + 1
-        }
-        
+        processing_message = %{message | status: :processing, attempts: message.attempts + 1}
+
         new_processing = Map.put(queue.processing, message.id, processing_message)
-        
-        {:ok, processing_message, %{queue | 
-          pending: rest,
-          processing: new_processing
-        }}
+
+        {:ok, processing_message, %{queue | pending: rest, processing: new_processing}}
     end
   end
 
@@ -100,15 +92,16 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
     case Map.get(queue.processing, message_id) do
       nil ->
         {:error, :not_found}
-      
+
       message ->
         completed_message = %{message | status: :completed}
-        
-        new_queue = %{queue |
-          processing: Map.delete(queue.processing, message_id),
-          completed: [completed_message | queue.completed]
+
+        new_queue = %{
+          queue
+          | processing: Map.delete(queue.processing, message_id),
+            completed: [completed_message | queue.completed]
         }
-        
+
         {:ok, new_queue}
     end
   end
@@ -121,37 +114,33 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
     case Map.get(queue.processing, message_id) do
       nil ->
         {:error, :not_found}
-      
+
       message ->
         if message.attempts < queue.max_retries do
           # Retry the message
-          retry_message = %{message | 
-            status: :pending,
-            retry_reason: reason
+          retry_message = %{message | status: :pending, retry_reason: reason}
+
+          new_queue = %{
+            queue
+            | processing: Map.delete(queue.processing, message_id),
+              pending: insert_by_priority(queue.pending, retry_message)
           }
-          
-          new_queue = %{queue |
-            processing: Map.delete(queue.processing, message_id),
-            pending: insert_by_priority(queue.pending, retry_message)
-          }
-          
+
           Logger.info("Retrying message #{message_id}, attempt #{message.attempts + 1}")
-          
+
           {:ok, new_queue}
         else
           # Max retries exceeded
-          failed_message = %{message | 
-            status: :failed,
-            failure_reason: reason
+          failed_message = %{message | status: :failed, failure_reason: reason}
+
+          new_queue = %{
+            queue
+            | processing: Map.delete(queue.processing, message_id),
+              failed: [failed_message | queue.failed]
           }
-          
-          new_queue = %{queue |
-            processing: Map.delete(queue.processing, message_id),
-            failed: [failed_message | queue.failed]
-          }
-          
+
           Logger.warn("Message #{message_id} failed after #{message.attempts} attempts")
-          
+
           {:ok, new_queue}
         end
     end
@@ -186,10 +175,11 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
   @spec cleanup(t(), non_neg_integer()) :: t()
   def cleanup(queue, max_age_seconds \\ 3600) do
     cutoff = DateTime.add(DateTime.utc_now(), -max_age_seconds, :second)
-    
-    %{queue |
-      completed: filter_recent(queue.completed, cutoff),
-      failed: filter_recent(queue.failed, cutoff)
+
+    %{
+      queue
+      | completed: filter_recent(queue.completed, cutoff),
+        failed: filter_recent(queue.failed, cutoff)
     }
   end
 
@@ -201,11 +191,12 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
 
   defp insert_by_priority(list, message) do
     priority_value = priority_to_value(message.priority)
-    
-    {before, after_list} = Enum.split_while(list, fn m ->
-      priority_to_value(m.priority) >= priority_value
-    end)
-    
+
+    {before, after_list} =
+      Enum.split_while(list, fn m ->
+        priority_to_value(m.priority) >= priority_value
+      end)
+
     before ++ [message | after_list]
   end
 

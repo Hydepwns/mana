@@ -1,6 +1,6 @@
 defmodule JSONRPC2.Servers.WebSocket do
   @behaviour :cowboy_websocket
-  
+
   require Logger
   alias JSONRPC2.SubscriptionManager
 
@@ -19,7 +19,7 @@ defmodule JSONRPC2.Servers.WebSocket do
       raise ArgumentError,
         message: "Could not load handler for #{inspect(__MODULE__)}, got: #{inspect(handler)}"
     end
-    
+
     # Register this WebSocket connection
     Logger.info("WebSocket connection established: #{inspect(self())}")
 
@@ -35,7 +35,7 @@ defmodule JSONRPC2.Servers.WebSocket do
     json = Jason.encode!(notification)
     {:reply, {:text, json}, state}
   end
-  
+
   def websocket_info(_info, state) do
     {:ok, state}
   end
@@ -50,7 +50,7 @@ defmodule JSONRPC2.Servers.WebSocket do
   defp do_handle_jsonrpc2(body_params, state = %{handler: handler}) do
     # Pass WebSocket PID as context for subscription methods
     context = %{ws_pid: self()}
-    
+
     resp_body =
       case handler.handle(body_params, context) do
         {:reply, reply} -> reply

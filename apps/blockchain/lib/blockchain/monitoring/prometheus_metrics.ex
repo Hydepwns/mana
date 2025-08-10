@@ -1,7 +1,7 @@
 defmodule Blockchain.Monitoring.PrometheusMetrics do
   @moduledoc """
   Prometheus metrics registry for Mana-Ethereum client.
-  
+
   This module manages metric definitions and provides a registry
   of all metrics for the monitoring system. Currently implements
   a simple metrics collection system that can be extended with
@@ -21,7 +21,7 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
   # Metric categories and names
   @blockchain_metrics [
     "mana_blockchain_height",
-    "mana_block_processing_seconds", 
+    "mana_block_processing_seconds",
     "mana_blocks_processed_total"
   ]
 
@@ -97,13 +97,14 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
   @impl true
   def init(_opts) do
     # Create ETS table for storing metrics
-    metrics_table = :ets.new(:prometheus_metrics, [
-      :set,
-      :public,
-      :named_table,
-      {:read_concurrency, true},
-      {:write_concurrency, true}
-    ])
+    metrics_table =
+      :ets.new(:prometheus_metrics, [
+        :set,
+        :public,
+        :named_table,
+        {:read_concurrency, true},
+        {:write_concurrency, true}
+      ])
 
     state = %__MODULE__{
       metrics_table: metrics_table,
@@ -144,12 +145,15 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
 
   def handle_cast({:inc_counter, metric_name, increment, labels}, state) do
     key = {metric_name, :counter, labels}
+
     case :ets.lookup(state.metrics_table, key) do
       [{^key, current_value}] ->
         :ets.insert(state.metrics_table, {key, current_value + increment})
+
       [] ->
         :ets.insert(state.metrics_table, {key, increment})
     end
+
     {:noreply, state}
   end
 
@@ -157,23 +161,25 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
     # For simplicity, store histogram observations as sum and count
     sum_key = {metric_name <> "_sum", :gauge, labels}
     count_key = {metric_name <> "_count", :counter, labels}
-    
+
     # Update sum
     case :ets.lookup(state.metrics_table, sum_key) do
       [{^sum_key, current_sum}] ->
         :ets.insert(state.metrics_table, {sum_key, current_sum + value})
+
       [] ->
         :ets.insert(state.metrics_table, {sum_key, value})
     end
-    
+
     # Update count
     case :ets.lookup(state.metrics_table, count_key) do
       [{^count_key, current_count}] ->
         :ets.insert(state.metrics_table, {count_key, current_count + 1})
+
       [] ->
         :ets.insert(state.metrics_table, {count_key, 1})
     end
-    
+
     {:noreply, state}
   end
 
@@ -183,13 +189,13 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
     # Initialize blockchain metrics
     :ets.insert(table, {{"mana_blockchain_height", :gauge, %{}}, 0})
     :ets.insert(table, {{"mana_blocks_processed_total", :counter, %{}}, 0})
-    
+
     # Initialize P2P metrics
     :ets.insert(table, {{"mana_p2p_peers_connected", :gauge, %{"protocol" => "eth"}}, 0})
     :ets.insert(table, {{"mana_p2p_peers_connected", :gauge, %{"protocol" => "libp2p"}}, 0})
     :ets.insert(table, {{"mana_p2p_messages_total", :counter, %{"direction" => "inbound"}}, 0})
     :ets.insert(table, {{"mana_p2p_messages_total", :counter, %{"direction" => "outbound"}}, 0})
-    
+
     # Initialize system metrics
     update_system_metrics_in_table(table)
   end
@@ -200,26 +206,36 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
     total_memory = Keyword.get(memory_info, :total, 0)
     process_memory = Keyword.get(memory_info, :processes, 0)
     atom_memory = Keyword.get(memory_info, :atom, 0)
-    
+
     :ets.insert(table, {{"mana_memory_usage_bytes", :gauge, %{"type" => "total"}}, total_memory})
-    :ets.insert(table, {{"mana_memory_usage_bytes", :gauge, %{"type" => "processes"}}, process_memory})
+
+    :ets.insert(
+      table,
+      {{"mana_memory_usage_bytes", :gauge, %{"type" => "processes"}}, process_memory}
+    )
+
     :ets.insert(table, {{"mana_memory_usage_bytes", :gauge, %{"type" => "atom"}}, atom_memory})
-    
+
     # Process count
     process_count = :erlang.system_info(:process_count)
     :ets.insert(table, {{"mana_erlang_processes", :gauge, %{}}, process_count})
-    
+
     # Schedulers
     schedulers = :erlang.system_info(:schedulers)
     :ets.insert(table, {{"mana_erlang_schedulers", :gauge, %{}}, schedulers})
-    
+
     # Disk usage (if available)
     case get_disk_usage() do
       {available, total} when total > 0 ->
-        :ets.insert(table, {{"mana_disk_usage_bytes", :gauge, %{"type" => "available"}}, available})
+        :ets.insert(
+          table,
+          {{"mana_disk_usage_bytes", :gauge, %{"type" => "available"}}, available}
+        )
+
         :ets.insert(table, {{"mana_disk_usage_bytes", :gauge, %{"type" => "total"}}, total})
         usage_ratio = (total - available) / total
         :ets.insert(table, {{"mana_disk_usage_ratio", :gauge, %{}}, usage_ratio})
+
       _ ->
         :ok
     end
@@ -234,17 +250,18 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
           [line | _] = lines
           parts = String.split(line, ~r/\s+/)
           [_filesystem, total_str, _used_str, available_str | _] = parts
-          
+
           total = String.to_integer(total_str)
           available = String.to_integer(available_str)
-          
+
           {available, total}
         rescue
           _ -> {0, 0}
         end
-      
+
       _ ->
-        {0, 0}  # Windows or other systems
+        # Windows or other systems
+        {0, 0}
     end
   end
 
@@ -254,13 +271,13 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
 
   defp format_prometheus_metrics(metrics) do
     # Group metrics by name
-    grouped_metrics = 
+    grouped_metrics =
       metrics
       |> Enum.group_by(fn {{name, _type, _labels}, _value} -> name end)
       |> Enum.sort()
 
     # Generate Prometheus format
-    prometheus_output = 
+    prometheus_output =
       Enum.map(grouped_metrics, fn {metric_name, metric_entries} ->
         format_metric_family(metric_name, metric_entries)
       end)
@@ -279,16 +296,18 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
   defp format_metric_family(metric_name, entries) do
     # Determine metric type from first entry
     {{_name, type, _labels}, _value} = List.first(entries)
-    type_str = case type do
-      :counter -> "counter"
-      :gauge -> "gauge"
-      :histogram -> "histogram"
-    end
+
+    type_str =
+      case type do
+        :counter -> "counter"
+        :gauge -> "gauge"
+        :histogram -> "histogram"
+      end
 
     help_text = get_help_text(metric_name)
-    
+
     # Format entries
-    formatted_entries = 
+    formatted_entries =
       entries
       |> Enum.map(fn {{_name, _type, labels}, value} ->
         labels_str = format_labels(labels)
@@ -304,16 +323,19 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
   end
 
   defp format_labels(labels) when map_size(labels) == 0, do: ""
+
   defp format_labels(labels) do
-    labels_list = 
+    labels_list =
       labels
       |> Enum.map(fn {key, value} -> "#{key}=\"#{value}\"" end)
       |> Enum.join(",")
-    
+
     "{#{labels_list}}"
   end
 
-  defp format_value(value) when is_float(value), do: :erlang.float_to_binary(value, [{:decimals, 6}])
+  defp format_value(value) when is_float(value),
+    do: :erlang.float_to_binary(value, [{:decimals, 6}])
+
   defp format_value(value), do: to_string(value)
 
   defp get_help_text(metric_name) do

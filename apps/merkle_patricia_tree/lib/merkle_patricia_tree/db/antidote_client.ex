@@ -325,48 +325,60 @@ defmodule MerklePatriciaTree.DB.AntidoteClient do
   def batch_operations(client, bucket, operations, tx_id) do
     with_retry(client, fn ->
       # Group operations by type for efficiency
-      reads = operations
+      reads =
+        operations
         |> Enum.filter(fn op -> match?({:get, _}, op) end)
         |> Enum.map(fn {:get, key} -> key end)
 
-      writes = operations
+      writes =
+        operations
         |> Enum.filter(fn op -> match?({:put, _, _}, op) end)
         |> Enum.map(fn {:put, key, value} -> {key, value} end)
 
-      deletes = operations
+      deletes =
+        operations
         |> Enum.filter(fn op -> match?({:delete, _}, op) end)
         |> Enum.map(fn {:delete, key} -> key end)
 
       # Process operations and collect results
-      read_results = if reads != [] do
-        case batch_read(client, bucket, reads, tx_id) do
-          {:ok, results} -> results
-          {:error, reason} -> 
-            throw({:error, "Batch read failed: #{inspect(reason)}"})
-        end
-      else
-        []
-      end
+      read_results =
+        if reads != [] do
+          case batch_read(client, bucket, reads, tx_id) do
+            {:ok, results} ->
+              results
 
-      write_results = if writes != [] do
-        case batch_write(client, bucket, writes, tx_id) do
-          {:ok, results} -> results
-          {:error, reason} -> 
-            throw({:error, "Batch write failed: #{inspect(reason)}"})
+            {:error, reason} ->
+              throw({:error, "Batch read failed: #{inspect(reason)}"})
+          end
+        else
+          []
         end
-      else
-        []
-      end
 
-      delete_results = if deletes != [] do
-        case batch_delete(client, bucket, deletes, tx_id) do
-          {:ok, results} -> results
-          {:error, reason} -> 
-            throw({:error, "Batch delete failed: #{inspect(reason)}"})
+      write_results =
+        if writes != [] do
+          case batch_write(client, bucket, writes, tx_id) do
+            {:ok, results} ->
+              results
+
+            {:error, reason} ->
+              throw({:error, "Batch write failed: #{inspect(reason)}"})
+          end
+        else
+          []
         end
-      else
-        []
-      end
+
+      delete_results =
+        if deletes != [] do
+          case batch_delete(client, bucket, deletes, tx_id) do
+            {:ok, results} ->
+              results
+
+            {:error, reason} ->
+              throw({:error, "Batch delete failed: #{inspect(reason)}"})
+          end
+        else
+          []
+        end
 
       # Combine results in order of original operations
       all_results = read_results ++ write_results ++ delete_results
@@ -378,36 +390,39 @@ defmodule MerklePatriciaTree.DB.AntidoteClient do
 
   # Private helper functions for batch operations
   defp batch_read(client, bucket, keys, tx_id) do
-    results = Enum.map(keys, fn key ->
-      case get(client, bucket, key, tx_id) do
-        {:ok, value} -> {:ok, value}
-        {:error, :not_found} -> {:error, :not_found}
-        {:error, _reason} -> {:error, :read_failed}
-      end
-    end)
-    
+    results =
+      Enum.map(keys, fn key ->
+        case get(client, bucket, key, tx_id) do
+          {:ok, value} -> {:ok, value}
+          {:error, :not_found} -> {:error, :not_found}
+          {:error, _reason} -> {:error, :read_failed}
+        end
+      end)
+
     {:ok, results}
   end
-  
+
   defp batch_write(client, bucket, key_value_pairs, tx_id) do
-    results = Enum.map(key_value_pairs, fn {key, value} ->
-      case put(client, bucket, key, value, tx_id) do
-        :ok -> :ok
-        {:error, _reason} -> {:error, :write_failed}
-      end
-    end)
-    
+    results =
+      Enum.map(key_value_pairs, fn {key, value} ->
+        case put(client, bucket, key, value, tx_id) do
+          :ok -> :ok
+          {:error, _reason} -> {:error, :write_failed}
+        end
+      end)
+
     {:ok, results}
   end
-  
+
   defp batch_delete(client, bucket, keys, tx_id) do
-    results = Enum.map(keys, fn key ->
-      case delete(client, bucket, key, tx_id) do
-        :ok -> :ok
-        {:error, _reason} -> {:error, :delete_failed}
-      end
-    end)
-    
+    results =
+      Enum.map(keys, fn key ->
+        case delete(client, bucket, key, tx_id) do
+          :ok -> :ok
+          {:error, _reason} -> {:error, :delete_failed}
+        end
+      end)
+
     {:ok, results}
   end
 

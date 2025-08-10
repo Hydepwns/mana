@@ -56,30 +56,34 @@ defmodule JSONRPC2.Server.Handler do
   """
   @callback handle_request(method :: JSONRPC2.method(), params :: JSONRPC2.params()) ::
               JSONRPC2.json() | no_return
-  @callback handle_request(method :: JSONRPC2.method(), params :: JSONRPC2.params(), context :: map()) ::
+  @callback handle_request(
+              method :: JSONRPC2.method(),
+              params :: JSONRPC2.params(),
+              context :: map()
+            ) ::
               JSONRPC2.json() | no_return
-  
+
   @optional_callbacks handle_request: 3
 
   defmacro __using__(_) do
     quote do
       @behaviour unquote(__MODULE__)
-      
+
       @spec handle(String.t()) :: {:reply, String.t()} | :noreply
       def handle(json) do
         unquote(__MODULE__).handle(__MODULE__, json)
       end
-      
+
       @spec handle(String.t(), map()) :: {:reply, String.t()} | :noreply
       def handle(json, context) do
         unquote(__MODULE__).handle(__MODULE__, json, context)
       end
-      
+
       # Default implementation for 3-arity handle_request that calls 2-arity
       def handle_request(method, params, _context) do
         handle_request(method, params)
       end
-      
+
       defoverridable handle_request: 3
     end
   end
@@ -88,7 +92,7 @@ defmodule JSONRPC2.Server.Handler do
   def handle(module, json) when is_binary(json) do
     handle(module, json, %{})
   end
-  
+
   def handle(module, json, context) when is_binary(json) do
     data =
       case Jason.decode(json) do
@@ -106,7 +110,7 @@ defmodule JSONRPC2.Server.Handler do
   def handle(module, json) do
     handle(module, json, %{})
   end
-  
+
   def handle(module, json, context) do
     json
     |> parse
@@ -115,7 +119,7 @@ defmodule JSONRPC2.Server.Handler do
   end
 
   defp collate_for_dispatch(batch_rpc, module, context \\ %{})
-  
+
   defp collate_for_dispatch(batch_rpc, module, context)
        when is_list(batch_rpc) and length(batch_rpc) > 0 do
     merge_responses(Enum.map(batch_rpc, &dispatch(module, &1, context)))
@@ -179,12 +183,13 @@ defmodule JSONRPC2.Server.Handler do
 
   defp dispatch(module, {method, params, id}, context) do
     # Try 3-arity first if context is not empty, fallback to 2-arity
-    result = if map_size(context) > 0 and function_exported?(module, :handle_request, 3) do
-      module.handle_request(method, params, context)
-    else
-      module.handle_request(method, params)
-    end
-    
+    result =
+      if map_size(context) > 0 and function_exported?(module, :handle_request, 3) do
+        module.handle_request(method, params, context)
+      else
+        module.handle_request(method, params)
+      end
+
     result_response(result, id)
   rescue
     e in FunctionClauseError ->

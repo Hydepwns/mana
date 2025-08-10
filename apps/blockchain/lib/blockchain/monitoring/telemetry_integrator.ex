@@ -2,7 +2,7 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   @moduledoc """
   Telemetry integration module that automatically instruments various parts
   of the Mana-Ethereum client with telemetry events for metrics collection.
-  
+
   This module provides helper functions to emit telemetry events that are
   automatically converted to Prometheus metrics by the PrometheusExporter.
   """
@@ -29,14 +29,25 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
     # Update Prometheus metrics directly
     Blockchain.Monitoring.PrometheusMetrics.set_gauge("mana_blockchain_height", block_number)
     Blockchain.Monitoring.PrometheusMetrics.inc_counter("mana_blocks_processed_total")
-    Blockchain.Monitoring.PrometheusMetrics.observe_histogram("mana_block_processing_seconds", processing_time_microseconds / 1_000_000)
-    
+
+    Blockchain.Monitoring.PrometheusMetrics.observe_histogram(
+      "mana_block_processing_seconds",
+      processing_time_microseconds / 1_000_000
+    )
+
     # Also emit telemetry event for other handlers
-    :telemetry.execute(@block_processed_event, %{
-      duration: processing_time_microseconds
-    }, Map.merge(%{
-      block_number: block_number
-    }, metadata))
+    :telemetry.execute(
+      @block_processed_event,
+      %{
+        duration: processing_time_microseconds
+      },
+      Map.merge(
+        %{
+          block_number: block_number
+        },
+        metadata
+      )
+    )
   end
 
   @doc """
@@ -44,9 +55,13 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec emit_transaction_processed(non_neg_integer(), map()) :: :ok
   def emit_transaction_processed(processing_time_microseconds, metadata \\ %{}) do
-    :telemetry.execute(@transaction_processed_event, %{
-      duration: processing_time_microseconds
-    }, metadata)
+    :telemetry.execute(
+      @transaction_processed_event,
+      %{
+        duration: processing_time_microseconds
+      },
+      metadata
+    )
   end
 
   @doc """
@@ -55,14 +70,23 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   @spec emit_p2p_message(String.t(), String.t(), map()) :: :ok
   def emit_p2p_message(message_type, direction, metadata \\ %{}) do
     # Update Prometheus metrics
-    Blockchain.Monitoring.PrometheusMetrics.inc_counter("mana_p2p_messages_total", 1, 
-      %{"message_type" => message_type, "direction" => direction})
-    
+    Blockchain.Monitoring.PrometheusMetrics.inc_counter("mana_p2p_messages_total", 1, %{
+      "message_type" => message_type,
+      "direction" => direction
+    })
+
     # Emit telemetry event
-    :telemetry.execute(@p2p_message_event, %{}, Map.merge(%{
-      message_type: message_type,
-      direction: direction
-    }, metadata))
+    :telemetry.execute(
+      @p2p_message_event,
+      %{},
+      Map.merge(
+        %{
+          message_type: message_type,
+          direction: direction
+        },
+        metadata
+      )
+    )
   end
 
   @doc """
@@ -70,11 +94,18 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec emit_storage_operation(String.t(), non_neg_integer(), map()) :: :ok
   def emit_storage_operation(operation_type, duration_microseconds, metadata \\ %{}) do
-    :telemetry.execute(@storage_operation_event, %{
-      duration: duration_microseconds
-    }, Map.merge(%{
-      operation_type: operation_type
-    }, metadata))
+    :telemetry.execute(
+      @storage_operation_event,
+      %{
+        duration: duration_microseconds
+      },
+      Map.merge(
+        %{
+          operation_type: operation_type
+        },
+        metadata
+      )
+    )
   end
 
   @doc """
@@ -82,11 +113,18 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec emit_evm_execution(non_neg_integer(), non_neg_integer(), map()) :: :ok
   def emit_evm_execution(execution_time_microseconds, gas_used, metadata \\ %{}) do
-    :telemetry.execute(@evm_execution_event, %{
-      duration: execution_time_microseconds
-    }, Map.merge(%{
-      gas_used: gas_used
-    }, metadata))
+    :telemetry.execute(
+      @evm_execution_event,
+      %{
+        duration: execution_time_microseconds
+      },
+      Map.merge(
+        %{
+          gas_used: gas_used
+        },
+        metadata
+      )
+    )
   end
 
   @doc """
@@ -94,9 +132,13 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec emit_sync_progress(float(), map()) :: :ok
   def emit_sync_progress(progress_ratio, metadata \\ %{}) do
-    :telemetry.execute(@sync_progress_event, %{
-      progress: progress_ratio
-    }, metadata)
+    :telemetry.execute(
+      @sync_progress_event,
+      %{
+        progress: progress_ratio
+      },
+      metadata
+    )
   end
 
   @doc """
@@ -106,13 +148,19 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   def emit_peer_count_update(peer_count, metadata \\ %{}) do
     # Update Prometheus metrics
     protocol = Map.get(metadata, :protocol, "eth")
-    Blockchain.Monitoring.PrometheusMetrics.set_gauge("mana_p2p_peers_connected", peer_count, 
-      %{"protocol" => protocol})
-    
+
+    Blockchain.Monitoring.PrometheusMetrics.set_gauge("mana_p2p_peers_connected", peer_count, %{
+      "protocol" => protocol
+    })
+
     # Emit telemetry event
-    :telemetry.execute(@peer_count_event, %{
-      count: peer_count
-    }, metadata)
+    :telemetry.execute(
+      @peer_count_event,
+      %{
+        count: peer_count
+      },
+      metadata
+    )
   end
 
   @doc """
@@ -120,9 +168,13 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec emit_transaction_pool_size(non_neg_integer(), map()) :: :ok
   def emit_transaction_pool_size(pool_size, metadata \\ %{}) do
-    :telemetry.execute(@transaction_pool_event, %{
-      size: pool_size
-    }, metadata)
+    :telemetry.execute(
+      @transaction_pool_event,
+      %{
+        size: pool_size
+      },
+      metadata
+    )
   end
 
   # Helper functions for timing operations
@@ -133,33 +185,47 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   @spec time_and_emit(atom(), list(), (-> any()), map()) :: any()
   def time_and_emit(event_name, event_path, fun, metadata \\ %{}) do
     start_time = System.monotonic_time(:microsecond)
-    
+
     try do
       result = fun.()
       end_time = System.monotonic_time(:microsecond)
       duration = end_time - start_time
-      
-      :telemetry.execute(event_path, %{
-        duration: duration,
-        result: :success
-      }, Map.merge(%{
-        operation: event_name
-      }, metadata))
-      
+
+      :telemetry.execute(
+        event_path,
+        %{
+          duration: duration,
+          result: :success
+        },
+        Map.merge(
+          %{
+            operation: event_name
+          },
+          metadata
+        )
+      )
+
       result
     rescue
       error ->
         end_time = System.monotonic_time(:microsecond)
         duration = end_time - start_time
-        
-        :telemetry.execute(event_path, %{
-          duration: duration,
-          result: :error
-        }, Map.merge(%{
-          operation: event_name,
-          error: inspect(error)
-        }, metadata))
-        
+
+        :telemetry.execute(
+          event_path,
+          %{
+            duration: duration,
+            result: :error
+          },
+          Map.merge(
+            %{
+              operation: event_name,
+              error: inspect(error)
+            },
+            metadata
+          )
+        )
+
         reraise error, __STACKTRACE__
     end
   end
@@ -169,8 +235,12 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec time_block_processing((-> any()), non_neg_integer(), map()) :: any()
   def time_block_processing(fun, block_number, metadata \\ %{}) do
-    time_and_emit(:block_processing, @block_processed_event, fun, 
-      Map.merge(%{block_number: block_number}, metadata))
+    time_and_emit(
+      :block_processing,
+      @block_processed_event,
+      fun,
+      Map.merge(%{block_number: block_number}, metadata)
+    )
   end
 
   @doc """
@@ -186,8 +256,12 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   """
   @spec time_storage_operation(String.t(), (-> any()), map()) :: any()
   def time_storage_operation(operation_type, fun, metadata \\ %{}) do
-    time_and_emit(operation_type, @storage_operation_event, fun,
-      Map.merge(%{operation_type: operation_type}, metadata))
+    time_and_emit(
+      operation_type,
+      @storage_operation_event,
+      fun,
+      Map.merge(%{operation_type: operation_type}, metadata)
+    )
   end
 
   @doc """
@@ -207,60 +281,76 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   defmacro instrument_function(module, function, arity, event_path, metadata_fun \\ nil) do
     quote do
       original_function = Function.capture(unquote(module), unquote(function), unquote(arity))
-      
+
       instrumented_function = fn args ->
         start_time = System.monotonic_time(:microsecond)
-        
+
         try do
           result = apply(original_function, args)
           end_time = System.monotonic_time(:microsecond)
           duration = end_time - start_time
-          
-          metadata = if unquote(metadata_fun) do
-            unquote(metadata_fun).(args, result)
-          else
-            %{}
-          end
-          
-          :telemetry.execute(unquote(event_path), %{
-            duration: duration,
-            result: :success
-          }, Map.merge(%{
-            module: unquote(module),
-            function: unquote(function),
-            arity: unquote(arity)
-          }, metadata))
-          
+
+          metadata =
+            if unquote(metadata_fun) do
+              unquote(metadata_fun).(args, result)
+            else
+              %{}
+            end
+
+          :telemetry.execute(
+            unquote(event_path),
+            %{
+              duration: duration,
+              result: :success
+            },
+            Map.merge(
+              %{
+                module: unquote(module),
+                function: unquote(function),
+                arity: unquote(arity)
+              },
+              metadata
+            )
+          )
+
           result
         rescue
           error ->
             end_time = System.monotonic_time(:microsecond)
             duration = end_time - start_time
-            
-            metadata = if unquote(metadata_fun) do
-              try do
-                unquote(metadata_fun).(args, {:error, error})
-              rescue
-                _ -> %{}
+
+            metadata =
+              if unquote(metadata_fun) do
+                try do
+                  unquote(metadata_fun).(args, {:error, error})
+                rescue
+                  _ -> %{}
+                end
+              else
+                %{}
               end
-            else
-              %{}
-            end
-            
-            :telemetry.execute(unquote(event_path), %{
-              duration: duration,
-              result: :error
-            }, Map.merge(%{
-              module: unquote(module),
-              function: unquote(function),
-              arity: unquote(arity),
-              error: inspect(error)
-            }, metadata))
-            
+
+            :telemetry.execute(
+              unquote(event_path),
+              %{
+                duration: duration,
+                result: :error
+              },
+              Map.merge(
+                %{
+                  module: unquote(module),
+                  function: unquote(function),
+                  arity: unquote(arity),
+                  error: inspect(error)
+                },
+                metadata
+              )
+            )
+
             reraise error, __STACKTRACE__
         end
       end
-      
+
       instrumented_function
     end
   end
@@ -273,7 +363,7 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   @spec auto_instrument() :: :ok
   def auto_instrument() do
     Logger.info("[TelemetryIntegrator] Setting up automatic instrumentation")
-    
+
     # Instrument blockchain operations if modules are available
     try do
       instrument_blockchain_operations()
@@ -284,7 +374,7 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
       error ->
         Logger.warning("[TelemetryIntegrator] Some instrumentation failed: #{inspect(error)}")
     end
-    
+
     Logger.info("[TelemetryIntegrator] Automatic instrumentation complete")
     :ok
   end
@@ -325,12 +415,13 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   @spec debug_telemetry_handlers() :: :ok
   def debug_telemetry_handlers() do
     handlers = list_telemetry_handlers()
-    
+
     Logger.info("[TelemetryIntegrator] Current telemetry handlers:")
+
     Enum.each(handlers, fn handler ->
       Logger.info("  - #{inspect(handler)}")
     end)
-    
+
     :ok
   end
 
@@ -340,7 +431,7 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
   @spec emit_test_events() :: :ok
   def emit_test_events() do
     Logger.info("[TelemetryIntegrator] Emitting test telemetry events")
-    
+
     # Emit some sample events
     emit_block_processed(12345, 150_000, %{transactions: 42})
     emit_transaction_processed(50_000, %{gas_used: 21000, status: :success})
@@ -350,7 +441,7 @@ defmodule Blockchain.Monitoring.TelemetryIntegrator do
     emit_sync_progress(0.75, %{mode: "fast_sync"})
     emit_peer_count_update(8, %{connected: 8, connecting: 2})
     emit_transaction_pool_size(128, %{pending: 100, queued: 28})
-    
+
     Logger.info("[TelemetryIntegrator] Test events emitted")
     :ok
   end

@@ -1,7 +1,7 @@
 defmodule Blockchain.Monitoring.PrometheusExporter do
   @moduledoc """
   Prometheus metrics exporter for Mana-Ethereum client.
-  
+
   Exports comprehensive metrics covering:
   - Block processing metrics
   - Transaction pool metrics  
@@ -17,7 +17,7 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
   # Metric names following Prometheus best practices
   @block_height_metric "mana_blockchain_height"
   @block_processing_time_metric "mana_block_processing_seconds"
-  @block_processing_total_metric "mana_blocks_processed_total" 
+  @block_processing_total_metric "mana_blocks_processed_total"
   @transaction_pool_size_metric "mana_transaction_pool_size"
   @transaction_processing_time_metric "mana_transaction_processing_seconds"
   @p2p_peers_metric "mana_p2p_peers_connected"
@@ -39,12 +39,12 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
   ]
 
   @type t :: %__MODULE__{
-    registry: :telemetry.handler_id(),
-    metrics_table: :ets.table(),
-    last_collection_time: DateTime.t() | nil,
-    collection_interval: pos_integer(),
-    enabled: boolean()
-  }
+          registry: :telemetry.handler_id(),
+          metrics_table: :ets.table(),
+          last_collection_time: DateTime.t() | nil,
+          collection_interval: pos_integer(),
+          enabled: boolean()
+        }
 
   # Default collection interval: 15 seconds
   @default_collection_interval 15_000
@@ -111,7 +111,10 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
   @spec record_storage_operation(String.t(), number()) :: :ok
   def record_storage_operation(operation_type, duration_ms) do
     increment_counter(@storage_operations_metric, %{"operation" => operation_type})
-    observe_histogram(@storage_operation_time_metric, duration_ms / 1000.0, %{"operation" => operation_type})
+
+    observe_histogram(@storage_operation_time_metric, duration_ms / 1000.0, %{
+      "operation" => operation_type
+    })
   end
 
   @spec record_evm_execution(number(), non_neg_integer()) :: :ok
@@ -136,16 +139,17 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
   def init(opts) do
     enabled = Keyword.get(opts, :enabled, true)
     collection_interval = Keyword.get(opts, :collection_interval, @default_collection_interval)
-    
+
     if enabled do
       # Create ETS table to store metrics
-      metrics_table = :ets.new(:prometheus_metrics, [
-        :set,
-        :public,
-        :named_table,
-        {:read_concurrency, true},
-        {:write_concurrency, true}
-      ])
+      metrics_table =
+        :ets.new(:prometheus_metrics, [
+          :set,
+          :public,
+          :named_table,
+          {:read_concurrency, true},
+          {:write_concurrency, true}
+        ])
 
       # Initialize metrics
       initialize_metrics(metrics_table)
@@ -156,15 +160,18 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
       # Attach telemetry handlers
       attach_telemetry_handlers()
 
-      Logger.info("[PrometheusExporter] Started with collection interval #{collection_interval}ms")
+      Logger.info(
+        "[PrometheusExporter] Started with collection interval #{collection_interval}ms"
+      )
 
-      {:ok, %__MODULE__{
-        registry: :prometheus_registry,
-        metrics_table: metrics_table,
-        last_collection_time: nil,
-        collection_interval: collection_interval,
-        enabled: true
-      }}
+      {:ok,
+       %__MODULE__{
+         registry: :prometheus_registry,
+         metrics_table: metrics_table,
+         last_collection_time: nil,
+         collection_interval: collection_interval,
+         enabled: true
+       }}
     else
       Logger.info("[PrometheusExporter] Disabled by configuration")
       {:ok, %__MODULE__{enabled: false}}
@@ -237,9 +244,11 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
 
   defp increment_metric_in_table(table, metric_name, type, labels, increment) do
     key = {metric_name, type, labels}
+
     case :ets.lookup(table, key) do
       [{^key, current_value}] ->
         :ets.insert(table, {key, current_value + increment})
+
       [] ->
         :ets.insert(table, {key, increment})
     end
@@ -255,11 +264,12 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
     # In a production system, you'd want proper histogram buckets
     base_key = {metric_name <> "_sum", :gauge, labels}
     count_key = {metric_name <> "_count", :counter, labels}
-    
+
     # Update sum
     case :ets.lookup(table, base_key) do
       [{^base_key, current_sum}] ->
         :ets.insert(table, {base_key, current_sum + value})
+
       [] ->
         :ets.insert(table, {base_key, value})
     end
@@ -275,7 +285,14 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
     set_metric_in_table(table, @memory_usage_metric, :gauge, %{"type" => "total"}, total_memory)
 
     process_memory = Keyword.get(memory_info, :processes, 0)
-    set_metric_in_table(table, @memory_usage_metric, :gauge, %{"type" => "processes"}, process_memory)
+
+    set_metric_in_table(
+      table,
+      @memory_usage_metric,
+      :gauge,
+      %{"type" => "processes"},
+      process_memory
+    )
 
     atom_memory = Keyword.get(memory_info, :atom, 0)
     set_metric_in_table(table, @memory_usage_metric, :gauge, %{"type" => "atom"}, atom_memory)
@@ -312,17 +329,18 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
           [line | _] = lines
           parts = String.split(line, ~r/\s+/)
           [_filesystem, total_str, used_str, available_str | _] = parts
-          
+
           total = String.to_integer(total_str)
           available = String.to_integer(available_str)
-          
+
           {available, total}
         rescue
           _ -> {0, 0}
         end
-      
+
       _ ->
-        {0, 0}  # Windows or other systems
+        # Windows or other systems
+        {0, 0}
     end
   end
 
@@ -332,12 +350,12 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
 
   defp format_prometheus_metrics(metrics) do
     # Group metrics by name for proper Prometheus format
-    grouped_metrics = 
+    grouped_metrics =
       metrics
       |> Enum.group_by(fn {{name, _type, _labels}, _value} -> name end)
       |> Enum.sort()
 
-    prometheus_output = 
+    prometheus_output =
       Enum.map(grouped_metrics, fn {metric_name, metric_entries} ->
         format_metric_family(metric_name, metric_entries)
       end)
@@ -356,16 +374,18 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
   defp format_metric_family(metric_name, entries) do
     # Determine metric type
     {_first_key, type, _first_labels} = elem(List.first(entries), 0)
-    type_str = case type do
-      :counter -> "counter"
-      :gauge -> "gauge" 
-      :histogram -> "histogram"
-    end
+
+    type_str =
+      case type do
+        :counter -> "counter"
+        :gauge -> "gauge"
+        :histogram -> "histogram"
+      end
 
     help_text = get_help_text(metric_name)
-    
+
     # Format entries
-    formatted_entries = 
+    formatted_entries =
       entries
       |> Enum.map(fn {{_name, _type, labels}, value} ->
         labels_str = format_labels(labels)
@@ -381,16 +401,19 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
   end
 
   defp format_labels(labels) when map_size(labels) == 0, do: ""
+
   defp format_labels(labels) do
-    labels_list = 
+    labels_list =
       labels
       |> Enum.map(fn {key, value} -> "#{key}=\"#{value}\"" end)
       |> Enum.join(",")
-    
+
     "{#{labels_list}}"
   end
 
-  defp format_value(value) when is_float(value), do: :erlang.float_to_binary(value, [{:decimals, 6}])
+  defp format_value(value) when is_float(value),
+    do: :erlang.float_to_binary(value, [{:decimals, 6}])
+
   defp format_value(value), do: to_string(value)
 
   defp get_help_text(metric_name) do
@@ -424,10 +447,10 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
     # Attach telemetry handlers for automatic metric collection
     # This allows other parts of the system to emit telemetry events
     # that get automatically converted to metrics
-    
+
     events = [
       [:mana, :block, :processed],
-      [:mana, :transaction, :processed], 
+      [:mana, :transaction, :processed],
       [:mana, :p2p, :message],
       [:mana, :storage, :operation],
       [:mana, :evm, :execution]
@@ -446,12 +469,14 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
   defp handle_telemetry_event([:mana, :block, :processed], measurements, metadata, _config) do
     block_number = Map.get(metadata, :block_number, 0)
     processing_time = Map.get(measurements, :duration, 0)
-    record_block_processed(block_number, processing_time / 1_000_000)  # Convert microseconds to milliseconds
+    # Convert microseconds to milliseconds
+    record_block_processed(block_number, processing_time / 1_000_000)
   end
 
   defp handle_telemetry_event([:mana, :transaction, :processed], measurements, _metadata, _config) do
     processing_time = Map.get(measurements, :duration, 0)
-    record_transaction_processed(processing_time / 1_000_000)  # Convert microseconds to milliseconds
+    # Convert microseconds to milliseconds
+    record_transaction_processed(processing_time / 1_000_000)
   end
 
   defp handle_telemetry_event([:mana, :p2p, :message], _measurements, metadata, _config) do
@@ -463,12 +488,14 @@ defmodule Blockchain.Monitoring.PrometheusExporter do
   defp handle_telemetry_event([:mana, :storage, :operation], measurements, metadata, _config) do
     operation_type = Map.get(metadata, :operation_type, "unknown")
     duration = Map.get(measurements, :duration, 0)
-    record_storage_operation(operation_type, duration / 1_000_000)  # Convert microseconds to milliseconds
+    # Convert microseconds to milliseconds
+    record_storage_operation(operation_type, duration / 1_000_000)
   end
 
   defp handle_telemetry_event([:mana, :evm, :execution], measurements, metadata, _config) do
     execution_time = Map.get(measurements, :duration, 0)
     gas_used = Map.get(metadata, :gas_used, 0)
-    record_evm_execution(execution_time / 1_000_000, gas_used)  # Convert microseconds to milliseconds
+    # Convert microseconds to milliseconds
+    record_evm_execution(execution_time / 1_000_000, gas_used)
   end
 end

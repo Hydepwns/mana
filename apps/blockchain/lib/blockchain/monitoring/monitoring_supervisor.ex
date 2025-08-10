@@ -1,7 +1,7 @@
 defmodule Blockchain.Monitoring.MonitoringSupervisor do
   @moduledoc """
   Supervisor for all monitoring and observability components.
-  
+
   Manages:
   - PrometheusExporter (metrics collection)
   - MetricsEndpoint (HTTP metrics server)  
@@ -20,40 +20,43 @@ defmodule Blockchain.Monitoring.MonitoringSupervisor do
   @impl true
   def init(opts) do
     monitoring_enabled = Keyword.get(opts, :enabled, true)
-    
+
     if monitoring_enabled do
       Logger.info("[MonitoringSupervisor] Starting monitoring and observability stack")
-      
+
       # Get configuration
       prometheus_config = Keyword.get(opts, :prometheus, [])
       metrics_endpoint_config = Keyword.get(opts, :metrics_endpoint, [])
       telemetry_config = Keyword.get(opts, :telemetry, [])
-      
+
       children = [
         # Start Prometheus metrics registry
         {Blockchain.Monitoring.PrometheusMetrics, []},
-        
+
         # Start Prometheus metrics exporter
         {Blockchain.Monitoring.PrometheusExporter, prometheus_config},
-        
+
         # Start HTTP metrics endpoint
         {Blockchain.Monitoring.MetricsEndpoint, metrics_endpoint_config}
       ]
-      
+
       # Initialize Prometheus metrics
       Task.start(fn ->
-        Process.sleep(500)  # Wait for registry setup
+        # Wait for registry setup
+        Process.sleep(500)
         Blockchain.Monitoring.PrometheusMetrics.setup()
       end)
-      
+
       # Initialize telemetry integration
       Task.start(fn ->
-        Process.sleep(1000)  # Wait for other components to start
+        # Wait for other components to start
+        Process.sleep(1000)
+
         if Keyword.get(telemetry_config, :auto_instrument, true) do
           Blockchain.Monitoring.TelemetryIntegrator.auto_instrument()
         end
       end)
-      
+
       opts = [strategy: :one_for_one, name: @name]
       Supervisor.init(children, opts)
     else
@@ -70,24 +73,25 @@ defmodule Blockchain.Monitoring.MonitoringSupervisor do
     case Supervisor.which_children(@name) do
       [] ->
         %{enabled: false, components: []}
-      
+
       children ->
-        component_status = 
+        component_status =
           children
           |> Enum.map(fn {id, pid, _type, _modules} ->
-            status = if is_pid(pid) and Process.alive?(pid) do
-              :running
-            else
-              :stopped
-            end
-            
+            status =
+              if is_pid(pid) and Process.alive?(pid) do
+                :running
+              else
+                :stopped
+              end
+
             %{
               id: id,
               pid: pid,
               status: status
             }
           end)
-        
+
         %{
           enabled: true,
           components: component_status,

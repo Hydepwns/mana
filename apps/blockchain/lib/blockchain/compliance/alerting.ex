@@ -1,12 +1,12 @@
 defmodule Blockchain.Compliance.Alerting do
   @moduledoc """
   Real-time compliance violation detection and alerting system.
-  
+
   This module provides comprehensive monitoring and alerting for compliance
   violations across all regulatory frameworks. It integrates with the compliance
   framework, audit engine, and external notification systems to ensure immediate
   response to compliance issues.
-  
+
   Alert Categories:
   - Control failures and deficiencies
   - Audit trail integrity violations
@@ -16,7 +16,7 @@ defmodule Blockchain.Compliance.Alerting do
   - Regulatory deadline violations
   - System availability violations
   - Data privacy violations
-  
+
   Alert Channels:
   - Email notifications to compliance officers
   - SMS alerts for critical violations
@@ -25,7 +25,7 @@ defmodule Blockchain.Compliance.Alerting do
   - SIEM system integration
   - Ticketing system integration (ServiceNow, Jira)
   - Regulatory reporting (automated submissions)
-  
+
   Features:
   - Real-time violation detection
   - Severity-based escalation
@@ -43,51 +43,59 @@ defmodule Blockchain.Compliance.Alerting do
   alias Blockchain.Compliance.{Framework, AuditEngine, DataRetention}
 
   @type alert_severity :: :info | :low | :medium | :high | :critical | :emergency
-  @type alert_category :: :control_failure | :audit_integrity | :data_retention_violation |
-                         :access_violation | :crypto_violation | :regulatory_deadline |
-                         :system_availability | :data_privacy | :configuration_drift
-  
-  @type alert_channel :: :email | :sms | :dashboard | :slack | :teams | :siem | :ticket | :regulatory
+  @type alert_category ::
+          :control_failure
+          | :audit_integrity
+          | :data_retention_violation
+          | :access_violation
+          | :crypto_violation
+          | :regulatory_deadline
+          | :system_availability
+          | :data_privacy
+          | :configuration_drift
+
+  @type alert_channel ::
+          :email | :sms | :dashboard | :slack | :teams | :siem | :ticket | :regulatory
 
   @type alert :: %{
-    id: String.t(),
-    severity: alert_severity(),
-    category: alert_category(),
-    title: String.t(),
-    description: String.t(),
-    details: map(),
-    compliance_standards: [atom()],
-    detected_at: DateTime.t(),
-    acknowledged_at: DateTime.t() | nil,
-    resolved_at: DateTime.t() | nil,
-    assigned_to: String.t() | nil,
-    escalated: boolean(),
-    channels_notified: [alert_channel()],
-    correlation_id: String.t() | nil,
-    remediation_actions: [map()],
-    metadata: map()
-  }
+          id: String.t(),
+          severity: alert_severity(),
+          category: alert_category(),
+          title: String.t(),
+          description: String.t(),
+          details: map(),
+          compliance_standards: [atom()],
+          detected_at: DateTime.t(),
+          acknowledged_at: DateTime.t() | nil,
+          resolved_at: DateTime.t() | nil,
+          assigned_to: String.t() | nil,
+          escalated: boolean(),
+          channels_notified: [alert_channel()],
+          correlation_id: String.t() | nil,
+          remediation_actions: [map()],
+          metadata: map()
+        }
 
   @type notification_config :: %{
-    channel: alert_channel(),
-    enabled: boolean(),
-    severity_threshold: alert_severity(),
-    recipients: [String.t()],
-    template: String.t(),
-    escalation_delay: non_neg_integer(),
-    rate_limit: map(),
-    authentication: map()
-  }
+          channel: alert_channel(),
+          enabled: boolean(),
+          severity_threshold: alert_severity(),
+          recipients: [String.t()],
+          template: String.t(),
+          escalation_delay: non_neg_integer(),
+          rate_limit: map(),
+          authentication: map()
+        }
 
   @type alerting_state :: %{
-    active_alerts: %{String.t() => alert()},
-    alert_history: [alert()],
-    notification_configs: %{alert_channel() => notification_config()},
-    violation_rules: %{String.t() => map()},
-    escalation_policies: [map()],
-    correlation_engine: map(),
-    stats: map()
-  }
+          active_alerts: %{String.t() => alert()},
+          alert_history: [alert()],
+          notification_configs: %{alert_channel() => notification_config()},
+          violation_rules: %{String.t() => map()},
+          escalation_policies: [map()],
+          correlation_engine: map(),
+          stats: map()
+        }
 
   # Alert severity levels with escalation thresholds
   @severity_levels %{
@@ -113,7 +121,6 @@ defmodule Blockchain.Compliance.Alerting do
         %{action: "document_deficiency", priority: :high}
       ]
     },
-    
     "pci_data_exposure" => %{
       description: "Potential PCI cardholder data exposure",
       category: :data_privacy,
@@ -126,7 +133,6 @@ defmodule Blockchain.Compliance.Alerting do
         %{action: "conduct_forensic_analysis", priority: :high}
       ]
     },
-    
     "fips_crypto_failure" => %{
       description: "FIPS 140-2 cryptographic module failure",
       category: :crypto_violation,
@@ -139,7 +145,6 @@ defmodule Blockchain.Compliance.Alerting do
         %{action: "initiate_incident_response", priority: :high}
       ]
     },
-    
     "gdpr_data_breach" => %{
       description: "GDPR personal data breach detected",
       category: :data_privacy,
@@ -152,7 +157,6 @@ defmodule Blockchain.Compliance.Alerting do
         %{action: "prepare_72hour_notification", priority: :urgent}
       ]
     },
-    
     "audit_trail_tampering" => %{
       description: "Audit trail integrity violation detected",
       category: :audit_integrity,
@@ -175,22 +179,22 @@ defmodule Blockchain.Compliance.Alerting do
       severity_threshold: :medium,
       recipients: ["compliance@company.com", "ciso@company.com"],
       template: "compliance_alert_email",
-      escalation_delay: 3600_000,  # 1 hour
+      # 1 hour
+      escalation_delay: 3600_000,
       rate_limit: %{max_per_hour: 10},
       authentication: %{}
     },
-    
     sms: %{
       channel: :sms,
       enabled: true,
       severity_threshold: :critical,
       recipients: ["+1555COMPLIANCE", "+1555SECURITY"],
       template: "compliance_alert_sms",
-      escalation_delay: 900_000,   # 15 minutes
+      # 15 minutes
+      escalation_delay: 900_000,
       rate_limit: %{max_per_hour: 5},
       authentication: %{}
     },
-    
     dashboard: %{
       channel: :dashboard,
       enabled: true,
@@ -201,14 +205,14 @@ defmodule Blockchain.Compliance.Alerting do
       rate_limit: %{max_per_hour: 100},
       authentication: %{}
     },
-    
     slack: %{
       channel: :slack,
       enabled: false,
       severity_threshold: :medium,
       recipients: ["#compliance", "#security-alerts"],
       template: "compliance_alert_slack",
-      escalation_delay: 1800_000,  # 30 minutes
+      # 30 minutes
+      escalation_delay: 1800_000,
       rate_limit: %{max_per_hour: 20},
       authentication: %{webhook_url: nil}
     }
@@ -222,7 +226,7 @@ defmodule Blockchain.Compliance.Alerting do
 
   def init(opts) do
     notification_configs = Keyword.get(opts, :notification_configs, @default_notification_configs)
-    
+
     state = %{
       active_alerts: %{},
       alert_history: [],
@@ -230,7 +234,8 @@ defmodule Blockchain.Compliance.Alerting do
       violation_rules: @violation_rules,
       escalation_policies: [],
       correlation_engine: %{
-        correlation_window: 300_000,  # 5 minutes
+        # 5 minutes
+        correlation_window: 300_000,
         similarity_threshold: 0.8
       },
       stats: %{
@@ -241,13 +246,13 @@ defmodule Blockchain.Compliance.Alerting do
         escalations_triggered: 0
       }
     }
-    
+
     # Schedule periodic violation checks
     schedule_violation_check()
-    
+
     # Schedule alert correlation and cleanup
     schedule_alert_maintenance()
-    
+
     Logger.info("Compliance Alerting system initialized")
     {:ok, state}
   end
@@ -257,7 +262,7 @@ defmodule Blockchain.Compliance.Alerting do
       {:ok, alert, new_state} ->
         Logger.info("Compliance alert raised: #{alert.id} (#{alert.severity})")
         {:reply, {:ok, alert.id}, new_state}
-      
+
       {:error, reason} ->
         Logger.error("Failed to raise compliance alert: #{reason}")
         {:reply, {:error, reason}, state}
@@ -268,17 +273,17 @@ defmodule Blockchain.Compliance.Alerting do
     case Map.get(state.active_alerts, alert_id) do
       nil ->
         {:reply, {:error, "Alert not found: #{alert_id}"}, state}
-      
+
       alert ->
         acknowledged_alert = %{
-          alert |
-          acknowledged_at: DateTime.utc_now(),
-          assigned_to: acknowledger.user_id
+          alert
+          | acknowledged_at: DateTime.utc_now(),
+            assigned_to: acknowledger.user_id
         }
-        
+
         new_active_alerts = Map.put(state.active_alerts, alert_id, acknowledged_alert)
         new_state = %{state | active_alerts: new_active_alerts}
-        
+
         # Log acknowledgment
         AuditEngine.log_event(%{
           category: :administrative_action,
@@ -291,7 +296,7 @@ defmodule Blockchain.Compliance.Alerting do
           },
           compliance_tags: ["ALERT_MANAGEMENT"] ++ alert.compliance_standards
         })
-        
+
         Logger.info("Compliance alert acknowledged: #{alert_id} by #{acknowledger.user_id}")
         {:reply, :ok, new_state}
     end
@@ -301,29 +306,31 @@ defmodule Blockchain.Compliance.Alerting do
     case Map.get(state.active_alerts, alert_id) do
       nil ->
         {:reply, {:error, "Alert not found: #{alert_id}"}, state}
-      
+
       alert ->
         resolved_alert = %{
-          alert |
-          resolved_at: DateTime.utc_now(),
-          metadata: Map.put(alert.metadata, :resolution_info, resolution_info)
+          alert
+          | resolved_at: DateTime.utc_now(),
+            metadata: Map.put(alert.metadata, :resolution_info, resolution_info)
         }
-        
+
         # Move to history and remove from active
         new_active_alerts = Map.delete(state.active_alerts, alert_id)
         new_alert_history = [resolved_alert | state.alert_history] |> Enum.take(1000)
-        
+
         # Update statistics
-        resolution_time = DateTime.diff(resolved_alert.resolved_at, resolved_alert.detected_at, :second)
+        resolution_time =
+          DateTime.diff(resolved_alert.resolved_at, resolved_alert.detected_at, :second)
+
         updated_stats = update_resolution_stats(state.stats, resolution_time)
-        
+
         new_state = %{
-          state |
-          active_alerts: new_active_alerts,
-          alert_history: new_alert_history,
-          stats: updated_stats
+          state
+          | active_alerts: new_active_alerts,
+            alert_history: new_alert_history,
+            stats: updated_stats
         }
-        
+
         # Log resolution
         AuditEngine.log_event(%{
           category: :administrative_action,
@@ -335,7 +342,7 @@ defmodule Blockchain.Compliance.Alerting do
           },
           compliance_tags: ["ALERT_MANAGEMENT"] ++ alert.compliance_standards
         })
-        
+
         Logger.info("Compliance alert resolved: #{alert_id} (#{resolution_time}s)")
         {:reply, :ok, new_state}
     end
@@ -351,87 +358,91 @@ defmodule Blockchain.Compliance.Alerting do
       :ok ->
         new_configs = Map.put(state.notification_configs, channel, config)
         new_state = %{state | notification_configs: new_configs}
-        
+
         Logger.info("Notification configuration updated for channel: #{channel}")
         {:reply, :ok, new_state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
 
   def handle_call(:get_statistics, _from, state) do
-    enhanced_stats = Map.merge(state.stats, %{
-      active_alerts: map_size(state.active_alerts),
-      critical_alerts: count_alerts_by_severity(state.active_alerts, :critical),
-      unacknowledged_alerts: count_unacknowledged_alerts(state.active_alerts),
-      notification_channels: map_size(state.notification_configs),
-      violation_rules: map_size(state.violation_rules)
-    })
-    
+    enhanced_stats =
+      Map.merge(state.stats, %{
+        active_alerts: map_size(state.active_alerts),
+        critical_alerts: count_alerts_by_severity(state.active_alerts, :critical),
+        unacknowledged_alerts: count_unacknowledged_alerts(state.active_alerts),
+        notification_channels: map_size(state.notification_configs),
+        violation_rules: map_size(state.violation_rules)
+      })
+
     {:reply, {:ok, enhanced_stats}, state}
   end
 
   def handle_info(:check_violations, state) do
     Logger.debug("Performing compliance violation check")
-    
+
     # Check each violation rule
-    new_state = Enum.reduce(state.violation_rules, state, fn {rule_id, rule}, acc_state ->
-      case execute_violation_check(rule) do
-        {:violation, violation_details} ->
-          Logger.warn("Compliance violation detected: #{rule_id}")
-          
-          alert_params = %{
-            category: rule.category,
-            severity: rule.severity,
-            title: rule.description,
-            description: "Automated violation detection: #{rule.description}",
-            details: violation_details,
-            compliance_standards: rule.compliance_standards,
-            remediation_actions: rule.remediation_actions,
-            metadata: %{
-              rule_id: rule_id,
-              automated_detection: true
+    new_state =
+      Enum.reduce(state.violation_rules, state, fn {rule_id, rule}, acc_state ->
+        case execute_violation_check(rule) do
+          {:violation, violation_details} ->
+            Logger.warn("Compliance violation detected: #{rule_id}")
+
+            alert_params = %{
+              category: rule.category,
+              severity: rule.severity,
+              title: rule.description,
+              description: "Automated violation detection: #{rule.description}",
+              details: violation_details,
+              compliance_standards: rule.compliance_standards,
+              remediation_actions: rule.remediation_actions,
+              metadata: %{
+                rule_id: rule_id,
+                automated_detection: true
+              }
             }
-          }
-          
-          case create_and_process_alert(alert_params, acc_state) do
-            {:ok, _alert, updated_state} -> updated_state
-            {:error, reason} -> 
-              Logger.error("Failed to create alert for violation #{rule_id}: #{reason}")
-              acc_state
-          end
-        
-        :no_violation ->
-          acc_state
-        
-        {:error, reason} ->
-          Logger.error("Violation check failed for #{rule_id}: #{reason}")
-          acc_state
-      end
-    end)
-    
+
+            case create_and_process_alert(alert_params, acc_state) do
+              {:ok, _alert, updated_state} ->
+                updated_state
+
+              {:error, reason} ->
+                Logger.error("Failed to create alert for violation #{rule_id}: #{reason}")
+                acc_state
+            end
+
+          :no_violation ->
+            acc_state
+
+          {:error, reason} ->
+            Logger.error("Violation check failed for #{rule_id}: #{reason}")
+            acc_state
+        end
+      end)
+
     # Schedule next check
     schedule_violation_check()
-    
+
     {:noreply, new_state}
   end
 
   def handle_info(:alert_maintenance, state) do
     Logger.debug("Performing alert correlation and maintenance")
-    
+
     # Correlate related alerts
     correlated_state = correlate_alerts(state)
-    
+
     # Check for escalations
     escalated_state = check_escalations(correlated_state)
-    
+
     # Clean up old resolved alerts
     cleaned_state = cleanup_old_alerts(escalated_state)
-    
+
     # Schedule next maintenance
     schedule_alert_maintenance()
-    
+
     {:noreply, cleaned_state}
   end
 
@@ -472,7 +483,8 @@ defmodule Blockchain.Compliance.Alerting do
   @doc """
   Configure notification settings for a channel.
   """
-  @spec configure_notifications(alert_channel(), notification_config()) :: :ok | {:error, String.t()}
+  @spec configure_notifications(alert_channel(), notification_config()) ::
+          :ok | {:error, String.t()}
   def configure_notifications(channel, config) do
     GenServer.call(__MODULE__, {:configure_notifications, channel, config})
   end
@@ -553,7 +565,7 @@ defmodule Blockchain.Compliance.Alerting do
     try do
       # Generate unique alert ID
       alert_id = generate_alert_id()
-      
+
       # Create alert structure
       alert = %{
         id: alert_id,
@@ -573,13 +585,13 @@ defmodule Blockchain.Compliance.Alerting do
         remediation_actions: Map.get(alert_params, :remediation_actions, []),
         metadata: Map.get(alert_params, :metadata, %{})
       }
-      
+
       # Check for duplicates and correlation
       case find_duplicate_or_correlated_alert(alert, state.active_alerts) do
         nil ->
           # New unique alert - process normally
           process_new_alert(alert, state)
-        
+
         correlated_alert_id ->
           # Update existing correlated alert
           process_correlated_alert(alert, correlated_alert_id, state)
@@ -593,17 +605,18 @@ defmodule Blockchain.Compliance.Alerting do
   defp process_new_alert(alert, state) do
     # Add to active alerts
     new_active_alerts = Map.put(state.active_alerts, alert.id, alert)
-    
+
     # Send notifications
-    {notification_results, notified_channels} = send_notifications(alert, state.notification_configs)
-    
+    {notification_results, notified_channels} =
+      send_notifications(alert, state.notification_configs)
+
     # Update alert with notification results
     updated_alert = %{alert | channels_notified: notified_channels}
     final_active_alerts = Map.put(new_active_alerts, alert.id, updated_alert)
-    
+
     # Update statistics
     updated_stats = Map.update(state.stats, :alerts_generated, 1, &(&1 + 1))
-    
+
     # Log alert creation
     AuditEngine.log_event(%{
       category: :compliance_violation,
@@ -617,69 +630,77 @@ defmodule Blockchain.Compliance.Alerting do
       },
       compliance_tags: ["ALERT_RAISED"] ++ alert.compliance_standards
     })
-    
+
     new_state = %{
-      state |
-      active_alerts: final_active_alerts,
-      stats: updated_stats
+      state
+      | active_alerts: final_active_alerts,
+        stats: updated_stats
     }
-    
+
     # Log notification results
     if Enum.any?(notification_results, fn {_, result} -> match?({:error, _}, result) end) do
-      Logger.warn("Some notifications failed for alert #{alert.id}: #{inspect(notification_results)}")
+      Logger.warn(
+        "Some notifications failed for alert #{alert.id}: #{inspect(notification_results)}"
+      )
     end
-    
+
     {:ok, updated_alert, new_state}
   end
 
   defp process_correlated_alert(alert, correlated_alert_id, state) do
     # Update existing alert with new information
     existing_alert = Map.get(state.active_alerts, correlated_alert_id)
-    
+
     # Merge details and increase severity if needed
     merged_details = Map.merge(existing_alert.details, alert.details)
     new_severity = escalate_severity(existing_alert.severity, alert.severity)
-    
+
     updated_alert = %{
-      existing_alert |
-      details: merged_details,
-      severity: new_severity,
-      metadata: Map.put(existing_alert.metadata, :correlation_count, 
-                       Map.get(existing_alert.metadata, :correlation_count, 1) + 1)
+      existing_alert
+      | details: merged_details,
+        severity: new_severity,
+        metadata:
+          Map.put(
+            existing_alert.metadata,
+            :correlation_count,
+            Map.get(existing_alert.metadata, :correlation_count, 1) + 1
+          )
     }
-    
+
     new_active_alerts = Map.put(state.active_alerts, correlated_alert_id, updated_alert)
     new_state = %{state | active_alerts: new_active_alerts}
-    
+
     Logger.info("Alert correlated with existing alert: #{correlated_alert_id}")
-    
+
     {:ok, updated_alert, new_state}
   end
 
   defp send_notifications(alert, notification_configs) do
-    notification_results = Enum.map(notification_configs, fn {channel, config} ->
-      if should_notify?(alert, config) do
-        case send_notification(alert, channel, config) do
-          :ok -> {channel, :ok}
-          {:error, reason} -> {channel, {:error, reason}}
+    notification_results =
+      Enum.map(notification_configs, fn {channel, config} ->
+        if should_notify?(alert, config) do
+          case send_notification(alert, channel, config) do
+            :ok -> {channel, :ok}
+            {:error, reason} -> {channel, {:error, reason}}
+          end
+        else
+          {channel, :skipped}
         end
-      else
-        {channel, :skipped}
-      end
-    end)
-    
+      end)
+
     # Extract successfully notified channels
-    notified_channels = notification_results
-                       |> Enum.filter(fn {_, result} -> result == :ok end)
-                       |> Enum.map(fn {channel, _} -> channel end)
-    
+    notified_channels =
+      notification_results
+      |> Enum.filter(fn {_, result} -> result == :ok end)
+      |> Enum.map(fn {channel, _} -> channel end)
+
     {notification_results, notified_channels}
   end
 
   defp should_notify?(alert, config) do
     config.enabled and
-    severity_meets_threshold?(alert.severity, config.severity_threshold) and
-    within_rate_limit?(config)
+      severity_meets_threshold?(alert.severity, config.severity_threshold) and
+      within_rate_limit?(config)
   end
 
   defp send_notification(alert, channel, config) do
@@ -698,11 +719,13 @@ defmodule Blockchain.Compliance.Alerting do
 
   defp send_email_notification(alert, config) do
     # Email notification implementation
-    Logger.info("Sending email notification for alert #{alert.id} to #{inspect(config.recipients)}")
-    
+    Logger.info(
+      "Sending email notification for alert #{alert.id} to #{inspect(config.recipients)}"
+    )
+
     subject = "[#{String.upcase(to_string(alert.severity))}] #{alert.title}"
     body = format_alert_for_email(alert)
-    
+
     # Simulate email sending - in production would use actual email service
     :ok
   end
@@ -710,9 +733,9 @@ defmodule Blockchain.Compliance.Alerting do
   defp send_sms_notification(alert, config) do
     # SMS notification implementation  
     Logger.info("Sending SMS notification for alert #{alert.id} to #{inspect(config.recipients)}")
-    
+
     message = format_alert_for_sms(alert)
-    
+
     # Simulate SMS sending - in production would use SMS service
     :ok
   end
@@ -720,7 +743,7 @@ defmodule Blockchain.Compliance.Alerting do
   defp send_dashboard_notification(alert, config) do
     # Dashboard notification implementation
     Logger.info("Sending dashboard notification for alert #{alert.id}")
-    
+
     # In production, would update dashboard state or send websocket message
     :ok
   end
@@ -729,10 +752,10 @@ defmodule Blockchain.Compliance.Alerting do
     # Slack notification implementation
     if config.authentication.webhook_url do
       Logger.info("Sending Slack notification for alert #{alert.id}")
-      
+
       # Format message for Slack
       message = format_alert_for_slack(alert)
-      
+
       # Simulate Slack webhook call
       :ok
     else
@@ -749,7 +772,7 @@ defmodule Blockchain.Compliance.Alerting do
   defp send_siem_notification(alert, config) do
     # SIEM integration
     Logger.info("Sending SIEM event for alert #{alert.id}")
-    
+
     # Format as structured log event for SIEM ingestion
     siem_event = %{
       timestamp: alert.detected_at,
@@ -760,7 +783,7 @@ defmodule Blockchain.Compliance.Alerting do
       compliance_standards: alert.compliance_standards,
       details: alert.details
     }
-    
+
     Logger.info("SIEM_EVENT: #{Jason.encode!(siem_event)}")
     :ok
   end
@@ -768,7 +791,7 @@ defmodule Blockchain.Compliance.Alerting do
   defp create_ticket(alert, config) do
     # Ticketing system integration (ServiceNow, Jira, etc.)
     Logger.info("Creating ticket for alert #{alert.id}")
-    
+
     ticket_data = %{
       title: "[Compliance] #{alert.title}",
       description: alert.description,
@@ -777,7 +800,7 @@ defmodule Blockchain.Compliance.Alerting do
       details: alert.details,
       compliance_standards: alert.compliance_standards
     }
-    
+
     # Simulate ticket creation
     :ok
   end
@@ -786,7 +809,7 @@ defmodule Blockchain.Compliance.Alerting do
     # Regulatory notification for specific violations (e.g., GDPR 72-hour breach notification)
     if requires_regulatory_notification?(alert) do
       Logger.warn("Regulatory notification required for alert #{alert.id}")
-      
+
       # In production, would format and submit to regulatory systems
       :ok
     else
@@ -801,8 +824,10 @@ defmodule Blockchain.Compliance.Alerting do
       case rule.detection_query do
         atom when is_atom(atom) ->
           apply(__MODULE__, atom, [])
+
         func when is_function(func) ->
           func.()
+
         _ ->
           {:error, "Invalid detection_query type"}
       end
@@ -820,10 +845,10 @@ defmodule Blockchain.Compliance.Alerting do
     case Framework.get_violations(%{standard: :sox}) do
       {:ok, violations} when length(violations) > 0 ->
         {:violation, %{sox_violations: violations, violation_count: length(violations)}}
-      
+
       {:ok, []} ->
         :no_violation
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -845,17 +870,17 @@ defmodule Blockchain.Compliance.Alerting do
         case ExthCrypto.HSM.Monitor.get_health_status() do
           {:ok, %{overall_status: :unhealthy}} ->
             {:violation, %{hsm_status: :unhealthy, issue: "HSM module failure"}}
-          
+
           {:ok, %{overall_status: :critical}} ->
             {:violation, %{hsm_status: :critical, issue: "Critical HSM failure"}}
-          
+
           {:ok, _} ->
             :no_violation
-          
+
           {:error, reason} ->
             {:violation, %{hsm_status: :error, issue: reason}}
         end
-      
+
       _ ->
         :no_violation
     end
@@ -872,10 +897,10 @@ defmodule Blockchain.Compliance.Alerting do
     case AuditEngine.verify_integrity(%{full_chain: false}) do
       {:ok, %{integrity_verified: false, violations: violations}} ->
         {:violation, %{integrity_violations: violations}}
-      
+
       {:ok, %{integrity_verified: true}} ->
         :no_violation
-      
+
       {:error, reason} ->
         {:violation, %{integrity_check_failed: reason}}
     end
@@ -885,12 +910,13 @@ defmodule Blockchain.Compliance.Alerting do
 
   defp find_duplicate_or_correlated_alert(new_alert, active_alerts) do
     # Simple correlation based on category and timeframe
-    correlation_window = 300_000  # 5 minutes
+    # 5 minutes
+    correlation_window = 300_000
     cutoff_time = DateTime.add(DateTime.utc_now(), -correlation_window, :millisecond)
-    
+
     Enum.find_value(active_alerts, fn {alert_id, existing_alert} ->
       if existing_alert.category == new_alert.category and
-         DateTime.compare(existing_alert.detected_at, cutoff_time) == :gt do
+           DateTime.compare(existing_alert.detected_at, cutoff_time) == :gt do
         alert_id
       else
         nil
@@ -901,7 +927,7 @@ defmodule Blockchain.Compliance.Alerting do
   defp generate_correlation_id(alert_params) do
     # Generate correlation ID based on alert characteristics
     correlation_data = "#{alert_params[:category]}_#{alert_params[:severity]}"
-    
+
     correlation_data
     |> :crypto.hash(:md5)
     |> Base.encode16(case: :lower)
@@ -911,7 +937,7 @@ defmodule Blockchain.Compliance.Alerting do
   defp escalate_severity(current_severity, new_severity) do
     current_level = Map.get(@severity_levels, current_severity, 0)
     new_level = Map.get(@severity_levels, new_severity, 0)
-    
+
     if new_level > current_level do
       new_severity
     else
@@ -922,7 +948,7 @@ defmodule Blockchain.Compliance.Alerting do
   defp severity_meets_threshold?(alert_severity, threshold_severity) do
     alert_level = Map.get(@severity_levels, alert_severity, 0)
     threshold_level = Map.get(@severity_levels, threshold_severity, 0)
-    
+
     alert_level >= threshold_level
   end
 
@@ -950,20 +976,20 @@ defmodule Blockchain.Compliance.Alerting do
   defp format_alert_for_email(alert) do
     """
     Compliance Alert: #{alert.title}
-    
+
     Severity: #{String.upcase(to_string(alert.severity))}
     Category: #{alert.category}
     Detected: #{alert.detected_at}
-    
+
     Description:
     #{alert.description}
-    
+
     Compliance Standards:
     #{Enum.join(alert.compliance_standards, ", ")}
-    
+
     Details:
     #{inspect(alert.details, pretty: true)}
-    
+
     Alert ID: #{alert.id}
     """
   end
@@ -973,26 +999,27 @@ defmodule Blockchain.Compliance.Alerting do
   end
 
   defp format_alert_for_slack(alert) do
-    severity_emoji = case alert.severity do
-      :emergency -> "🚨"
-      :critical -> "🔴"
-      :high -> "🟠"
-      :medium -> "🟡"
-      :low -> "🔵"
-      :info -> "ℹ️"
-    end
-    
+    severity_emoji =
+      case alert.severity do
+        :emergency -> "🚨"
+        :critical -> "🔴"
+        :high -> "🟠"
+        :medium -> "🟡"
+        :low -> "🔵"
+        :info -> "ℹ️"
+      end
+
     "#{severity_emoji} *#{alert.title}*\n" <>
-    "Severity: #{alert.severity}\n" <>
-    "Category: #{alert.category}\n" <>
-    "Standards: #{Enum.join(alert.compliance_standards, ", ")}\n" <>
-    "Alert ID: `#{alert.id}`"
+      "Severity: #{alert.severity}\n" <>
+      "Category: #{alert.category}\n" <>
+      "Standards: #{Enum.join(alert.compliance_standards, ", ")}\n" <>
+      "Alert ID: `#{alert.id}`"
   end
 
   defp map_severity_to_ticket_priority(severity) do
     case severity do
       :emergency -> "Critical"
-      :critical -> "High"  
+      :critical -> "High"
       :high -> "Medium"
       :medium -> "Low"
       :low -> "Low"
@@ -1003,11 +1030,11 @@ defmodule Blockchain.Compliance.Alerting do
   defp requires_regulatory_notification?(alert) do
     # Check if alert requires immediate regulatory notification
     alert.severity in [:emergency, :critical] and
-    :gdpr in alert.compliance_standards
+      :gdpr in alert.compliance_standards
   end
 
   defp filter_alerts(alerts, filters) when map_size(filters) == 0, do: alerts
-  
+
   defp filter_alerts(alerts, filters) do
     Enum.filter(alerts, fn alert ->
       Enum.all?(filters, fn {key, value} ->
@@ -1031,27 +1058,29 @@ defmodule Blockchain.Compliance.Alerting do
   defp update_resolution_stats(stats, resolution_time_seconds) do
     current_count = Map.get(stats, :alerts_resolved, 0)
     current_avg = Map.get(stats, :average_resolution_time, 0)
-    
-    new_avg = if current_count == 0 do
-      resolution_time_seconds
-    else
-      (current_avg * current_count + resolution_time_seconds) / (current_count + 1)
-    end
-    
+
+    new_avg =
+      if current_count == 0 do
+        resolution_time_seconds
+      else
+        (current_avg * current_count + resolution_time_seconds) / (current_count + 1)
+      end
+
     %{
-      stats |
-      alerts_resolved: current_count + 1,
-      average_resolution_time: new_avg
+      stats
+      | alerts_resolved: current_count + 1,
+        average_resolution_time: new_avg
     }
   end
 
   defp validate_notification_config(config) do
     required_fields = [:channel, :enabled, :severity_threshold, :recipients]
-    
-    missing_fields = Enum.filter(required_fields, fn field ->
-      not Map.has_key?(config, field)
-    end)
-    
+
+    missing_fields =
+      Enum.filter(required_fields, fn field ->
+        not Map.has_key?(config, field)
+      end)
+
     if Enum.empty?(missing_fields) do
       :ok
     else

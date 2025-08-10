@@ -2,7 +2,7 @@ defmodule MerklePatriciaTree.StateManager do
   @moduledoc """
   Advanced state management system with configurable pruning modes,
   reference counting, garbage collection, and disk usage monitoring.
-  
+
   Supports three pruning modes:
   - Fast: Keep only recent states (last ~128 blocks)
   - Full: Keep all states but prune old data periodically
@@ -17,43 +17,43 @@ defmodule MerklePatriciaTree.StateManager do
 
   @typedoc "State manager configuration"
   @type config :: %{
-    pruning_mode: :fast | :full | :archive,
-    fast_blocks_to_keep: pos_integer(),
-    full_pruning_interval: pos_integer(),
-    gc_interval: pos_integer(),
-    disk_usage_check_interval: pos_integer(),
-    max_disk_usage_gb: pos_integer(),
-    snapshot_interval: pos_integer(),
-    compaction_threshold: float()
-  }
+          pruning_mode: :fast | :full | :archive,
+          fast_blocks_to_keep: pos_integer(),
+          full_pruning_interval: pos_integer(),
+          gc_interval: pos_integer(),
+          disk_usage_check_interval: pos_integer(),
+          max_disk_usage_gb: pos_integer(),
+          snapshot_interval: pos_integer(),
+          compaction_threshold: float()
+        }
 
   @typedoc "State manager state"
   @type t :: %__MODULE__{
-    db: DB.db(),
-    config: config(),
-    reference_counter: ReferenceCounter.t(),
-    pruning_stats: pruning_stats(),
-    disk_usage: disk_usage_stats(),
-    last_snapshot: DateTime.t() | nil,
-    compaction_running: boolean()
-  }
+          db: DB.db(),
+          config: config(),
+          reference_counter: ReferenceCounter.t(),
+          pruning_stats: pruning_stats(),
+          disk_usage: disk_usage_stats(),
+          last_snapshot: DateTime.t() | nil,
+          compaction_running: boolean()
+        }
 
   @typedoc "Pruning statistics"
   @type pruning_stats :: %{
-    total_nodes_pruned: non_neg_integer(),
-    bytes_freed: non_neg_integer(),
-    last_prune_time: DateTime.t() | nil,
-    prune_duration_ms: non_neg_integer()
-  }
+          total_nodes_pruned: non_neg_integer(),
+          bytes_freed: non_neg_integer(),
+          last_prune_time: DateTime.t() | nil,
+          prune_duration_ms: non_neg_integer()
+        }
 
   @typedoc "Disk usage statistics"
   @type disk_usage_stats :: %{
-    total_size_gb: float(),
-    state_size_gb: float(),
-    blocks_size_gb: float(),
-    available_space_gb: float(),
-    usage_percentage: float()
-  }
+          total_size_gb: float(),
+          state_size_gb: float(),
+          blocks_size_gb: float(),
+          available_space_gb: float(),
+          usage_percentage: float()
+        }
 
   defstruct [
     :db,
@@ -69,12 +69,18 @@ defmodule MerklePatriciaTree.StateManager do
   @default_config %{
     pruning_mode: :full,
     fast_blocks_to_keep: 128,
-    full_pruning_interval: 3600_000,    # 1 hour
-    gc_interval: 300_000,               # 5 minutes
-    disk_usage_check_interval: 60_000,  # 1 minute
-    max_disk_usage_gb: 500,             # 500 GB limit
-    snapshot_interval: 86_400_000,      # 24 hours
-    compaction_threshold: 0.3           # 30% fragmentation triggers compaction
+    # 1 hour
+    full_pruning_interval: 3600_000,
+    # 5 minutes
+    gc_interval: 300_000,
+    # 1 minute
+    disk_usage_check_interval: 60_000,
+    # 500 GB limit
+    max_disk_usage_gb: 500,
+    # 24 hours
+    snapshot_interval: 86_400_000,
+    # 30% fragmentation triggers compaction
+    compaction_threshold: 0.3
   }
 
   @name __MODULE__
@@ -136,7 +142,7 @@ defmodule MerklePatriciaTree.StateManager do
   @impl true
   def init({db, opts}) do
     config = Map.merge(@default_config, Map.new(opts))
-    
+
     state = %__MODULE__{
       db: db,
       config: config,
@@ -177,7 +183,7 @@ defmodule MerklePatriciaTree.StateManager do
       {:ok, snapshot_path} ->
         new_state = %{state | last_snapshot: DateTime.utc_now()}
         {:reply, {:ok, snapshot_path}, new_state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -238,7 +244,7 @@ defmodule MerklePatriciaTree.StateManager do
         new_state = %{state | last_snapshot: DateTime.utc_now()}
         schedule_snapshot(state.config.snapshot_interval)
         {:noreply, new_state}
-      
+
       {:error, reason} ->
         Logger.warning("[StateManager] Snapshot creation failed: #{inspect(reason)}")
         schedule_snapshot(state.config.snapshot_interval)
@@ -278,25 +284,29 @@ defmodule MerklePatriciaTree.StateManager do
 
     # Find unreferenced state roots
     unreferenced_roots = ReferenceCounter.get_unreferenced_roots(state.reference_counter)
-    
+
     # Collect garbage for each unreferenced root
-    {nodes_removed, bytes_freed} = GarbageCollector.collect_unreferenced_nodes(
-      state.db,
-      unreferenced_roots
-    )
+    {nodes_removed, bytes_freed} =
+      GarbageCollector.collect_unreferenced_nodes(
+        state.db,
+        unreferenced_roots
+      )
 
     # Update reference counter
     new_counter = ReferenceCounter.remove_roots(state.reference_counter, unreferenced_roots)
 
     duration = System.monotonic_time(:millisecond) - start_time
 
-    Logger.info("[StateManager] GC completed: #{nodes_removed} nodes removed, #{bytes_freed} bytes freed in #{duration}ms")
+    Logger.info(
+      "[StateManager] GC completed: #{nodes_removed} nodes removed, #{bytes_freed} bytes freed in #{duration}ms"
+    )
 
     # Update stats
-    new_stats = %{state.pruning_stats |
-      total_nodes_pruned: state.pruning_stats.total_nodes_pruned + nodes_removed,
-      bytes_freed: state.pruning_stats.bytes_freed + bytes_freed,
-      prune_duration_ms: duration
+    new_stats = %{
+      state.pruning_stats
+      | total_nodes_pruned: state.pruning_stats.total_nodes_pruned + nodes_removed,
+        bytes_freed: state.pruning_stats.bytes_freed + bytes_freed,
+        prune_duration_ms: duration
     }
 
     %{state | reference_counter: new_counter, pruning_stats: new_stats}
@@ -306,27 +316,31 @@ defmodule MerklePatriciaTree.StateManager do
     Logger.info("[StateManager] Performing pruning with mode: #{state.config.pruning_mode}")
     start_time = System.monotonic_time(:millisecond)
 
-    {nodes_pruned, bytes_freed} = case state.config.pruning_mode do
-      :fast ->
-        PruningPolicy.prune_fast_mode(state.db, state.config.fast_blocks_to_keep)
-      
-      :full ->
-        PruningPolicy.prune_full_mode(state.db, state.reference_counter)
-      
-      :archive ->
-        PruningPolicy.prune_archive_mode()
-    end
+    {nodes_pruned, bytes_freed} =
+      case state.config.pruning_mode do
+        :fast ->
+          PruningPolicy.prune_fast_mode(state.db, state.config.fast_blocks_to_keep)
+
+        :full ->
+          PruningPolicy.prune_full_mode(state.db, state.reference_counter)
+
+        :archive ->
+          PruningPolicy.prune_archive_mode()
+      end
 
     duration = System.monotonic_time(:millisecond) - start_time
 
-    Logger.info("[StateManager] Pruning completed: #{nodes_pruned} nodes pruned, #{bytes_freed} bytes freed in #{duration}ms")
+    Logger.info(
+      "[StateManager] Pruning completed: #{nodes_pruned} nodes pruned, #{bytes_freed} bytes freed in #{duration}ms"
+    )
 
     # Update stats
-    new_stats = %{state.pruning_stats |
-      total_nodes_pruned: state.pruning_stats.total_nodes_pruned + nodes_pruned,
-      bytes_freed: state.pruning_stats.bytes_freed + bytes_freed,
-      last_prune_time: DateTime.utc_now(),
-      prune_duration_ms: duration
+    new_stats = %{
+      state.pruning_stats
+      | total_nodes_pruned: state.pruning_stats.total_nodes_pruned + nodes_pruned,
+        bytes_freed: state.pruning_stats.bytes_freed + bytes_freed,
+        last_prune_time: DateTime.utc_now(),
+        prune_duration_ms: duration
     }
 
     %{state | pruning_stats: new_stats}
@@ -337,14 +351,16 @@ defmodule MerklePatriciaTree.StateManager do
 
     # Get current disk usage statistics
     disk_stats = calculate_disk_usage(state.db)
-    
+
     # Check if we're approaching limits
     if disk_stats.usage_percentage > 0.9 do
-      Logger.warning("[StateManager] High disk usage: #{Float.round(disk_stats.usage_percentage * 100, 1)}%")
-      
+      Logger.warning(
+        "[StateManager] High disk usage: #{Float.round(disk_stats.usage_percentage * 100, 1)}%"
+      )
+
       # Trigger emergency pruning if not in archive mode
       if state.config.pruning_mode != :archive do
-        spawn(fn -> 
+        spawn(fn ->
           Logger.info("[StateManager] Triggering emergency pruning due to disk usage")
           GenServer.cast(@name, :force_pruning)
         end)
@@ -353,8 +369,12 @@ defmodule MerklePatriciaTree.StateManager do
 
     # Check if compaction is needed
     fragmentation = calculate_fragmentation_ratio(state.db)
+
     if fragmentation > state.config.compaction_threshold and not state.compaction_running do
-      Logger.info("[StateManager] Triggering compaction due to fragmentation: #{Float.round(fragmentation * 100, 1)}%")
+      Logger.info(
+        "[StateManager] Triggering compaction due to fragmentation: #{Float.round(fragmentation * 100, 1)}%"
+      )
+
       GenServer.cast(@name, :trigger_compaction)
     end
 
@@ -363,14 +383,14 @@ defmodule MerklePatriciaTree.StateManager do
 
   defp create_state_snapshot(state) do
     Logger.info("[StateManager] Creating state snapshot")
-    
+
     timestamp = DateTime.utc_now() |> DateTime.to_unix()
     snapshot_path = "snapshots/state_snapshot_#{timestamp}.dat"
-    
+
     try do
       # Create snapshots directory if it doesn't exist
       File.mkdir_p!(Path.dirname(snapshot_path))
-      
+
       # Create snapshot data
       snapshot_data = %{
         timestamp: timestamp,
@@ -379,11 +399,11 @@ defmodule MerklePatriciaTree.StateManager do
         pruning_stats: state.pruning_stats,
         disk_usage: state.disk_usage
       }
-      
+
       # Write snapshot to file
       encoded_data = :erlang.term_to_binary(snapshot_data, [:compressed])
       File.write!(snapshot_path, encoded_data)
-      
+
       Logger.info("[StateManager] Snapshot created successfully: #{snapshot_path}")
       {:ok, snapshot_path}
     rescue
@@ -396,27 +416,28 @@ defmodule MerklePatriciaTree.StateManager do
   defp perform_compaction(state) do
     Logger.info("[StateManager] Starting database compaction")
     start_time = System.monotonic_time(:millisecond)
-    
+
     try do
       # Perform database compaction based on backend
-      compaction_stats = case state.db do
-        {:ets, _} -> 
-          # ETS doesn't need traditional compaction, but we can optimize memory
-          :erlang.garbage_collect()
-          %{compacted_size: 0, time_ms: 0}
-        
-        {:antidote, _} ->
-          # AntidoteDB compaction would be handled by the database itself
-          %{compacted_size: 0, time_ms: 0}
-        
-        _ ->
-          %{compacted_size: 0, time_ms: 0}
-      end
-      
+      compaction_stats =
+        case state.db do
+          {:ets, _} ->
+            # ETS doesn't need traditional compaction, but we can optimize memory
+            :erlang.garbage_collect()
+            %{compacted_size: 0, time_ms: 0}
+
+          {:antidote, _} ->
+            # AntidoteDB compaction would be handled by the database itself
+            %{compacted_size: 0, time_ms: 0}
+
+          _ ->
+            %{compacted_size: 0, time_ms: 0}
+        end
+
       duration = System.monotonic_time(:millisecond) - start_time
-      
+
       final_stats = Map.put(compaction_stats, :time_ms, duration)
-      
+
       Logger.info("[StateManager] Compaction completed in #{duration}ms")
       send(self(), {:compaction_complete, final_stats})
     rescue
@@ -433,15 +454,17 @@ defmodule MerklePatriciaTree.StateManager do
         # For ETS, calculate memory usage
         memory_bytes = :ets.info(:trie_cache, :memory) * :erlang.system_info(:wordsize)
         memory_gb = memory_bytes / (1024 * 1024 * 1024)
-        
+
         %{
           total_size_gb: memory_gb,
-          state_size_gb: memory_gb * 0.8,  # Estimate
+          # Estimate
+          state_size_gb: memory_gb * 0.8,
           blocks_size_gb: memory_gb * 0.2,
-          available_space_gb: 100.0,  # Assume plenty of RAM
+          # Assume plenty of RAM
+          available_space_gb: 100.0,
           usage_percentage: memory_gb / 100.0
         }
-      
+
       _ ->
         # Default stats for other backends
         %{
@@ -457,7 +480,8 @@ defmodule MerklePatriciaTree.StateManager do
   defp calculate_fragmentation_ratio(_db) do
     # Simplified fragmentation calculation
     # In production, this would analyze actual storage fragmentation
-    :rand.uniform() * 0.5  # Random value between 0 and 0.5 for testing
+    # Random value between 0 and 0.5 for testing
+    :rand.uniform() * 0.5
   end
 
   defp schedule_garbage_collection(interval) do
@@ -469,12 +493,15 @@ defmodule MerklePatriciaTree.StateManager do
   end
 
   defp schedule_pruning(config) do
-    interval = case config.pruning_mode do
-      :fast -> config.gc_interval * 2     # More frequent for fast mode
-      :full -> config.full_pruning_interval
-      :archive -> :infinity               # No pruning for archive mode
-    end
-    
+    interval =
+      case config.pruning_mode do
+        # More frequent for fast mode
+        :fast -> config.gc_interval * 2
+        :full -> config.full_pruning_interval
+        # No pruning for archive mode
+        :archive -> :infinity
+      end
+
     if interval != :infinity do
       Process.send_after(self(), :pruning_cycle, interval)
     end

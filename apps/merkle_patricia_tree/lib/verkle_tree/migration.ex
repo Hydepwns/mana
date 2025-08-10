@@ -1,15 +1,15 @@
 defmodule VerkleTree.Migration do
   @moduledoc """
   State migration tools for transitioning from Merkle Patricia Trees to Verkle Trees.
-  
+
   This module implements the transition mechanism described in EIP-6800,
   which allows for a gradual migration where:
-  
+
   1. A new empty verkle tree is introduced alongside the existing MPT
   2. New state changes go to the verkle tree
   3. Accessed MPT state is copied to the verkle tree
   4. Eventually the MPT can be discarded
-  
+
   This approach minimizes disruption while enabling the benefits of verkle trees.
   """
 
@@ -39,7 +39,7 @@ defmodule VerkleTree.Migration do
   @spec new(Trie.t(), DB.db()) :: t()
   def new(existing_mpt, db) do
     verkle = VerkleTree.new(db)
-    
+
     %__MODULE__{
       mpt: existing_mpt,
       verkle: verkle,
@@ -51,7 +51,7 @@ defmodule VerkleTree.Migration do
 
   @doc """
   Handles a state access during the transition period.
-  
+
   This implements the EIP-6800 behavior:
   1. First check the verkle tree
   2. If not found, check the MPT
@@ -64,22 +64,25 @@ defmodule VerkleTree.Migration do
       {:ok, value} ->
         # Found in verkle tree
         {{:ok, value}, migration_state}
-      
+
       :not_found ->
         # Try MPT
         case Trie.get_key(migration_state.mpt, key) do
           nil ->
             {:not_found, migration_state}
+
           value ->
             # Found in MPT, migrate to verkle
-            Logger.debug("Migrating key on access: #{inspect key}")
-            
+            Logger.debug("Migrating key on access: #{inspect(key)}")
+
             updated_verkle = VerkleTree.put(migration_state.verkle, key, value)
-            updated_state = %{migration_state | 
-              verkle: updated_verkle,
-              migration_progress: migration_state.migration_progress + 1
+
+            updated_state = %{
+              migration_state
+              | verkle: updated_verkle,
+                migration_progress: migration_state.migration_progress + 1
             }
-            
+
             {{:ok, value}, updated_state}
         end
     end
@@ -92,7 +95,7 @@ defmodule VerkleTree.Migration do
   @spec put_with_migration(t(), binary(), binary()) :: t()
   def put_with_migration(migration_state, key, value) do
     updated_verkle = VerkleTree.put(migration_state.verkle, key, value)
-    
+
     %{migration_state | verkle: updated_verkle}
   end
 
@@ -104,11 +107,8 @@ defmodule VerkleTree.Migration do
   def remove_with_migration(migration_state, key) do
     updated_verkle = VerkleTree.remove(migration_state.verkle, key)
     updated_mpt = Trie.remove_key(migration_state.mpt, key)
-    
-    %{migration_state | 
-      verkle: updated_verkle,
-      mpt: updated_mpt
-    }
+
+    %{migration_state | verkle: updated_verkle, mpt: updated_mpt}
   end
 
   @doc """
@@ -123,6 +123,7 @@ defmodule VerkleTree.Migration do
       case migrate_batch(state, batch) do
         {:ok, updated_state} ->
           {:cont, {:ok, updated_state}}
+
         error ->
           {:halt, error}
       end
@@ -137,7 +138,7 @@ defmodule VerkleTree.Migration do
     if migration_state.total_keys == 0 do
       100.0
     else
-      (migration_state.migration_progress / migration_state.total_keys) * 100.0
+      migration_state.migration_progress / migration_state.total_keys * 100.0
     end
   end
 
@@ -175,7 +176,7 @@ defmodule VerkleTree.Migration do
         migration_progress: migration_state.migration_progress,
         total_keys: migration_state.total_keys
       }
-      
+
       {:ok, :erlang.term_to_binary(state_data)}
     rescue
       error -> {:error, error}
@@ -188,16 +189,17 @@ defmodule VerkleTree.Migration do
   """
   @spec validate_consistency(t(), [binary()]) :: {:ok, [binary()]} | {:error, [binary()]}
   def validate_consistency(migration_state, sample_keys) do
-    inconsistent_keys = 
+    inconsistent_keys =
       sample_keys
       |> Enum.filter(fn key ->
         mpt_value = Trie.get_key(migration_state.mpt, key)
-        
-        verkle_value = case VerkleTree.get(migration_state.verkle, key) do
-          {:ok, value} -> value
-          :not_found -> nil
-        end
-        
+
+        verkle_value =
+          case VerkleTree.get(migration_state.verkle, key) do
+            {:ok, value} -> value
+            :not_found -> nil
+          end
+
         # Keys are inconsistent if they exist in both but have different values
         not is_nil(mpt_value) and not is_nil(verkle_value) and mpt_value != verkle_value
       end)
@@ -212,17 +214,20 @@ defmodule VerkleTree.Migration do
 
   defp migrate_batch(migration_state, keys) do
     try do
-      updated_state = 
+      updated_state =
         keys
         |> Enum.reduce(migration_state, fn key, acc_state ->
           case Trie.get_key(acc_state.mpt, key) do
             nil ->
               acc_state
+
             value ->
               updated_verkle = VerkleTree.put(acc_state.verkle, key, value)
-              %{acc_state | 
-                verkle: updated_verkle,
-                migration_progress: acc_state.migration_progress + 1
+
+              %{
+                acc_state
+                | verkle: updated_verkle,
+                  migration_progress: acc_state.migration_progress + 1
               }
           end
         end)
@@ -237,6 +242,7 @@ defmodule VerkleTree.Migration do
     # Placeholder: In practice, you'd need to traverse the MPT to count keys
     # This could be expensive, so you might want to cache this value
     # or estimate based on other metrics
-    10000  # Placeholder value
+    # Placeholder value
+    10000
   end
 end

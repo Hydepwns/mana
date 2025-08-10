@@ -11,18 +11,19 @@ defmodule ExWire.Layer2.Bridge.EventRelay do
   """
   def start_monitoring(callback_pid, contract_address, layer) do
     Logger.info("Starting event monitoring for #{Base.encode16(contract_address)} on #{layer}")
-    
+
     # In production, this would connect to actual event sources
     # For now, we'll simulate event monitoring
-    {:ok, _pid} = GenServer.start_link(__MODULE__, %{
-      callback_pid: callback_pid,
-      contract: contract_address,
-      layer: layer
-    })
+    {:ok, _pid} =
+      GenServer.start_link(__MODULE__, %{
+        callback_pid: callback_pid,
+        contract: contract_address,
+        layer: layer
+      })
   end
 
   # GenServer callbacks
-  
+
   def init(state) do
     # Schedule periodic event checks
     Process.send_after(self(), :check_events, 1000)
@@ -32,12 +33,12 @@ defmodule ExWire.Layer2.Bridge.EventRelay do
   def handle_info(:check_events, state) do
     # Simulate event checking
     # In production, this would query blockchain events
-    
+
     # Occasionally send simulated events to callback
     if :rand.uniform(10) > 8 do
       send(state.callback_pid, {:"#{state.layer}_event", generate_mock_event(state)})
     end
-    
+
     Process.send_after(self(), :check_events, 1000)
     {:noreply, state}
   end

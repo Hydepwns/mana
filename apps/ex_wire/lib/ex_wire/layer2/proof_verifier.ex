@@ -13,22 +13,23 @@ defmodule ExWire.Layer2.ProofVerifier do
     try do
       # Decode the fraud proof
       decoded_proof = decode_fraud_proof(proof)
-      
+
       # Verify the state transition is invalid
-      result = case decoded_proof.type do
-        :state_transition ->
-          verify_invalid_state_transition(batch, decoded_proof)
-        
-        :signature ->
-          verify_invalid_signature(batch, decoded_proof)
-        
-        :execution ->
-          verify_invalid_execution(batch, decoded_proof)
-        
-        _ ->
-          false
-      end
-      
+      result =
+        case decoded_proof.type do
+          :state_transition ->
+            verify_invalid_state_transition(batch, decoded_proof)
+
+          :signature ->
+            verify_invalid_signature(batch, decoded_proof)
+
+          :execution ->
+            verify_invalid_execution(batch, decoded_proof)
+
+          _ ->
+            false
+        end
+
       {:ok, result}
     rescue
       e -> {:error, e}
@@ -43,17 +44,17 @@ defmodule ExWire.Layer2.ProofVerifier do
     try do
       # For now, simulate proof verification
       # In production, this would call native cryptographic libraries
-      
+
       # Decode proof
       decoded = decode_zk_proof(proof)
-      
+
       # Verify proof matches batch
       batch_hash = compute_batch_hash(batch)
       proof_valid = decoded.batch_hash == batch_hash
-      
+
       # Simulate cryptographic verification (would use NIFs in production)
       crypto_valid = simulate_crypto_verification(decoded)
-      
+
       {:ok, proof_valid and crypto_valid}
     rescue
       e -> {:error, e}
@@ -71,7 +72,7 @@ defmodule ExWire.Layer2.ProofVerifier do
     # Verify that the claimed state transition is invalid
     expected_root = proof.expected_state_root
     actual_root = batch.state_root
-    
+
     # The fraud proof is valid if the roots don't match
     expected_root != actual_root
   end
@@ -80,7 +81,7 @@ defmodule ExWire.Layer2.ProofVerifier do
     # Verify that a signature in the batch is invalid
     tx_index = proof.transaction_index
     tx = Enum.at(batch.transactions, tx_index)
-    
+
     if tx do
       # Verify the transaction signature is invalid
       not verify_transaction_signature(tx)
@@ -93,7 +94,7 @@ defmodule ExWire.Layer2.ProofVerifier do
     # Verify that transaction execution is invalid
     # This would involve re-executing the transaction
     # and comparing results
-    
+
     # For now, simulate
     :rand.uniform() > 0.5
   end
@@ -125,7 +126,7 @@ defmodule ExWire.Layer2.ProofVerifier do
     # Simulate cryptographic verification
     # In production, this would call native verification functions
     # for the specific proof system (Groth16, PLONK, STARK, etc.)
-    
+
     # For testing, accept most proofs
     :rand.uniform() > 0.1
   end

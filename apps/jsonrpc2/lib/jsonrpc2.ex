@@ -43,13 +43,13 @@ defmodule JSONRPC2 do
 
     filter_manager = {JSONRPC2.FilterManager, []}
     subscription_manager = {JSONRPC2.SubscriptionManager, []}
-    
+
     children =
       [filter_manager, subscription_manager] ++
-      Enum.concat(
-        ipc_child,
-        WebSocketHTTP.children(http_configuration, ws_configuration, SpecHandler)
-      )
+        Enum.concat(
+          ipc_child,
+          WebSocketHTTP.children(http_configuration, ws_configuration, SpecHandler)
+        )
 
     Supervisor.start_link(children,
       strategy: :one_for_one

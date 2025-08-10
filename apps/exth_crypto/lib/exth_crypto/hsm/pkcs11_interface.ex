@@ -1,11 +1,11 @@
 defmodule ExthCrypto.HSM.PKCS11Interface do
   @moduledoc """
   PKCS#11 interface adapter for Hardware Security Module (HSM) communication.
-  
+
   This module provides a standard interface to communicate with HSMs that support
   the PKCS#11 standard. It abstracts the complexities of the PKCS#11 C API and
   provides a clean Elixir interface for cryptographic operations.
-  
+
   Supports major HSM vendors:
   - Thales nShield
   - AWS CloudHSM
@@ -25,23 +25,23 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
   @type object_handle :: reference()
   @type mechanism :: atom()
   @type key_type :: :ec_secp256k1 | :rsa_2048 | :aes_256
-  
+
   @type hsm_config :: %{
-    library_path: String.t(),
-    slot_id: slot_id(),
-    pin: String.t(),
-    label: String.t(),
-    read_write: boolean()
-  }
+          library_path: String.t(),
+          slot_id: slot_id(),
+          pin: String.t(),
+          label: String.t(),
+          read_write: boolean()
+        }
 
   @type key_info :: %{
-    handle: object_handle(),
-    label: String.t(),
-    key_type: key_type(),
-    extractable: boolean(),
-    sign_verify: boolean(),
-    encrypt_decrypt: boolean()
-  }
+          handle: object_handle(),
+          label: String.t(),
+          key_type: key_type(),
+          extractable: boolean(),
+          sign_verify: boolean(),
+          encrypt_decrypt: boolean()
+        }
 
   # PKCS#11 mechanism constants
   @mechanisms %{
@@ -70,17 +70,171 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
 
   # secp256k1 curve parameters (DER encoded)
   @secp256k1_params <<
-    0x30, 0x81, 0xa7, 0x02, 0x01, 0x01, 0x30, 0x2c, 0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x01, 
-    0x01, 0x02, 0x21, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 
-    0xff, 0xff, 0xfc, 0x2f, 0x30, 0x06, 0x04, 0x01, 0x00, 0x04, 0x01, 0x07, 0x04, 0x41, 0x04, 0x79, 
-    0xbe, 0x66, 0x7e, 0xf9, 0xdc, 0xbb, 0xac, 0x55, 0xa0, 0x62, 0x95, 0xce, 0x87, 0x0b, 0x07, 0x02, 
-    0x9b, 0xfc, 0xdb, 0x2d, 0xce, 0x28, 0xd9, 0x59, 0xf2, 0x81, 0x5b, 0x16, 0xf8, 0x17, 0x98, 0x48, 
-    0x3a, 0xda, 0x77, 0x26, 0xa3, 0xc4, 0x65, 0x5d, 0xa4, 0xfb, 0xfc, 0x0e, 0x11, 0x08, 0xa8, 0xfd, 
-    0x17, 0xb4, 0x48, 0xa6, 0x85, 0x54, 0x19, 0x9c, 0x47, 0xd0, 0x8f, 0xfb, 0x10, 0xd4, 0xb8, 0x02, 
-    0x21, 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 
-    0xff, 0xfe, 0xba, 0xae, 0xdc, 0xe6, 0xaf, 0x48, 0xa0, 0x3b, 0xbf, 0xd2, 0x5e, 0x8c, 0xd0, 0x36, 
-    0x41, 0x41, 0x02, 0x01, 0x01
+    0x30,
+    0x81,
+    0xA7,
+    0x02,
+    0x01,
+    0x01,
+    0x30,
+    0x2C,
+    0x06,
+    0x07,
+    0x2A,
+    0x86,
+    0x48,
+    0xCE,
+    0x3D,
+    0x01,
+    0x01,
+    0x02,
+    0x21,
+    0x00,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFE,
+    0xFF,
+    0xFF,
+    0xFC,
+    0x2F,
+    0x30,
+    0x06,
+    0x04,
+    0x01,
+    0x00,
+    0x04,
+    0x01,
+    0x07,
+    0x04,
+    0x41,
+    0x04,
+    0x79,
+    0xBE,
+    0x66,
+    0x7E,
+    0xF9,
+    0xDC,
+    0xBB,
+    0xAC,
+    0x55,
+    0xA0,
+    0x62,
+    0x95,
+    0xCE,
+    0x87,
+    0x0B,
+    0x07,
+    0x02,
+    0x9B,
+    0xFC,
+    0xDB,
+    0x2D,
+    0xCE,
+    0x28,
+    0xD9,
+    0x59,
+    0xF2,
+    0x81,
+    0x5B,
+    0x16,
+    0xF8,
+    0x17,
+    0x98,
+    0x48,
+    0x3A,
+    0xDA,
+    0x77,
+    0x26,
+    0xA3,
+    0xC4,
+    0x65,
+    0x5D,
+    0xA4,
+    0xFB,
+    0xFC,
+    0x0E,
+    0x11,
+    0x08,
+    0xA8,
+    0xFD,
+    0x17,
+    0xB4,
+    0x48,
+    0xA6,
+    0x85,
+    0x54,
+    0x19,
+    0x9C,
+    0x47,
+    0xD0,
+    0x8F,
+    0xFB,
+    0x10,
+    0xD4,
+    0xB8,
+    0x02,
+    0x21,
+    0x00,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFF,
+    0xFE,
+    0xBA,
+    0xAE,
+    0xDC,
+    0xE6,
+    0xAF,
+    0x48,
+    0xA0,
+    0x3B,
+    0xBF,
+    0xD2,
+    0x5E,
+    0x8C,
+    0xD0,
+    0x36,
+    0x41,
+    0x41,
+    0x02,
+    0x01,
+    0x01
   >>
 
   ## GenServer API
@@ -94,7 +248,7 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
       {:ok, state} ->
         Logger.info("PKCS#11 interface initialized successfully")
         {:ok, state}
-      
+
       {:error, reason} ->
         Logger.error("Failed to initialize PKCS#11 interface: #{reason}")
         {:stop, reason}
@@ -130,9 +284,11 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
       logout(state.session)
       close_session(state.session)
     end
+
     if state.handle do
       finalize(state.handle)
     end
+
     Logger.info("PKCS#11 interface terminated")
   end
 
@@ -157,7 +313,8 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
   @doc """
   Generate a new ECDSA secp256k1 key pair for Ethereum use.
   """
-  @spec generate_ethereum_key_pair(String.t()) :: {:ok, {object_handle(), object_handle()}} | {:error, String.t()}
+  @spec generate_ethereum_key_pair(String.t()) ::
+          {:ok, {object_handle(), object_handle()}} | {:error, String.t()}
   def generate_ethereum_key_pair(label) do
     GenServer.call(__MODULE__, {:generate_key_pair, :ec_secp256k1, label}, 30_000)
   end
@@ -185,13 +342,12 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
          :ok <- initialize(handle),
          {:ok, session} <- open_session(handle, config.slot_id, config.read_write),
          :ok <- login(session, config.pin) do
-      
       state = %{
         handle: handle,
         session: session,
         config: config
       }
-      
+
       {:ok, state}
     else
       {:error, reason} -> {:error, reason}
@@ -204,6 +360,7 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
   defp load_library(library_path) do
     # Simulated implementation - would use NIFs in production
     Logger.debug("Loading PKCS#11 library: #{library_path}")
+
     case File.exists?(library_path) do
       true -> {:ok, make_ref()}
       false -> {:error, "PKCS#11 library not found: #{library_path}"}
@@ -252,13 +409,13 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
 
   defp find_objects(session, filters) do
     Logger.debug("Finding objects with filters: #{inspect(filters)}")
-    
+
     # Build template based on filters
     template = build_template(filters)
-    
+
     # Simulated object discovery
     # In real implementation: C_FindObjectsInit, C_FindObjects, C_FindObjectsFinal
-    
+
     sample_keys = [
       %{
         handle: make_ref(),
@@ -270,108 +427,243 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
       },
       %{
         handle: make_ref(),
-        label: "ethereum-validator-key-1", 
+        label: "ethereum-validator-key-1",
         key_type: :ec_secp256k1,
         extractable: false,
         sign_verify: true,
         encrypt_decrypt: false
       }
     ]
-    
+
     # Filter results based on template
-    filtered_keys = Enum.filter(sample_keys, fn key ->
-      Enum.all?(filters, fn {filter_key, filter_value} ->
-        Map.get(key, filter_key) == filter_value
+    filtered_keys =
+      Enum.filter(sample_keys, fn key ->
+        Enum.all?(filters, fn {filter_key, filter_value} ->
+          Map.get(key, filter_key) == filter_value
+        end)
       end)
-    end)
-    
+
     {:ok, filtered_keys}
   end
 
   defp generate_ec_key_pair(session, label) do
     Logger.info("Generating EC secp256k1 key pair with label: #{label}")
-    
+
     # Public key template
     public_template = [
-      {0x00000000, @object_classes.public_key},    # CKA_CLASS
-      {0x00000100, @key_types.ec},                 # CKA_KEY_TYPE  
-      {0x00000003, label},                         # CKA_LABEL
-      {0x00000108, @secp256k1_params},            # CKA_EC_PARAMS
-      {0x00000001, true},                          # CKA_TOKEN
-      {0x0000010A, true},                          # CKA_VERIFY
+      # CKA_CLASS
+      {0x00000000, @object_classes.public_key},
+      # CKA_KEY_TYPE  
+      {0x00000100, @key_types.ec},
+      # CKA_LABEL
+      {0x00000003, label},
+      # CKA_EC_PARAMS
+      {0x00000108, @secp256k1_params},
+      # CKA_TOKEN
+      {0x00000001, true},
+      # CKA_VERIFY
+      {0x0000010A, true}
     ]
-    
+
     # Private key template  
     private_template = [
-      {0x00000000, @object_classes.private_key},   # CKA_CLASS
-      {0x00000100, @key_types.ec},                 # CKA_KEY_TYPE
-      {0x00000003, label},                         # CKA_LABEL
-      {0x00000001, true},                          # CKA_TOKEN
-      {0x00000109, true},                          # CKA_SIGN
-      {0x00000162, false},                         # CKA_EXTRACTABLE
-      {0x00000163, true},                          # CKA_SENSITIVE
+      # CKA_CLASS
+      {0x00000000, @object_classes.private_key},
+      # CKA_KEY_TYPE
+      {0x00000100, @key_types.ec},
+      # CKA_LABEL
+      {0x00000003, label},
+      # CKA_TOKEN
+      {0x00000001, true},
+      # CKA_SIGN
+      {0x00000109, true},
+      # CKA_EXTRACTABLE
+      {0x00000162, false},
+      # CKA_SENSITIVE
+      {0x00000163, true}
     ]
-    
+
     # In real implementation: C_GenerateKeyPair
     public_key_handle = make_ref()
     private_key_handle = make_ref()
-    
-    Logger.info("Generated key pair - Private: #{inspect(private_key_handle)}, Public: #{inspect(public_key_handle)}")
-    
+
+    Logger.info(
+      "Generated key pair - Private: #{inspect(private_key_handle)}, Public: #{inspect(public_key_handle)}"
+    )
+
     {:ok, {private_key_handle, public_key_handle}}
   end
 
   defp sign_data(session, data, private_key_handle) do
     Logger.debug("Signing data with private key: #{inspect(private_key_handle)}")
-    
+
     # Initialize signing operation
     mechanism = %{mechanism: @mechanisms.ecdsa_sha256, parameter: nil}
-    
+
     # In real implementation: 
     # C_SignInit(session, mechanism, private_key_handle)
     # C_Sign(session, data) or C_SignUpdate/C_SignFinal for large data
-    
+
     # Simulate ECDSA signature (DER format)
     # Real HSM would return actual signature
     simulated_signature = <<
-      0x30, 0x44,                                    # SEQUENCE, length
-      0x02, 0x20,                                    # INTEGER r, length 32
-      0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-      0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-      0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-      0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-      0x02, 0x20,                                    # INTEGER s, length 32  
-      0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
-      0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
-      0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
-      0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10
+      # SEQUENCE, length
+      0x30,
+      0x44,
+      # INTEGER r, length 32
+      0x02,
+      0x20,
+      0x12,
+      0x34,
+      0x56,
+      0x78,
+      0x9A,
+      0xBC,
+      0xDE,
+      0xF0,
+      0x12,
+      0x34,
+      0x56,
+      0x78,
+      0x9A,
+      0xBC,
+      0xDE,
+      0xF0,
+      0x12,
+      0x34,
+      0x56,
+      0x78,
+      0x9A,
+      0xBC,
+      0xDE,
+      0xF0,
+      0x12,
+      0x34,
+      0x56,
+      0x78,
+      0x9A,
+      0xBC,
+      0xDE,
+      0xF0,
+      # INTEGER s, length 32  
+      0x02,
+      0x20,
+      0xFE,
+      0xDC,
+      0xBA,
+      0x98,
+      0x76,
+      0x54,
+      0x32,
+      0x10,
+      0xFE,
+      0xDC,
+      0xBA,
+      0x98,
+      0x76,
+      0x54,
+      0x32,
+      0x10,
+      0xFE,
+      0xDC,
+      0xBA,
+      0x98,
+      0x76,
+      0x54,
+      0x32,
+      0x10,
+      0xFE,
+      0xDC,
+      0xBA,
+      0x98,
+      0x76,
+      0x54,
+      0x32,
+      0x10
     >>
-    
+
     {:ok, simulated_signature}
   end
 
   defp get_corresponding_public_key(session, private_key_handle) do
     Logger.debug("Getting public key for private key: #{inspect(private_key_handle)}")
-    
+
     # Find the corresponding public key by label
     # In real implementation: C_FindObjectsInit with template matching the private key's label
-    
+
     # Simulate getting public key data
     # Real implementation would extract CKA_EC_POINT attribute
     simulated_public_key = <<
-      0x04,  # Uncompressed point indicator
+      # Uncompressed point indicator
+      0x04,
       # x coordinate (32 bytes)
-      0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-      0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,  
-      0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
-      0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0,
+      0x12,
+      0x34,
+      0x56,
+      0x78,
+      0x9A,
+      0xBC,
+      0xDE,
+      0xF0,
+      0x12,
+      0x34,
+      0x56,
+      0x78,
+      0x9A,
+      0xBC,
+      0xDE,
+      0xF0,
+      0x12,
+      0x34,
+      0x56,
+      0x78,
+      0x9A,
+      0xBC,
+      0xDE,
+      0xF0,
+      0x12,
+      0x34,
+      0x56,
+      0x78,
+      0x9A,
+      0xBC,
+      0xDE,
+      0xF0,
       # y coordinate (32 bytes)
-      0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
-      0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
-      0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10,
-      0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10
+      0xFE,
+      0xDC,
+      0xBA,
+      0x98,
+      0x76,
+      0x54,
+      0x32,
+      0x10,
+      0xFE,
+      0xDC,
+      0xBA,
+      0x98,
+      0x76,
+      0x54,
+      0x32,
+      0x10,
+      0xFE,
+      0xDC,
+      0xBA,
+      0x98,
+      0x76,
+      0x54,
+      0x32,
+      0x10,
+      0xFE,
+      0xDC,
+      0xBA,
+      0x98,
+      0x76,
+      0x54,
+      0x32,
+      0x10
     >>
-    
+
     {:ok, simulated_public_key}
   end
 
@@ -403,7 +695,7 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
           timestamp: DateTime.utc_now()
         }
       else
-        {:error, reason} -> 
+        {:error, reason} ->
           %{
             status: :unhealthy,
             reason: reason,

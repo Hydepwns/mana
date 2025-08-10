@@ -1,10 +1,10 @@
 defmodule VerkleTree do
   @moduledoc """
   Implementation of Verkle Trees for Ethereum state transition, following EIP-6800.
-  
+
   Verkle trees combine vector commitments with Merkle tree structures to enable
   stateless clients with small witnesses (~200 bytes vs ~3KB for MPT).
-  
+
   Key features:
   - 256-width nodes (vs 17-width for MPT)
   - Bandersnatch curve cryptographic commitments  
@@ -51,7 +51,7 @@ defmodule VerkleTree do
     # In a full verkle tree, this would traverse the tree structure
     verkle_key = normalize_key(key)
     storage_key = "verkle:" <> verkle_key
-    
+
     case DB.get(tree.db, storage_key) do
       {:ok, value} -> {:ok, value}
       :not_found -> :not_found
@@ -66,15 +66,16 @@ defmodule VerkleTree do
   def put(tree, key, value) do
     verkle_key = normalize_key(key)
     storage_key = "verkle:" <> verkle_key
-    
+
     if is_nil(value) do
       remove(tree, key)
     else
       # Store the value directly for simplified implementation
       DB.put!(tree.db, storage_key, value)
-      
+
       # Update root commitment based on new state
       new_commitment = compute_new_root_commitment(tree, key, value)
+
       %{tree | root_commitment: new_commitment}
       |> store()
     end
@@ -87,12 +88,13 @@ defmodule VerkleTree do
   def remove(tree, key) do
     verkle_key = normalize_key(key)
     storage_key = "verkle:" <> verkle_key
-    
+
     # Remove from storage
     DB.delete!(tree.db, storage_key)
-    
+
     # Update root commitment
     new_commitment = compute_new_root_commitment(tree, key, nil)
+
     %{tree | root_commitment: new_commitment}
     |> store()
   end
@@ -120,12 +122,12 @@ defmodule VerkleTree do
   """
   @spec root_commitment(t()) :: root_commitment()
   def root_commitment(tree), do: tree.root_commitment
-  
+
   # State Expiry Methods (EIP-7736)
-  
+
   @doc """
   Gets a value with state expiry checking.
-  
+
   Returns `{:expired, proof}` if the state is expired and needs resurrection.
   """
   @spec get_with_expiry(t(), key(), map()) :: {:ok, value()} | {:expired, map()} | :not_found
@@ -133,7 +135,7 @@ defmodule VerkleTree do
     normalized_key = normalize_key(key)
     StateExpiry.get_with_expiry(tree, normalized_key, expiry_manager)
   end
-  
+
   @doc """
   Puts a value with state expiry epoch tracking.
   """
@@ -142,16 +144,17 @@ defmodule VerkleTree do
     normalized_key = normalize_key(key)
     StateExpiry.put_with_expiry(tree, normalized_key, value, expiry_manager)
   end
-  
+
   @doc """
   Resurrects expired state with a proof.
   """
-  @spec resurrect_state(t(), key(), map(), map()) :: {:ok, t(), map(), non_neg_integer()} | {:error, term()}
+  @spec resurrect_state(t(), key(), map(), map()) ::
+          {:ok, t(), map(), non_neg_integer()} | {:error, term()}
   def resurrect_state(tree, key, resurrection_proof, expiry_manager) do
     normalized_key = normalize_key(key)
     StateExpiry.resurrect_state(tree, normalized_key, resurrection_proof, expiry_manager)
   end
-  
+
   @doc """
   Performs garbage collection to remove expired state.
   """
@@ -159,7 +162,7 @@ defmodule VerkleTree do
   def garbage_collect(tree, expiry_manager) do
     StateExpiry.garbage_collect(tree, expiry_manager)
   end
-  
+
   @doc """
   Gets state expiry statistics.
   """
@@ -171,19 +174,23 @@ defmodule VerkleTree do
   # Private helper functions
 
   defp normalize_key(key) when byte_size(key) == 32, do: key
+
   defp normalize_key(key) when is_binary(key) do
     # Pad or hash to 32 bytes as per EIP-6800
     case byte_size(key) do
       size when size < 32 ->
         # Pad with zeros
         key <> :binary.copy(<<0>>, 32 - size)
+
       size when size > 32 ->
         # Hash to 32 bytes
         ExthCrypto.Hash.Keccak.kec(key)
+
       32 ->
         key
     end
   end
+
   defp normalize_key(key) when is_list(key) do
     key
     |> :binary.list_to_bin()
@@ -194,6 +201,7 @@ defmodule VerkleTree do
     case DB.get(tree.db, tree.root_commitment) do
       {:ok, encoded_node} ->
         Node.decode(encoded_node)
+
       :not_found ->
         Node.empty()
     end
@@ -207,9 +215,10 @@ defmodule VerkleTree do
   defp compute_new_root_commitment(tree, key, value) do
     # Simplified implementation: hash the current state
     # In a real verkle tree, this would compute the proper polynomial commitment
-    state_data = [tree.root_commitment, normalize_key(key), value || ""]
-    |> Enum.join()
-    
+    state_data =
+      [tree.root_commitment, normalize_key(key), value || ""]
+      |> Enum.join()
+
     ExthCrypto.Hash.Keccak.kec(state_data)
   end
 

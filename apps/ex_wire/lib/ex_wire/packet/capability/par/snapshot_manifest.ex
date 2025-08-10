@@ -159,15 +159,16 @@ defmodule ExWire.Packet.Capability.Par.SnapshotManifest do
     # This handler is called when we receive a SnapshotManifest from a peer
     # In the context of serving, we respond to GetSnapshotManifest requests
     # via ExWire.Sync.SnapshotServer.handle_manifest_request/2
-    
+
     # For now, just log that we received a manifest (peer is sharing their snapshot)
     case peer_info do
       %{peer_id: peer_id} ->
         Logger.debug("[SnapshotManifest] Received manifest from peer #{peer_id}")
+
       _ ->
         Logger.debug("[SnapshotManifest] Received manifest from unknown peer")
     end
-    
+
     :ok
   end
 end

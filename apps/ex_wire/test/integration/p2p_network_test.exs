@@ -35,7 +35,8 @@ defmodule ExWire.Integration.P2PNetworkTest do
     # Create test configuration
     config = %{
       max_test_connections: 3,
-      test_duration: 60_000,  # 1 minute
+      # 1 minute
+      test_duration: 60_000,
       expected_min_peers: 2,
       protocol_test_timeout: 10_000
     }
@@ -43,6 +44,7 @@ defmodule ExWire.Integration.P2PNetworkTest do
     on_exit(fn ->
       # Cleanup any remaining connections
       connected_peers = ConnectionPool.get_connected_peers()
+
       for peer <- connected_peers do
         ConnectionPool.disconnect_peer(peer)
       end
@@ -57,15 +59,18 @@ defmodule ExWire.Integration.P2PNetworkTest do
       Logger.info("Testing connections to #{length(@ethereum_bootnodes)} Ethereum bootnodes")
 
       # Convert bootnode URIs to Peer structs
-      peers = Enum.map(@ethereum_bootnodes, fn uri ->
-        case Peer.from_uri(uri) do
-          {:ok, peer} -> peer
-          {:error, reason} -> 
-            Logger.warning("Failed to parse bootnode URI #{uri}: #{inspect(reason)}")
-            nil
-        end
-      end)
-      |> Enum.reject(&is_nil/1)
+      peers =
+        Enum.map(@ethereum_bootnodes, fn uri ->
+          case Peer.from_uri(uri) do
+            {:ok, peer} ->
+              peer
+
+            {:error, reason} ->
+              Logger.warning("Failed to parse bootnode URI #{uri}: #{inspect(reason)}")
+              nil
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
 
       assert length(peers) > 0, "Could not parse any bootnode URIs"
 
@@ -75,11 +80,13 @@ defmodule ExWire.Integration.P2PNetworkTest do
 
       # Verify at least some connections succeeded
       successful_connections = Enum.count(connection_results, &match?({:ok, _}, &1))
-      
-      assert successful_connections >= config.expected_min_peers, 
-        "Expected at least #{config.expected_min_peers} successful connections, got #{successful_connections}"
 
-      Logger.info("Successfully connected to #{successful_connections}/#{length(test_peers)} test peers")
+      assert successful_connections >= config.expected_min_peers,
+             "Expected at least #{config.expected_min_peers} successful connections, got #{successful_connections}"
+
+      Logger.info(
+        "Successfully connected to #{successful_connections}/#{length(test_peers)} test peers"
+      )
 
       # Test basic protocol exchange with connected peers
       connected_peers = ConnectionPool.get_connected_peers()
@@ -88,7 +95,9 @@ defmodule ExWire.Integration.P2PNetworkTest do
       successful_protocols = Enum.count(protocol_results, &match?({:ok, _}, &1))
       assert successful_protocols > 0, "No successful protocol exchanges"
 
-      Logger.info("Successfully completed protocol exchange with #{successful_protocols}/#{length(connected_peers)} peers")
+      Logger.info(
+        "Successfully completed protocol exchange with #{successful_protocols}/#{length(connected_peers)} peers"
+      )
     end
 
     @tag timeout: 90_000
@@ -121,14 +130,14 @@ defmodule ExWire.Integration.P2PNetworkTest do
 
       # Check network metrics
       metrics = NetworkMonitor.get_network_metrics()
-      
+
       assert metrics.current_peer_count >= 0
       assert is_number(metrics.avg_response_time)
       assert is_number(metrics.connection_churn_rate)
 
       # Get topology information
       topology = NetworkMonitor.get_topology_info()
-      
+
       assert is_list(topology.peer_clusters)
       assert is_list(topology.super_nodes)
 
@@ -145,7 +154,7 @@ defmodule ExWire.Integration.P2PNetworkTest do
       Logger.info("Testing peer reputation system")
 
       connected_peers = ConnectionPool.get_connected_peers()
-      
+
       if length(connected_peers) > 0 do
         test_peer = hd(connected_peers)
 
@@ -161,7 +170,9 @@ defmodule ExWire.Integration.P2PNetworkTest do
         updated_reputation = ConnectionPool.get_peer_reputation(test_peer)
         assert is_float(updated_reputation)
 
-        Logger.info("Peer #{inspect(test_peer)} reputation: #{initial_reputation} -> #{updated_reputation}")
+        Logger.info(
+          "Peer #{inspect(test_peer)} reputation: #{initial_reputation} -> #{updated_reputation}"
+        )
       else
         Logger.warning("No connected peers available for reputation testing")
       end
@@ -174,16 +185,19 @@ defmodule ExWire.Integration.P2PNetworkTest do
       Logger.info("Testing eth/66 and eth/67 protocol support")
 
       connected_peers = ConnectionPool.get_connected_peers()
-      
+
       if length(connected_peers) > 0 do
         # Test protocol version negotiation
         for peer <- Enum.take(connected_peers, 2) do
           peer_stats = NetworkMonitor.get_peer_stats(peer)
-          
+
           if peer_stats do
             protocol_info = peer_stats.protocol_info
-            Logger.info("Peer #{inspect(peer)} protocol: version=#{protocol_info.version}, capabilities=#{inspect(protocol_info.capabilities)}")
-            
+
+            Logger.info(
+              "Peer #{inspect(peer)} protocol: version=#{protocol_info.version}, capabilities=#{inspect(protocol_info.capabilities)}"
+            )
+
             # Verify modern protocol support
             assert protocol_info.version >= 66, "Peer should support eth/66 or higher"
           end
@@ -201,21 +215,21 @@ defmodule ExWire.Integration.P2PNetworkTest do
       :timer.sleep(10_000)
 
       connected_peers = ConnectionPool.get_connected_peers()
-      
+
       if length(connected_peers) > 0 do
         test_peer = hd(connected_peers)
         peer_stats = NetworkMonitor.get_peer_stats(test_peer)
-        
+
         if peer_stats do
           message_stats = peer_stats.message_stats
-          
+
           # Verify message exchange occurred
           total_messages = message_stats.sent + message_stats.received
           assert total_messages > 0, "Expected some message exchange"
-          
+
           # Verify message types
           assert map_size(message_stats.types) > 0, "Expected different message types"
-          
+
           Logger.info("Message stats for #{inspect(test_peer)}: #{inspect(message_stats)}")
         end
       else
@@ -251,11 +265,14 @@ defmodule ExWire.Integration.P2PNetworkTest do
         recovered_peers = ConnectionPool.get_connected_peers()
         recovered_count = length(recovered_peers)
 
-        Logger.info("Connection recovery: #{initial_count} -> #{length(remaining_peers)} -> #{recovered_count}")
-        
+        Logger.info(
+          "Connection recovery: #{initial_count} -> #{length(remaining_peers)} -> #{recovered_count}"
+        )
+
         # We should ideally recover the connection through discovery
         # This might not always succeed in test environment, so we're lenient
-        assert recovered_count >= length(remaining_peers), "Should maintain or improve connection count"
+        assert recovered_count >= length(remaining_peers),
+               "Should maintain or improve connection count"
       else
         Logger.warning("No connected peers available for disconnect testing")
       end
@@ -267,18 +284,20 @@ defmodule ExWire.Integration.P2PNetworkTest do
 
       # Get initial network metrics
       initial_metrics = NetworkMonitor.get_network_metrics()
-      
+
       # Wait for some network activity that might include timeouts
       :timer.sleep(20_000)
-      
+
       # Check updated metrics
       final_metrics = NetworkMonitor.get_network_metrics()
-      
+
       # Verify metrics are being tracked
       assert final_metrics.total_messages_sent >= initial_metrics.total_messages_sent
       assert final_metrics.total_messages_received >= initial_metrics.total_messages_received
 
-      Logger.info("Network activity: sent #{final_metrics.total_messages_sent}, received #{final_metrics.total_messages_received}")
+      Logger.info(
+        "Network activity: sent #{final_metrics.total_messages_sent}, received #{final_metrics.total_messages_received}"
+      )
     end
   end
 
@@ -288,32 +307,36 @@ defmodule ExWire.Integration.P2PNetworkTest do
     Logger.info("Testing connections to #{length(peers)} peers with timeout #{timeout}ms")
 
     # Start connection attempts
-    connection_tasks = Enum.map(peers, fn peer ->
-      Task.async(fn ->
-        case ConnectionPool.connect_to_peer(peer) do
-          :ok ->
-            # Wait a moment to ensure connection is established
-            :timer.sleep(2_000)
-            
-            # Verify connection
-            connected_peers = ConnectionPool.get_connected_peers()
-            if Enum.member?(connected_peers, peer) do
-              {:ok, peer}
-            else
-              {:error, :connection_not_established}
-            end
+    connection_tasks =
+      Enum.map(peers, fn peer ->
+        Task.async(fn ->
+          case ConnectionPool.connect_to_peer(peer) do
+            :ok ->
+              # Wait a moment to ensure connection is established
+              :timer.sleep(2_000)
 
-          error ->
-            {:error, error}
-        end
+              # Verify connection
+              connected_peers = ConnectionPool.get_connected_peers()
+
+              if Enum.member?(connected_peers, peer) do
+                {:ok, peer}
+              else
+                {:error, :connection_not_established}
+              end
+
+            error ->
+              {:error, error}
+          end
+        end)
       end)
-    end)
 
     # Wait for results with timeout
     Enum.map(connection_tasks, fn task ->
       case Task.yield(task, timeout) do
-        {:ok, result} -> result
-        nil -> 
+        {:ok, result} ->
+          result
+
+        nil ->
           Task.shutdown(task, :brutal_kill)
           {:error, :timeout}
       end
@@ -329,7 +352,7 @@ defmodule ExWire.Integration.P2PNetworkTest do
       try do
         # Give some time for protocol negotiation
         :timer.sleep(1_000)
-        
+
         case NetworkMonitor.get_peer_stats(peer) do
           nil -> {:error, :no_stats}
           _stats -> {:ok, peer}

@@ -1,36 +1,36 @@
 defmodule ExWire.Eth2.StateTransition do
   @moduledoc """
   State transition functions for Ethereum 2.0 beacon chain.
-  
+
   Implements the beacon chain state transition function that processes
   blocks and updates the beacon state.
   """
-  
+
   alias ExWire.Eth2.{BeaconState, BeaconBlock}
-  
+
   @doc """
   Process a beacon block and return the new state.
   """
-  @spec process_block(BeaconState.t(), BeaconBlock.t()) :: 
-    {:ok, BeaconState.t()} | {:error, term()}
+  @spec process_block(BeaconState.t(), BeaconBlock.t()) ::
+          {:ok, BeaconState.t()} | {:error, term()}
   def process_block(state, block) do
     # Simplified state transition - in production this would implement
     # the full Ethereum 2.0 state transition function
-    
+
     # Basic validation
     if block.slot < state.slot do
       {:error, :invalid_slot}
     else
       # Update state slot
       new_state = %{state | slot: block.slot}
-      
+
       # Process block body operations
       new_state = process_block_body(new_state, block.body)
-      
+
       {:ok, new_state}
     end
   end
-  
+
   @doc """
   Process slots without blocks (empty slots).
   """
@@ -42,9 +42,9 @@ defmodule ExWire.Eth2.StateTransition do
       %{state | slot: target_slot}
     end
   end
-  
+
   # Private functions
-  
+
   defp process_block_body(state, body) do
     # Process all operations in the block body
     state
@@ -52,17 +52,17 @@ defmodule ExWire.Eth2.StateTransition do
     |> process_eth1_data(body.eth1_data)
     |> process_operations(body)
   end
-  
+
   defp process_randao_reveal(state, _randao_reveal) do
     # Process RANDAO reveal
     state
   end
-  
+
   defp process_eth1_data(state, _eth1_data) do
     # Process ETH1 data
     state
   end
-  
+
   defp process_operations(state, body) do
     # Process all operations
     state
@@ -75,7 +75,7 @@ defmodule ExWire.Eth2.StateTransition do
     |> process_execution_payload(body.execution_payload)
     |> process_bls_to_execution_changes(body.bls_to_execution_changes)
   end
-  
+
   defp process_proposer_slashings(state, _slashings), do: state
   defp process_attester_slashings(state, _slashings), do: state
   defp process_attestations(state, _attestations), do: state

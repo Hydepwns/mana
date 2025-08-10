@@ -1,11 +1,11 @@
 defmodule Blockchain.Monitoring.StructuredLogger do
   @moduledoc """
   Structured logging module for the Mana-Ethereum client.
-  
+
   Provides consistent, structured logging with proper log levels, context,
   and machine-readable output. Supports both development (human-readable)
   and production (JSON) formats.
-  
+
   ## Features:
   - Structured log entries with consistent fields
   - Context propagation (request IDs, session IDs, etc.)
@@ -28,7 +28,7 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   # Component identifiers
   @components %{
     blockchain: "blockchain",
-    evm: "evm", 
+    evm: "evm",
     p2p: "p2p",
     rpc: "rpc",
     sync: "sync",
@@ -48,22 +48,22 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   ]
 
   @type t :: %__MODULE__{
-    node_id: String.t(),
-    version: String.t(), 
-    format: :human | :json,
-    min_level: atom(),
-    context: map(),
-    sampling_rate: float()
-  }
+          node_id: String.t(),
+          version: String.t(),
+          format: :human | :json,
+          min_level: atom(),
+          context: map(),
+          sampling_rate: float()
+        }
 
   @type log_entry :: %{
-    timestamp: DateTime.t(),
-    level: atom(),
-    message: String.t(),
-    component: String.t(),
-    context: map(),
-    metadata: map()
-  }
+          timestamp: DateTime.t(),
+          level: atom(),
+          message: String.t(),
+          component: String.t(),
+          context: map(),
+          metadata: map()
+        }
 
   # Public API
 
@@ -80,11 +80,14 @@ defmodule Blockchain.Monitoring.StructuredLogger do
       context: Keyword.get(opts, :context, %{}),
       sampling_rate: Keyword.get(opts, :sampling_rate, 1.0)
     }
-    
+
     # Store config in process dictionary for fast access
     Process.put(:structured_logger_config, config)
-    
-    Logger.info("[StructuredLogger] Initialized with format: #{config.format}, min_level: #{config.min_level}")
+
+    Logger.info(
+      "[StructuredLogger] Initialized with format: #{config.format}, min_level: #{config.min_level}"
+    )
+
     :ok
   end
 
@@ -97,6 +100,7 @@ defmodule Blockchain.Monitoring.StructuredLogger do
       entry = create_log_entry(level, component, message, context, metadata)
       emit_log_entry(entry)
     end
+
     :ok
   end
 
@@ -163,13 +167,17 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   """
   @spec log_performance(String.t(), String.t(), number(), map()) :: :ok
   def log_performance(component, operation, duration_ms, context \\ %{}) do
-    log(:info, component, "Performance measurement: #{operation}", 
+    log(
+      :info,
+      component,
+      "Performance measurement: #{operation}",
       Map.merge(context, %{
         operation: operation,
         duration_ms: duration_ms,
         performance: true
-      }))
-    
+      })
+    )
+
     # Also emit telemetry for metrics collection
     TelemetryIntegrator.emit_storage_operation(operation, trunc(duration_ms * 1000), %{
       component: component
@@ -181,12 +189,13 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   """
   @spec log_error(String.t(), String.t(), Exception.t(), list(), map()) :: :ok
   def log_error(component, message, error, stacktrace, context \\ %{}) do
-    error_context = Map.merge(context, %{
-      error_type: error.__struct__,
-      error_message: Exception.message(error),
-      stacktrace: format_stacktrace(stacktrace)
-    })
-    
+    error_context =
+      Map.merge(context, %{
+        error_type: error.__struct__,
+        error_message: Exception.message(error),
+        stacktrace: format_stacktrace(stacktrace)
+      })
+
     log(:error, component, message, error_context)
   end
 
@@ -195,12 +204,13 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   """
   @spec log_request(String.t(), String.t(), String.t(), map(), map()) :: :ok
   def log_request(component, request_type, request_id, request_data, context \\ %{}) do
-    request_context = Map.merge(context, %{
-      request_id: request_id,
-      request_type: request_type,
-      request_data: sanitize_request_data(request_data)
-    })
-    
+    request_context =
+      Map.merge(context, %{
+        request_id: request_id,
+        request_type: request_type,
+        request_data: sanitize_request_data(request_data)
+      })
+
     log(:info, component, "Request received: #{request_type}", request_context)
   end
 
@@ -208,16 +218,24 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   Log a response (HTTP, RPC, P2P message, etc.).
   """
   @spec log_response(String.t(), String.t(), String.t(), map(), number(), map()) :: :ok
-  def log_response(component, request_type, request_id, response_data, duration_ms, context \\ %{}) do
-    response_context = Map.merge(context, %{
-      request_id: request_id,
-      request_type: request_type,
-      response_data: sanitize_response_data(response_data),
-      duration_ms: duration_ms
-    })
-    
+  def log_response(
+        component,
+        request_type,
+        request_id,
+        response_data,
+        duration_ms,
+        context \\ %{}
+      ) do
+    response_context =
+      Map.merge(context, %{
+        request_id: request_id,
+        request_type: request_type,
+        response_data: sanitize_response_data(response_data),
+        duration_ms: duration_ms
+      })
+
     log(:info, component, "Response sent: #{request_type}", response_context)
-    
+
     # Also log performance
     log_performance(component, "#{request_type}_response", duration_ms, %{request_id: request_id})
   end
@@ -227,12 +245,13 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   """
   @spec log_blockchain_event(String.t(), String.t(), map(), map()) :: :ok
   def log_blockchain_event(event_type, description, event_data, context \\ %{}) do
-    blockchain_context = Map.merge(context, %{
-      event_type: event_type,
-      event_data: event_data,
-      blockchain: true
-    })
-    
+    blockchain_context =
+      Map.merge(context, %{
+        event_type: event_type,
+        event_data: event_data,
+        blockchain: true
+      })
+
     log(:info, @components.blockchain, description, blockchain_context)
   end
 
@@ -241,14 +260,15 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   """
   @spec log_p2p_event(String.t(), String.t(), map(), map()) :: :ok
   def log_p2p_event(event_type, description, event_data, context \\ %{}) do
-    p2p_context = Map.merge(context, %{
-      event_type: event_type,
-      event_data: sanitize_p2p_data(event_data),
-      p2p: true
-    })
-    
+    p2p_context =
+      Map.merge(context, %{
+        event_type: event_type,
+        event_data: sanitize_p2p_data(event_data),
+        p2p: true
+      })
+
     log(:info, @components.p2p, description, p2p_context)
-    
+
     # Emit telemetry for P2P events
     if event_data[:message_type] and event_data[:direction] do
       TelemetryIntegrator.emit_p2p_message(
@@ -264,13 +284,14 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   """
   @spec log_security_event(String.t(), String.t(), map(), map()) :: :ok
   def log_security_event(event_type, description, event_data, context \\ %{}) do
-    security_context = Map.merge(context, %{
-      event_type: event_type,
-      event_data: event_data,
-      security: true,
-      severity: "high"
-    })
-    
+    security_context =
+      Map.merge(context, %{
+        event_type: event_type,
+        event_data: event_data,
+        security: true,
+        severity: "high"
+      })
+
     # Security events are always logged as warnings or higher
     log(:warn, @components.system, "SECURITY: #{description}", security_context)
   end
@@ -309,9 +330,9 @@ defmodule Blockchain.Monitoring.StructuredLogger do
     config = get_config()
     level_priority = get_level_priority(level)
     min_level_priority = get_level_priority(config.min_level)
-    
+
     should_sample = :rand.uniform() <= config.sampling_rate
-    
+
     level_priority >= min_level_priority and should_sample
   end
 
@@ -322,7 +343,7 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   defp create_log_entry(level, component, message, context, metadata) do
     config = get_config()
     process_context = get_context()
-    
+
     %{
       timestamp: DateTime.utc_now(),
       level: level,
@@ -337,10 +358,11 @@ defmodule Blockchain.Monitoring.StructuredLogger do
 
   defp emit_log_entry(entry) do
     config = get_config()
-    
+
     case config.format do
       :json ->
         emit_json_log(entry)
+
       :human ->
         emit_human_log(entry)
     end
@@ -354,18 +376,19 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   defp emit_human_log(entry) do
     timestamp_str = DateTime.to_iso8601(entry.timestamp)
     level_str = String.upcase(to_string(entry.level))
-    
+
     # Create human-readable log line
     log_line = "[#{timestamp_str}] #{level_str} [#{entry.component}] #{entry.message}"
-    
+
     # Add context if present
-    log_line = if map_size(entry.context) > 0 do
-      context_str = format_context_for_human(entry.context)
-      "#{log_line} #{context_str}"
-    else
-      log_line
-    end
-    
+    log_line =
+      if map_size(entry.context) > 0 do
+        context_str = format_context_for_human(entry.context)
+        "#{log_line} #{context_str}"
+      else
+        log_line
+      end
+
     log_to_backend(entry.level, log_line)
   end
 
@@ -384,18 +407,20 @@ defmodule Blockchain.Monitoring.StructuredLogger do
   end
 
   defp format_context_for_human(context) when map_size(context) == 0, do: ""
+
   defp format_context_for_human(context) do
-    context_pairs = 
+    context_pairs =
       context
       |> Enum.map(fn {key, value} -> "#{key}=#{inspect(value)}" end)
       |> Enum.join(" ")
-    
+
     "[#{context_pairs}]"
   end
 
   defp format_stacktrace(stacktrace) do
     stacktrace
-    |> Enum.take(10)  # Limit to first 10 frames
+    # Limit to first 10 frames
+    |> Enum.take(10)
     |> Enum.map(&Exception.format_stacktrace_entry/1)
   end
 
@@ -403,7 +428,8 @@ defmodule Blockchain.Monitoring.StructuredLogger do
     # Remove or mask sensitive information
     data
     |> remove_sensitive_keys([:password, :private_key, :secret, :token])
-    |> limit_size(1000)  # Limit size to prevent log bloat
+    # Limit size to prevent log bloat
+    |> limit_size(1000)
   end
 
   defp sanitize_response_data(data) do
@@ -439,6 +465,7 @@ defmodule Blockchain.Monitoring.StructuredLogger do
 
   defp limit_size(data, max_length) when is_map(data) do
     serialized = inspect(data)
+
     if String.length(serialized) > max_length do
       "[LARGE_MAP:#{map_size(data)}_keys]"
     else
@@ -448,6 +475,7 @@ defmodule Blockchain.Monitoring.StructuredLogger do
 
   defp limit_size(data, max_length) when is_list(data) do
     serialized = inspect(data)
+
     if String.length(serialized) > max_length do
       "[LARGE_LIST:#{length(data)}_items]"
     else

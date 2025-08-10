@@ -23,32 +23,32 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   ]
 
   @type privacy_group :: %{
-    id: String.t(),
-    name: String.t(),
-    members: list(binary()),
-    encryption_key: binary(),
-    created_at: DateTime.t(),
-    permissions: map()
-  }
+          id: String.t(),
+          name: String.t(),
+          members: list(binary()),
+          encryption_key: binary(),
+          created_at: DateTime.t(),
+          permissions: map()
+        }
 
   @type private_tx :: %{
-    tx_id: String.t(),
-    public_tx: Transaction.t(),
-    private_payload: binary(),
-    privacy_group_id: String.t(),
-    participants: list(binary()),
-    zk_proof: binary() | nil,
-    status: :pending | :committed | :revealed,
-    metadata: map()
-  }
+          tx_id: String.t(),
+          public_tx: Transaction.t(),
+          private_payload: binary(),
+          privacy_group_id: String.t(),
+          participants: list(binary()),
+          zk_proof: binary() | nil,
+          status: :pending | :committed | :revealed,
+          metadata: map()
+        }
 
   @type encrypted_state :: %{
-    key: binary(),
-    value: binary(),
-    privacy_group_id: String.t(),
-    version: non_neg_integer(),
-    last_modified: DateTime.t()
-  }
+          key: binary(),
+          value: binary(),
+          privacy_group_id: String.t(),
+          version: non_neg_integer(),
+          last_modified: DateTime.t()
+        }
 
   # Client API
 
@@ -131,7 +131,7 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   @impl true
   def init(opts) do
     Logger.info("Starting Private Transactions manager")
-    
+
     state = %__MODULE__{
       private_pools: %{},
       privacy_groups: %{},
@@ -141,7 +141,7 @@ defmodule ExWire.Enterprise.PrivateTransactions do
       tessera_client: initialize_tessera(opts),
       config: build_config(opts)
     }
-    
+
     schedule_cleanup()
     {:ok, state}
   end
@@ -149,10 +149,10 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   @impl true
   def handle_call({:create_privacy_group, name, members, opts}, _from, state) do
     group_id = generate_group_id()
-    
+
     # Generate group encryption key
     encryption_key = generate_group_key()
-    
+
     privacy_group = %{
       id: group_id,
       name: name,
@@ -162,20 +162,20 @@ defmodule ExWire.Enterprise.PrivateTransactions do
       permissions: Keyword.get(opts, :permissions, default_permissions()),
       metadata: Keyword.get(opts, :metadata, %{})
     }
-    
+
     # Distribute keys to members using Tessera if configured
     if state.tessera_client do
       distribute_keys_via_tessera(privacy_group, state.tessera_client)
     end
-    
+
     state = put_in(state.privacy_groups[group_id], privacy_group)
-    
+
     AuditLogger.log(:privacy_group_created, %{
       group_id: group_id,
       name: name,
       members_count: length(members)
     })
-    
+
     {:reply, {:ok, privacy_group}, state}
   end
 
@@ -184,23 +184,24 @@ defmodule ExWire.Enterprise.PrivateTransactions do
     case Map.get(state.privacy_groups, privacy_group_id) do
       nil ->
         {:reply, {:error, :privacy_group_not_found}, state}
-      
+
       privacy_group ->
         # Encrypt transaction payload
         encrypted_payload = encrypt_transaction(transaction, privacy_group.encryption_key)
-        
+
         # Create public marker transaction
         public_tx = create_marker_transaction(transaction, encrypted_payload)
-        
+
         # Generate ZK proof if requested
-        zk_proof = if Keyword.get(opts, :use_zk_proof, false) do
-          generate_transaction_proof(transaction)
-        else
-          nil
-        end
-        
+        zk_proof =
+          if Keyword.get(opts, :use_zk_proof, false) do
+            generate_transaction_proof(transaction)
+          else
+            nil
+          end
+
         tx_id = generate_tx_id()
-        
+
         private_tx = %{
           tx_id: tx_id,
           public_tx: public_tx,
@@ -214,19 +215,19 @@ defmodule ExWire.Enterprise.PrivateTransactions do
             timestamp: DateTime.utc_now()
           }
         }
-        
+
         # Store in private pool
         state = put_in(state.private_pools[tx_id], private_tx)
-        
+
         # Distribute to participants
         distribute_to_participants(private_tx, privacy_group, state)
-        
+
         AuditLogger.log(:private_transaction_sent, %{
           tx_id: tx_id,
           privacy_group_id: privacy_group_id,
           has_zk_proof: zk_proof != nil
         })
-        
+
         {:reply, {:ok, tx_id, public_tx}, state}
     end
   end
@@ -236,22 +237,23 @@ defmodule ExWire.Enterprise.PrivateTransactions do
     case Map.get(state.private_pools, tx_id) do
       nil ->
         {:reply, {:error, :transaction_not_found}, state}
-      
+
       private_tx ->
         privacy_group = Map.get(state.privacy_groups, private_tx.privacy_group_id)
-        
+
         if requester in privacy_group.members do
           # Decrypt transaction for authorized member
-          decrypted = decrypt_transaction(
-            private_tx.private_payload,
-            privacy_group.encryption_key
-          )
-          
+          decrypted =
+            decrypt_transaction(
+              private_tx.private_payload,
+              privacy_group.encryption_key
+            )
+
           AuditLogger.log(:private_transaction_accessed, %{
             tx_id: tx_id,
             requester: requester
           })
-          
+
           {:reply, {:ok, decrypted}, state}
         else
           {:reply, {:error, :unauthorized}, state}
@@ -262,22 +264,22 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   @impl true
   def handle_call({:generate_zk_proof, transaction, witness}, _from, state) do
     proof = create_zk_proof(transaction, witness)
-    
+
     proof_id = generate_proof_id()
     state = put_in(state.zk_proofs[proof_id], proof)
-    
+
     {:reply, {:ok, proof_id, proof}, state}
   end
 
   @impl true
   def handle_call({:verify_zk_proof, proof, public_inputs}, _from, state) do
     valid = verify_proof(proof, public_inputs)
-    
+
     AuditLogger.log(:zk_proof_verified, %{
       valid: valid,
       inputs_hash: :crypto.hash(:sha256, :erlang.term_to_binary(public_inputs))
     })
-    
+
     {:reply, {:ok, valid}, state}
   end
 
@@ -286,15 +288,15 @@ defmodule ExWire.Enterprise.PrivateTransactions do
     case Map.get(state.privacy_groups, privacy_group_id) do
       nil ->
         {:reply, {:error, :privacy_group_not_found}, state}
-      
+
       privacy_group ->
         if requester in privacy_group.members do
           state_key = {privacy_group_id, key}
-          
+
           case Map.get(state.encrypted_states, state_key) do
             nil ->
               {:reply, {:ok, nil}, state}
-            
+
             encrypted_state ->
               decrypted = decrypt_state(encrypted_state, privacy_group.encryption_key)
               {:reply, {:ok, decrypted}, state}
@@ -310,13 +312,13 @@ defmodule ExWire.Enterprise.PrivateTransactions do
     case Map.get(state.privacy_groups, privacy_group_id) do
       nil ->
         {:reply, {:error, :privacy_group_not_found}, state}
-      
+
       privacy_group ->
         if updater in privacy_group.members do
           state_key = {privacy_group_id, key}
-          
+
           encrypted_value = encrypt_state(value, privacy_group.encryption_key)
-          
+
           encrypted_state = %{
             key: key,
             value: encrypted_value,
@@ -324,12 +326,12 @@ defmodule ExWire.Enterprise.PrivateTransactions do
             version: get_next_version(state, state_key),
             last_modified: DateTime.utc_now()
           }
-          
+
           state = put_in(state.encrypted_states[state_key], encrypted_state)
-          
+
           # Sync with other members
           sync_state_update(encrypted_state, privacy_group)
-          
+
           {:reply, :ok, state}
         else
           {:reply, {:error, :unauthorized}, state}
@@ -342,22 +344,22 @@ defmodule ExWire.Enterprise.PrivateTransactions do
     case Map.get(state.privacy_groups, privacy_group_id) do
       nil ->
         {:reply, {:error, :privacy_group_not_found}, state}
-      
+
       privacy_group ->
         if has_admin_permission?(privacy_group, authorizer) do
           updated_group = update_in(privacy_group.members, &[new_member | &1])
-          
+
           # Share encryption key with new member
           share_key_with_member(updated_group.encryption_key, new_member)
-          
+
           state = put_in(state.privacy_groups[privacy_group_id], updated_group)
-          
+
           AuditLogger.log(:privacy_group_member_added, %{
             privacy_group_id: privacy_group_id,
             new_member: new_member,
             authorizer: authorizer
           })
-          
+
           {:reply, :ok, state}
         else
           {:reply, {:error, :insufficient_permissions}, state}
@@ -370,10 +372,10 @@ defmodule ExWire.Enterprise.PrivateTransactions do
     case Map.get(state.private_pools, tx_id) do
       nil ->
         {:reply, {:error, :transaction_not_found}, state}
-      
+
       private_tx ->
         privacy_group = Map.get(state.privacy_groups, private_tx.privacy_group_id)
-        
+
         if authorizer in privacy_group.members do
           # Create disclosure record
           disclosure = %{
@@ -383,25 +385,26 @@ defmodule ExWire.Enterprise.PrivateTransactions do
             disclosed_at: DateTime.utc_now(),
             encryption_key: generate_disclosure_key()
           }
-          
+
           # Re-encrypt for recipient
-          disclosed_payload = re_encrypt_for_disclosure(
-            private_tx.private_payload,
-            privacy_group.encryption_key,
-            disclosure.encryption_key
-          )
-          
+          disclosed_payload =
+            re_encrypt_for_disclosure(
+              private_tx.private_payload,
+              privacy_group.encryption_key,
+              disclosure.encryption_key
+            )
+
           # Send to recipient
           send_disclosure(recipient, disclosed_payload, disclosure.encryption_key)
-          
+
           state = update_in(state.pending_reveals, &[disclosure | &1])
-          
+
           AuditLogger.log(:selective_disclosure, %{
             tx_id: tx_id,
             recipient: recipient,
             authorizer: authorizer
           })
-          
+
           {:reply, {:ok, disclosure}, state}
         else
           {:reply, {:error, :unauthorized}, state}
@@ -411,18 +414,19 @@ defmodule ExWire.Enterprise.PrivateTransactions do
 
   @impl true
   def handle_call({:list_privacy_groups, member}, _from, state) do
-    groups = Enum.filter(state.privacy_groups, fn {_id, group} ->
-      member in group.members
-    end)
-    |> Enum.map(fn {id, group} ->
-      %{
-        id: id,
-        name: group.name,
-        members_count: length(group.members),
-        created_at: group.created_at
-      }
-    end)
-    
+    groups =
+      Enum.filter(state.privacy_groups, fn {_id, group} ->
+        member in group.members
+      end)
+      |> Enum.map(fn {id, group} ->
+        %{
+          id: id,
+          name: group.name,
+          members_count: length(group.members),
+          created_at: group.created_at
+        }
+      end)
+
     {:reply, {:ok, groups}, state}
   end
 
@@ -439,14 +443,14 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   defp encrypt_transaction(transaction, group_key) do
     plaintext = :erlang.term_to_binary(transaction)
     iv = :crypto.strong_rand_bytes(16)
-    
+
     ciphertext = :crypto.crypto_one_time(:aes_256_gcm, group_key, iv, plaintext, true)
     iv <> ciphertext
   end
 
   defp decrypt_transaction(encrypted_payload, group_key) do
     <<iv::binary-size(16), ciphertext::binary>> = encrypted_payload
-    
+
     plaintext = :crypto.crypto_one_time(:aes_256_gcm, group_key, iv, ciphertext, false)
     :erlang.binary_to_term(plaintext)
   end
@@ -454,14 +458,14 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   defp encrypt_state(value, group_key) do
     plaintext = :erlang.term_to_binary(value)
     iv = :crypto.strong_rand_bytes(16)
-    
+
     ciphertext = :crypto.crypto_one_time(:aes_256_cbc, group_key, iv, plaintext, true)
     iv <> ciphertext
   end
 
   defp decrypt_state(encrypted_state, group_key) do
     <<iv::binary-size(16), ciphertext::binary>> = encrypted_state.value
-    
+
     plaintext = :crypto.crypto_one_time(:aes_256_cbc, group_key, iv, ciphertext, false)
     :erlang.binary_to_term(plaintext)
   end
@@ -469,7 +473,7 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   defp re_encrypt_for_disclosure(encrypted_payload, old_key, new_key) do
     # Decrypt with old key
     decrypted = decrypt_transaction(encrypted_payload, old_key)
-    
+
     # Re-encrypt with new key
     encrypt_transaction(decrypted, new_key)
   end
@@ -484,7 +488,7 @@ defmodule ExWire.Enterprise.PrivateTransactions do
       from: transaction.from,
       nonce: transaction.nonce
     }
-    
+
     create_zk_proof(transaction, witness)
   end
 
@@ -521,7 +525,8 @@ defmodule ExWire.Enterprise.PrivateTransactions do
     # The actual private data is stored off-chain
     %Transaction{
       from: private_tx.from,
-      to: <<0::160>>, # Privacy precompile address
+      # Privacy precompile address
+      to: <<0::160>>,
       value: 0,
       data: create_marker_data(encrypted_payload),
       gas_limit: 100_000,
@@ -533,10 +538,10 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   defp create_marker_data(encrypted_payload) do
     # Create marker data with hash of encrypted payload
     payload_hash = :crypto.hash(:sha256, encrypted_payload)
-    
+
     # Function selector for private transaction marker
     selector = <<0x12, 0x34, 0x56, 0x78>>
-    
+
     selector <> payload_hash
   end
 
@@ -606,7 +611,7 @@ defmodule ExWire.Enterprise.PrivateTransactions do
 
   defp has_admin_permission?(privacy_group, member) do
     member in privacy_group.members &&
-    Map.get(privacy_group.permissions, member, %{})[:admin] == true
+      Map.get(privacy_group.permissions, member, %{})[:admin] == true
   end
 
   defp get_next_version(state, state_key) do
@@ -618,11 +623,12 @@ defmodule ExWire.Enterprise.PrivateTransactions do
 
   defp cleanup_expired_data(state) do
     cutoff = DateTime.add(DateTime.utc_now(), -state.config.retention_hours * 3600, :second)
-    
-    pending_reveals = Enum.filter(state.pending_reveals, fn reveal ->
-      DateTime.compare(reveal.disclosed_at, cutoff) == :gt
-    end)
-    
+
+    pending_reveals =
+      Enum.filter(state.pending_reveals, fn reveal ->
+        DateTime.compare(reveal.disclosed_at, cutoff) == :gt
+      end)
+
     %{state | pending_reveals: pending_reveals}
   end
 
@@ -641,7 +647,8 @@ defmodule ExWire.Enterprise.PrivateTransactions do
     %{
       max_privacy_groups: Keyword.get(opts, :max_privacy_groups, 100),
       max_group_size: Keyword.get(opts, :max_group_size, 20),
-      retention_hours: Keyword.get(opts, :retention_hours, 168), # 7 days
+      # 7 days
+      retention_hours: Keyword.get(opts, :retention_hours, 168),
       use_hsm_for_keys: Keyword.get(opts, :use_hsm_for_keys, false)
     }
   end

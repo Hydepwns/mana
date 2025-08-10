@@ -1,0 +1,15 @@
+# Tell GitHub this is primarily an Elixir project
+*.ex linguist-language=Elixir
+*.exs linguist-language=Elixir
+
+# Ignore Rust documentation from language detection
+apps/ex_wire/native/*/target/doc/** linguist-documentation
+apps/ex_wire/native/*/target/** linguist-generated
+
+# Ignore build artifacts
+_build/** linguist-generated
+deps/** linguist-vendored
+
+# Documentation files
+docs/** linguist-documentation
+*.md linguist-documentation

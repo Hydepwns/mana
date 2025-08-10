@@ -12,113 +12,113 @@ defmodule ExWire.Monitoring.NetworkMonitor do
 
   @typedoc "Network monitoring state"
   @type t :: %__MODULE__{
-    metrics: network_metrics(),
-    peer_stats: %{Peer.t() => peer_stats()},
-    topology_info: topology_info(),
-    alerts: [alert()],
-    config: monitor_config()
-  }
+          metrics: network_metrics(),
+          peer_stats: %{Peer.t() => peer_stats()},
+          topology_info: topology_info(),
+          alerts: [alert()],
+          config: monitor_config()
+        }
 
   @typedoc "Network-wide metrics"
   @type network_metrics :: %{
-    # Connection metrics
-    total_peers_ever: non_neg_integer(),
-    current_peer_count: non_neg_integer(),
-    avg_peer_lifetime: float(),
-    connection_churn_rate: float(),
-    
-    # Protocol metrics
-    total_messages_sent: non_neg_integer(),
-    total_messages_received: non_neg_integer(),
-    message_loss_rate: float(),
-    avg_response_time: float(),
-    
-    # Sync metrics
-    blocks_received: non_neg_integer(),
-    blocks_validated: non_neg_integer(),
-    sync_speed_bps: float(),
-    
-    # Network health
-    network_partition_detected: boolean(),
-    consensus_disagreements: non_neg_integer(),
-    protocol_violations: non_neg_integer()
-  }
+          # Connection metrics
+          total_peers_ever: non_neg_integer(),
+          current_peer_count: non_neg_integer(),
+          avg_peer_lifetime: float(),
+          connection_churn_rate: float(),
+
+          # Protocol metrics
+          total_messages_sent: non_neg_integer(),
+          total_messages_received: non_neg_integer(),
+          message_loss_rate: float(),
+          avg_response_time: float(),
+
+          # Sync metrics
+          blocks_received: non_neg_integer(),
+          blocks_validated: non_neg_integer(),
+          sync_speed_bps: float(),
+
+          # Network health
+          network_partition_detected: boolean(),
+          consensus_disagreements: non_neg_integer(),
+          protocol_violations: non_neg_integer()
+        }
 
   @typedoc "Per-peer statistics"
   @type peer_stats :: %{
-    first_seen: DateTime.t(),
-    last_seen: DateTime.t(),
-    total_uptime: non_neg_integer(),
-    message_stats: message_stats(),
-    performance_stats: performance_stats(),
-    protocol_info: protocol_info()
-  }
+          first_seen: DateTime.t(),
+          last_seen: DateTime.t(),
+          total_uptime: non_neg_integer(),
+          message_stats: message_stats(),
+          performance_stats: performance_stats(),
+          protocol_info: protocol_info()
+        }
 
   @typedoc "Message statistics for a peer"
   @type message_stats :: %{
-    sent: non_neg_integer(),
-    received: non_neg_integer(),
-    failed: non_neg_integer(),
-    avg_size: float(),
-    types: %{String.t() => non_neg_integer()}
-  }
+          sent: non_neg_integer(),
+          received: non_neg_integer(),
+          failed: non_neg_integer(),
+          avg_size: float(),
+          types: %{String.t() => non_neg_integer()}
+        }
 
   @typedoc "Performance statistics for a peer"
   @type performance_stats :: %{
-    avg_response_time: float(),
-    throughput_mbps: float(),
-    reliability_score: float(),
-    last_performance_check: DateTime.t()
-  }
+          avg_response_time: float(),
+          throughput_mbps: float(),
+          reliability_score: float(),
+          last_performance_check: DateTime.t()
+        }
 
   @typedoc "Protocol information for a peer"
   @type protocol_info :: %{
-    version: integer() | nil,
-    capabilities: [String.t()],
-    client_id: String.t() | nil,
-    supported_protocols: [String.t()]
-  }
+          version: integer() | nil,
+          capabilities: [String.t()],
+          client_id: String.t() | nil,
+          supported_protocols: [String.t()]
+        }
 
   @typedoc "Network topology information"
   @type topology_info :: %{
-    peer_clusters: [[Peer.t()]],
-    network_diameter: integer(),
-    clustering_coefficient: float(),
-    avg_path_length: float(),
-    isolated_nodes: [Peer.t()],
-    super_nodes: [Peer.t()]
-  }
+          peer_clusters: [[Peer.t()]],
+          network_diameter: integer(),
+          clustering_coefficient: float(),
+          avg_path_length: float(),
+          isolated_nodes: [Peer.t()],
+          super_nodes: [Peer.t()]
+        }
 
   @typedoc "Network alert"
   @type alert :: %{
-    id: String.t(),
-    type: alert_type(),
-    severity: :info | :warning | :critical,
-    message: String.t(),
-    timestamp: DateTime.t(),
-    acknowledged: boolean(),
-    data: map()
-  }
+          id: String.t(),
+          type: alert_type(),
+          severity: :info | :warning | :critical,
+          message: String.t(),
+          timestamp: DateTime.t(),
+          acknowledged: boolean(),
+          data: map()
+        }
 
   @typedoc "Alert types"
-  @type alert_type :: 
-    :peer_churn_high |
-    :network_partition |
-    :consensus_disagreement |
-    :protocol_violation |
-    :performance_degradation |
-    :connection_failure_spike |
-    :suspicious_peer_behavior |
-    :sync_stalled
+  @type alert_type ::
+          :peer_churn_high
+          | :network_partition
+          | :consensus_disagreement
+          | :protocol_violation
+          | :performance_degradation
+          | :connection_failure_spike
+          | :suspicious_peer_behavior
+          | :sync_stalled
 
   @typedoc "Monitor configuration"
   @type monitor_config :: %{
-    collection_interval: non_neg_integer(),
-    alert_thresholds: %{atom() => number()},
-    peer_timeout: non_neg_integer(),
-    performance_check_interval: non_neg_integer(),
-    topology_analysis_interval: non_neg_integer()
-  }
+          collection_interval: non_neg_integer(),
+          alert_thresholds: %{atom() => number()},
+          peer_timeout: non_neg_integer(),
+          performance_check_interval: non_neg_integer(),
+          topology_analysis_interval: non_neg_integer()
+        }
 
   defstruct [
     :metrics,
@@ -130,14 +130,19 @@ defmodule ExWire.Monitoring.NetworkMonitor do
 
   # Default configuration
   @default_config %{
-    collection_interval: 30_000,    # 30 seconds
-    performance_check_interval: 60_000,  # 1 minute
-    topology_analysis_interval: 300_000, # 5 minutes
-    peer_timeout: 120_000,  # 2 minutes
+    # 30 seconds
+    collection_interval: 30_000,
+    # 1 minute
+    performance_check_interval: 60_000,
+    # 5 minutes
+    topology_analysis_interval: 300_000,
+    # 2 minutes
+    peer_timeout: 120_000,
     alert_thresholds: %{
       peer_churn_rate: 0.3,
       message_loss_rate: 0.1,
-      avg_response_time: 5000,  # 5 seconds
+      # 5 seconds
+      avg_response_time: 5000,
       consensus_disagreement_rate: 0.05
     }
   }
@@ -191,7 +196,7 @@ defmodule ExWire.Monitoring.NetworkMonitor do
   @impl true
   def init(opts) do
     config = Map.merge(@default_config, Map.new(opts))
-    
+
     state = %__MODULE__{
       metrics: initial_network_metrics(),
       peer_stats: %{},
@@ -205,7 +210,9 @@ defmodule ExWire.Monitoring.NetworkMonitor do
     schedule_performance_check(config.performance_check_interval)
     schedule_topology_analysis(config.topology_analysis_interval)
 
-    Logger.info("[NetworkMonitor] Started with collection interval: #{config.collection_interval}ms")
+    Logger.info(
+      "[NetworkMonitor] Started with collection interval: #{config.collection_interval}ms"
+    )
 
     {:ok, state}
   end
@@ -241,13 +248,14 @@ defmodule ExWire.Monitoring.NetworkMonitor do
   end
 
   def handle_cast({:acknowledge_alert, alert_id}, state) do
-    new_alerts = Enum.map(state.alerts, fn alert ->
-      if alert.id == alert_id do
-        %{alert | acknowledged: true}
-      else
-        alert
-      end
-    end)
+    new_alerts =
+      Enum.map(state.alerts, fn alert ->
+        if alert.id == alert_id do
+          %{alert | acknowledged: true}
+        else
+          alert
+        end
+      end)
 
     {:noreply, %{state | alerts: new_alerts}}
   end
@@ -306,11 +314,12 @@ defmodule ExWire.Monitoring.NetworkMonitor do
   defp collect_network_metrics(state) do
     # Get current connection pool stats
     pool_stats = ConnectionPool.get_pool_stats()
-    
+
     # Update network metrics
-    new_metrics = %{state.metrics |
-      current_peer_count: pool_stats.active,
-      total_peers_ever: max(state.metrics.total_peers_ever, pool_stats.active)
+    new_metrics = %{
+      state.metrics
+      | current_peer_count: pool_stats.active,
+        total_peers_ever: max(state.metrics.total_peers_ever, pool_stats.active)
     }
 
     # Calculate churn rate
@@ -320,137 +329,156 @@ defmodule ExWire.Monitoring.NetworkMonitor do
     # Check for alerts
     new_alerts = check_metric_alerts(state.alerts, updated_metrics, state.config.alert_thresholds)
 
-    %{state | 
-      metrics: updated_metrics,
-      alerts: new_alerts
-    }
+    %{state | metrics: updated_metrics, alerts: new_alerts}
   end
 
   defp update_peer_message_stats(state, peer, direction, message_type, size) do
     now = DateTime.utc_now()
-    
+
     # Get or create peer stats
-    peer_stats = Map.get(state.peer_stats, peer, %{
-      first_seen: now,
-      last_seen: now,
-      total_uptime: 0,
-      message_stats: %{
-        sent: 0,
-        received: 0,
-        failed: 0,
-        avg_size: 0.0,
-        types: %{}
-      },
-      performance_stats: %{
-        avg_response_time: 0.0,
-        throughput_mbps: 0.0,
-        reliability_score: 1.0,
-        last_performance_check: now
-      },
-      protocol_info: %{
-        version: nil,
-        capabilities: [],
-        client_id: nil,
-        supported_protocols: []
-      }
-    })
+    peer_stats =
+      Map.get(state.peer_stats, peer, %{
+        first_seen: now,
+        last_seen: now,
+        total_uptime: 0,
+        message_stats: %{
+          sent: 0,
+          received: 0,
+          failed: 0,
+          avg_size: 0.0,
+          types: %{}
+        },
+        performance_stats: %{
+          avg_response_time: 0.0,
+          throughput_mbps: 0.0,
+          reliability_score: 1.0,
+          last_performance_check: now
+        },
+        protocol_info: %{
+          version: nil,
+          capabilities: [],
+          client_id: nil,
+          supported_protocols: []
+        }
+      })
 
     # Update message stats
     message_stats = peer_stats.message_stats
-    
-    updated_message_stats = case direction do
-      :sent ->
-        %{message_stats |
-          sent: message_stats.sent + 1,
-          avg_size: calculate_avg_size(message_stats.avg_size, message_stats.sent + message_stats.received, size),
-          types: Map.update(message_stats.types, message_type, 1, &(&1 + 1))
-        }
-      
-      :received ->
-        %{message_stats |
-          received: message_stats.received + 1,
-          avg_size: calculate_avg_size(message_stats.avg_size, message_stats.sent + message_stats.received, size),
-          types: Map.update(message_stats.types, message_type, 1, &(&1 + 1))
-        }
-    end
 
-    updated_peer_stats = %{peer_stats | 
-      message_stats: updated_message_stats,
-      last_seen: now
-    }
+    updated_message_stats =
+      case direction do
+        :sent ->
+          %{
+            message_stats
+            | sent: message_stats.sent + 1,
+              avg_size:
+                calculate_avg_size(
+                  message_stats.avg_size,
+                  message_stats.sent + message_stats.received,
+                  size
+                ),
+              types: Map.update(message_stats.types, message_type, 1, &(&1 + 1))
+          }
+
+        :received ->
+          %{
+            message_stats
+            | received: message_stats.received + 1,
+              avg_size:
+                calculate_avg_size(
+                  message_stats.avg_size,
+                  message_stats.sent + message_stats.received,
+                  size
+                ),
+              types: Map.update(message_stats.types, message_type, 1, &(&1 + 1))
+          }
+      end
+
+    updated_peer_stats = %{peer_stats | message_stats: updated_message_stats, last_seen: now}
 
     # Update global message counters
-    new_metrics = case direction do
-      :sent -> %{state.metrics | total_messages_sent: state.metrics.total_messages_sent + 1}
-      :received -> %{state.metrics | total_messages_received: state.metrics.total_messages_received + 1}
-    end
+    new_metrics =
+      case direction do
+        :sent ->
+          %{state.metrics | total_messages_sent: state.metrics.total_messages_sent + 1}
 
-    %{state | 
-      peer_stats: Map.put(state.peer_stats, peer, updated_peer_stats),
-      metrics: new_metrics
+        :received ->
+          %{state.metrics | total_messages_received: state.metrics.total_messages_received + 1}
+      end
+
+    %{
+      state
+      | peer_stats: Map.put(state.peer_stats, peer, updated_peer_stats),
+        metrics: new_metrics
     }
   end
 
   defp update_peer_performance_stats(state, peer, metric_name, value) do
     now = DateTime.utc_now()
-    
+
     case Map.get(state.peer_stats, peer) do
-      nil -> state  # Ignore metrics for unknown peers
-      
+      # Ignore metrics for unknown peers
+      nil ->
+        state
+
       peer_stats ->
         performance_stats = peer_stats.performance_stats
-        
-        updated_performance_stats = case metric_name do
-          "response_time" ->
-            new_avg = if performance_stats.avg_response_time > 0 do
-              (performance_stats.avg_response_time * 0.9) + (value * 0.1)
-            else
-              value
-            end
-            %{performance_stats | avg_response_time: new_avg, last_performance_check: now}
-          
-          "throughput" ->
-            %{performance_stats | throughput_mbps: value, last_performance_check: now}
-          
-          "reliability" ->
-            %{performance_stats | reliability_score: value, last_performance_check: now}
-          
-          _ ->
-            performance_stats
-        end
+
+        updated_performance_stats =
+          case metric_name do
+            "response_time" ->
+              new_avg =
+                if performance_stats.avg_response_time > 0 do
+                  performance_stats.avg_response_time * 0.9 + value * 0.1
+                else
+                  value
+                end
+
+              %{performance_stats | avg_response_time: new_avg, last_performance_check: now}
+
+            "throughput" ->
+              %{performance_stats | throughput_mbps: value, last_performance_check: now}
+
+            "reliability" ->
+              %{performance_stats | reliability_score: value, last_performance_check: now}
+
+            _ ->
+              performance_stats
+          end
 
         updated_peer_stats = %{peer_stats | performance_stats: updated_performance_stats}
-        
+
         %{state | peer_stats: Map.put(state.peer_stats, peer, updated_peer_stats)}
     end
   end
 
   defp perform_performance_checks(state) do
-    Logger.debug("[NetworkMonitor] Performing performance checks on #{map_size(state.peer_stats)} peers")
-    
+    Logger.debug(
+      "[NetworkMonitor] Performing performance checks on #{map_size(state.peer_stats)} peers"
+    )
+
     # Update global average response time
     avg_response_time = calculate_global_avg_response_time(state.peer_stats)
     new_metrics = %{state.metrics | avg_response_time: avg_response_time}
 
     # Check for performance alerts
-    new_alerts = check_performance_alerts(state.alerts, state.peer_stats, state.config.alert_thresholds)
+    new_alerts =
+      check_performance_alerts(state.alerts, state.peer_stats, state.config.alert_thresholds)
 
-    %{state | 
-      metrics: new_metrics,
-      alerts: new_alerts
-    }
+    %{state | metrics: new_metrics, alerts: new_alerts}
   end
 
   defp analyze_network_topology(state) do
     Logger.debug("[NetworkMonitor] Analyzing network topology")
-    
+
     connected_peers = ConnectionPool.get_connected_peers()
-    
+
     # Basic topology analysis
-    topology_info = %{state.topology_info |
-      peer_clusters: identify_peer_clusters(connected_peers),
-      isolated_nodes: identify_isolated_nodes(connected_peers),
-      super_nodes: identify_super_nodes(state.peer_stats)
+    topology_info = %{
+      state.topology_info
+      | peer_clusters: identify_peer_clusters(connected_peers),
+        isolated_nodes: identify_isolated_nodes(connected_peers),
+        super_nodes: identify_super_nodes(state.peer_stats)
     }
 
     %{state | topology_info: topology_info}
@@ -461,27 +489,31 @@ defmodule ExWire.Monitoring.NetworkMonitor do
       0.0
     else
       now = DateTime.utc_now()
-      recent_disconnections = Enum.count(peer_stats, fn {_peer, stats} ->
-        DateTime.diff(now, stats.last_seen, :second) < 300  # 5 minutes
-      end)
-      
+
+      recent_disconnections =
+        Enum.count(peer_stats, fn {_peer, stats} ->
+          # 5 minutes
+          DateTime.diff(now, stats.last_seen, :second) < 300
+        end)
+
       recent_disconnections / max(1, map_size(peer_stats))
     end
   end
 
   defp calculate_avg_size(current_avg, message_count, new_size) do
     if message_count > 0 do
-      ((current_avg * message_count) + new_size) / (message_count + 1)
+      (current_avg * message_count + new_size) / (message_count + 1)
     else
       new_size
     end
   end
 
   defp calculate_global_avg_response_time(peer_stats) do
-    response_times = peer_stats
-                    |> Map.values()
-                    |> Enum.map(& &1.performance_stats.avg_response_time)
-                    |> Enum.filter(&(&1 > 0))
+    response_times =
+      peer_stats
+      |> Map.values()
+      |> Enum.map(& &1.performance_stats.avg_response_time)
+      |> Enum.filter(&(&1 > 0))
 
     if length(response_times) > 0 do
       Enum.sum(response_times) / length(response_times)
@@ -494,40 +526,59 @@ defmodule ExWire.Monitoring.NetworkMonitor do
     new_alerts = []
 
     # Check churn rate
-    new_alerts = if metrics.connection_churn_rate > Map.get(thresholds, :peer_churn_rate, 0.3) do
-      [create_alert(:peer_churn_high, :warning, 
-        "High peer churn rate detected: #{Float.round(metrics.connection_churn_rate * 100, 1)}%",
-        %{churn_rate: metrics.connection_churn_rate}) | new_alerts]
-    else
-      new_alerts
-    end
+    new_alerts =
+      if metrics.connection_churn_rate > Map.get(thresholds, :peer_churn_rate, 0.3) do
+        [
+          create_alert(
+            :peer_churn_high,
+            :warning,
+            "High peer churn rate detected: #{Float.round(metrics.connection_churn_rate * 100, 1)}%",
+            %{churn_rate: metrics.connection_churn_rate}
+          )
+          | new_alerts
+        ]
+      else
+        new_alerts
+      end
 
     # Check average response time
-    new_alerts = if metrics.avg_response_time > Map.get(thresholds, :avg_response_time, 5000) do
-      [create_alert(:performance_degradation, :warning,
-        "Network response time degraded: #{Float.round(metrics.avg_response_time, 1)}ms",
-        %{avg_response_time: metrics.avg_response_time}) | new_alerts]
-    else
-      new_alerts
-    end
+    new_alerts =
+      if metrics.avg_response_time > Map.get(thresholds, :avg_response_time, 5000) do
+        [
+          create_alert(
+            :performance_degradation,
+            :warning,
+            "Network response time degraded: #{Float.round(metrics.avg_response_time, 1)}ms",
+            %{avg_response_time: metrics.avg_response_time}
+          )
+          | new_alerts
+        ]
+      else
+        new_alerts
+      end
 
     current_alerts ++ new_alerts
   end
 
   defp check_performance_alerts(current_alerts, peer_stats, thresholds) do
     # Check for peers with consistently poor performance
-    poor_performers = peer_stats
-                     |> Enum.filter(fn {_peer, stats} ->
-                         stats.performance_stats.avg_response_time > Map.get(thresholds, :avg_response_time, 5000) or
-                         stats.performance_stats.reliability_score < 0.5
-                       end)
-                     |> Enum.map(fn {peer, _stats} -> peer end)
+    poor_performers =
+      peer_stats
+      |> Enum.filter(fn {_peer, stats} ->
+        stats.performance_stats.avg_response_time > Map.get(thresholds, :avg_response_time, 5000) or
+          stats.performance_stats.reliability_score < 0.5
+      end)
+      |> Enum.map(fn {peer, _stats} -> peer end)
 
     if length(poor_performers) > 0 do
-      alert = create_alert(:performance_degradation, :info,
-        "#{length(poor_performers)} peer(s) showing poor performance",
-        %{poor_performers: poor_performers})
-      
+      alert =
+        create_alert(
+          :performance_degradation,
+          :info,
+          "#{length(poor_performers)} peer(s) showing poor performance",
+          %{poor_performers: poor_performers}
+        )
+
       [alert | current_alerts]
     else
       current_alerts
@@ -548,9 +599,10 @@ defmodule ExWire.Monitoring.NetworkMonitor do
     # Identify nodes with high message throughput or many connections
     peer_stats
     |> Enum.filter(fn {_peer, stats} ->
-        total_messages = stats.message_stats.sent + stats.message_stats.received
-        total_messages > 1000  # Threshold for super node
-      end)
+      total_messages = stats.message_stats.sent + stats.message_stats.received
+      # Threshold for super node
+      total_messages > 1000
+    end)
     |> Enum.map(fn {peer, _stats} -> peer end)
   end
 

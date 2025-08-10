@@ -70,7 +70,8 @@ defmodule ExWire.Layer2.ProductionTuning do
   Runs a full performance analysis and optimization.
   """
   def run_optimization_cycle(network) do
-    GenServer.call(via_tuple(network), :run_optimization, 120_000) # 2 minute timeout
+    # 2 minute timeout
+    GenServer.call(via_tuple(network), :run_optimization, 120_000)
   end
 
   @doc """
@@ -100,7 +101,7 @@ defmodule ExWire.Layer2.ProductionTuning do
   def init({network, opts}) do
     profile = Keyword.get(opts, :profile, :balanced)
     auto_tuning = Keyword.get(opts, :auto_tuning, false)
-    
+
     state = %__MODULE__{
       network: network,
       tuning_profile: profile,
@@ -122,12 +123,13 @@ defmodule ExWire.Layer2.ProductionTuning do
 
   @impl true
   def handle_call({:enable_auto_tuning, profile}, _from, state) do
-    updated_state = %{state | 
-      auto_tuning_enabled: true,
-      tuning_profile: profile,
-      performance_targets: get_targets_for_profile(profile)
+    updated_state = %{
+      state
+      | auto_tuning_enabled: true,
+        tuning_profile: profile,
+        performance_targets: get_targets_for_profile(profile)
     }
-    
+
     schedule_monitoring()
     Logger.info("Auto-tuning enabled for #{state.network} with #{profile} profile")
     {:reply, :ok, updated_state}
@@ -143,19 +145,19 @@ defmodule ExWire.Layer2.ProductionTuning do
   @impl true
   def handle_call(:run_optimization, _from, state) do
     Logger.info("Running optimization cycle for #{state.network}")
-    
+
     # Collect current metrics
     current_metrics = collect_performance_metrics(state.network)
-    
+
     # Analyze performance bottlenecks
     analysis = analyze_performance(current_metrics, state.performance_targets)
-    
+
     # Generate optimization recommendations
     recommendations = generate_optimizations(analysis, state.tuning_profile)
-    
+
     # Apply safe optimizations automatically
     applied_optimizations = apply_safe_optimizations(recommendations, state.network)
-    
+
     # Update optimization history
     optimization_record = %{
       timestamp: DateTime.utc_now(),
@@ -165,19 +167,20 @@ defmodule ExWire.Layer2.ProductionTuning do
       recommendations: recommendations,
       applied: applied_optimizations
     }
-    
-    updated_state = %{state |
-      current_metrics: current_metrics,
-      optimization_history: [optimization_record | state.optimization_history]
+
+    updated_state = %{
+      state
+      | current_metrics: current_metrics,
+        optimization_history: [optimization_record | state.optimization_history]
     }
-    
+
     result = %{
       analysis: analysis,
       recommendations: recommendations,
       applied_optimizations: applied_optimizations,
       performance_improvement: calculate_improvement(state.current_metrics, current_metrics)
     }
-    
+
     Logger.info("Optimization cycle completed for #{state.network}")
     {:reply, {:ok, result}, updated_state}
   end
@@ -193,17 +196,15 @@ defmodule ExWire.Layer2.ProductionTuning do
       optimization_count: length(state.optimization_history),
       last_optimization: get_last_optimization(state.optimization_history)
     }
+
     {:reply, status, state}
   end
 
   @impl true
   def handle_call({:update_targets, new_targets}, _from, state) do
     updated_targets = Map.merge(state.performance_targets, new_targets)
-    updated_state = %{state | 
-      performance_targets: updated_targets,
-      tuning_profile: :custom
-    }
-    
+    updated_state = %{state | performance_targets: updated_targets, tuning_profile: :custom}
+
     Logger.info("Updated performance targets for #{state.network}")
     {:reply, :ok, updated_state}
   end
@@ -213,7 +214,7 @@ defmodule ExWire.Layer2.ProductionTuning do
     current_metrics = collect_performance_metrics(state.network)
     analysis = analyze_performance(current_metrics, state.performance_targets)
     recommendations = generate_optimizations(analysis, state.tuning_profile)
-    
+
     {:reply, recommendations, state}
   end
 
@@ -222,19 +223,19 @@ defmodule ExWire.Layer2.ProductionTuning do
     if state.auto_tuning_enabled do
       # Collect metrics and check if optimization is needed
       current_metrics = collect_performance_metrics(state.network)
-      
+
       if needs_optimization?(current_metrics, state.performance_targets) do
         Logger.info("Performance degradation detected, running auto-optimization")
-        
+
         # Run optimization asynchronously
         Task.start(fn ->
           GenServer.call(via_tuple(state.network), :run_optimization)
         end)
       end
-      
+
       # Schedule next monitoring cycle
       schedule_monitoring()
-      
+
       updated_state = %{state | current_metrics: current_metrics}
       {:noreply, updated_state}
     else
@@ -280,27 +281,34 @@ defmodule ExWire.Layer2.ProductionTuning do
 
   defp collect_performance_metrics(network) do
     Logger.debug("Collecting performance metrics for #{network}")
-    
+
     # In a real implementation, these would collect actual system metrics
     # For this implementation, we simulate realistic production metrics
-    
-    base_throughput = case network do
-      :optimism_mainnet -> 1_200_000
-      :arbitrum_mainnet -> 1_500_000  
-      :zksync_era_mainnet -> 900_000
-    end
-    
+
+    base_throughput =
+      case network do
+        :optimism_mainnet -> 1_200_000
+        :arbitrum_mainnet -> 1_500_000
+        :zksync_era_mainnet -> 900_000
+      end
+
     # Add some realistic variance
-    variance = :rand.uniform(20) - 10 # -10% to +10%
+    # -10% to +10%
+    variance = :rand.uniform(20) - 10
     current_throughput = trunc(base_throughput * (1 + variance / 100))
-    
+
     %{
       throughput_ops_per_sec: current_throughput,
-      avg_latency_ms: :rand.uniform(50) + 20, # 20-70ms
-      memory_usage_mb: :rand.uniform(1000) + 500, # 500-1500MB
-      cpu_usage_percent: :rand.uniform(40) + 30, # 30-70%
-      network_connections: :rand.uniform(500) + 100, # 100-600 connections
-      error_rate: :rand.uniform(100) / 10000, # 0.01% max error rate
+      # 20-70ms
+      avg_latency_ms: :rand.uniform(50) + 20,
+      # 500-1500MB
+      memory_usage_mb: :rand.uniform(1000) + 500,
+      # 30-70%
+      cpu_usage_percent: :rand.uniform(40) + 30,
+      # 100-600 connections
+      network_connections: :rand.uniform(500) + 100,
+      # 0.01% max error rate
+      error_rate: :rand.uniform(100) / 10000,
       gc_collections: :rand.uniform(10),
       process_count: :rand.uniform(200) + 50,
       beam_memory_total: :rand.uniform(500) + 200,
@@ -310,27 +318,31 @@ defmodule ExWire.Layer2.ProductionTuning do
 
   defp analyze_performance(metrics, targets) do
     analysis = %{
-      throughput_status: analyze_throughput(metrics.throughput_ops_per_sec, targets.min_ops_per_second),
+      throughput_status:
+        analyze_throughput(metrics.throughput_ops_per_sec, targets.min_ops_per_second),
       latency_status: analyze_latency(metrics.avg_latency_ms, targets.max_latency_ms),
       memory_status: analyze_memory(metrics.memory_usage_mb, targets.max_memory_mb),
       cpu_status: analyze_cpu(metrics.cpu_usage_percent, targets.max_cpu_percent),
       bottlenecks: identify_bottlenecks(metrics, targets),
       overall_health: :healthy
     }
-    
+
     # Determine overall health
     issues = count_performance_issues(analysis)
-    overall_health = cond do
-      issues == 0 -> :healthy
-      issues <= 2 -> :degraded  
-      true -> :critical
-    end
-    
+
+    overall_health =
+      cond do
+        issues == 0 -> :healthy
+        issues <= 2 -> :degraded
+        true -> :critical
+      end
+
     %{analysis | overall_health: overall_health}
   end
 
   defp analyze_throughput(current, target) do
     ratio = current / target
+
     cond do
       ratio >= 1.2 -> :excellent
       ratio >= 1.0 -> :good
@@ -350,6 +362,7 @@ defmodule ExWire.Layer2.ProductionTuning do
 
   defp analyze_memory(current, max_target) do
     ratio = current / max_target
+
     cond do
       ratio <= 0.6 -> :excellent
       ratio <= 0.8 -> :good
@@ -369,65 +382,73 @@ defmodule ExWire.Layer2.ProductionTuning do
 
   defp identify_bottlenecks(metrics, targets) do
     bottlenecks = []
-    
-    bottlenecks = if metrics.throughput_ops_per_sec < targets.min_ops_per_second do
-      [:throughput | bottlenecks]
-    else
-      bottlenecks
-    end
-    
-    bottlenecks = if metrics.avg_latency_ms > targets.max_latency_ms do
-      [:latency | bottlenecks]
-    else
-      bottlenecks
-    end
-    
-    bottlenecks = if metrics.memory_usage_mb > targets.max_memory_mb * 0.9 do
-      [:memory | bottlenecks]
-    else
-      bottlenecks
-    end
-    
-    bottlenecks = if metrics.cpu_usage_percent > targets.max_cpu_percent * 0.9 do
-      [:cpu | bottlenecks]
-    else
-      bottlenecks
-    end
-    
+
+    bottlenecks =
+      if metrics.throughput_ops_per_sec < targets.min_ops_per_second do
+        [:throughput | bottlenecks]
+      else
+        bottlenecks
+      end
+
+    bottlenecks =
+      if metrics.avg_latency_ms > targets.max_latency_ms do
+        [:latency | bottlenecks]
+      else
+        bottlenecks
+      end
+
+    bottlenecks =
+      if metrics.memory_usage_mb > targets.max_memory_mb * 0.9 do
+        [:memory | bottlenecks]
+      else
+        bottlenecks
+      end
+
+    bottlenecks =
+      if metrics.cpu_usage_percent > targets.max_cpu_percent * 0.9 do
+        [:cpu | bottlenecks]
+      else
+        bottlenecks
+      end
+
     bottlenecks
   end
 
   defp generate_optimizations(analysis, profile) do
     optimizations = []
-    
+
     # Throughput optimizations
-    optimizations = if analysis.throughput_status in [:degraded, :critical] do
-      throughput_optimizations(profile) ++ optimizations
-    else
-      optimizations
-    end
-    
+    optimizations =
+      if analysis.throughput_status in [:degraded, :critical] do
+        throughput_optimizations(profile) ++ optimizations
+      else
+        optimizations
+      end
+
     # Latency optimizations  
-    optimizations = if analysis.latency_status in [:degraded, :critical] do
-      latency_optimizations(profile) ++ optimizations
-    else
-      optimizations
-    end
-    
+    optimizations =
+      if analysis.latency_status in [:degraded, :critical] do
+        latency_optimizations(profile) ++ optimizations
+      else
+        optimizations
+      end
+
     # Memory optimizations
-    optimizations = if analysis.memory_status in [:degraded, :critical] do
-      memory_optimizations(profile) ++ optimizations
-    else
-      optimizations
-    end
-    
+    optimizations =
+      if analysis.memory_status in [:degraded, :critical] do
+        memory_optimizations(profile) ++ optimizations
+      else
+        optimizations
+      end
+
     # CPU optimizations
-    optimizations = if analysis.cpu_status in [:degraded, :critical] do
-      cpu_optimizations(profile) ++ optimizations
-    else
-      optimizations
-    end
-    
+    optimizations =
+      if analysis.cpu_status in [:degraded, :critical] do
+        cpu_optimizations(profile) ++ optimizations
+      else
+        optimizations
+      end
+
     # Sort by priority and safety
     Enum.sort_by(optimizations, fn opt -> {opt.priority, opt.safety_level} end, :desc)
   end
@@ -453,21 +474,23 @@ defmodule ExWire.Layer2.ProductionTuning do
         implementation: fn -> optimize_concurrency() end
       }
     ]
-    
+
     # Add profile-specific optimizations
     case profile do
       :aggressive ->
-        base_optimizations ++ [
-          %{
-            category: :throughput,
-            type: :aggressive_caching,
-            description: "Enable aggressive proof verification caching",
-            impact: :high,
-            safety_level: :moderate,
-            priority: 7,
-            implementation: fn -> enable_aggressive_caching() end
-          }
-        ]
+        base_optimizations ++
+          [
+            %{
+              category: :throughput,
+              type: :aggressive_caching,
+              description: "Enable aggressive proof verification caching",
+              impact: :high,
+              safety_level: :moderate,
+              priority: 7,
+              implementation: fn -> enable_aggressive_caching() end
+            }
+          ]
+
       _ ->
         base_optimizations
     end
@@ -544,35 +567,37 @@ defmodule ExWire.Layer2.ProductionTuning do
 
   defp apply_safe_optimizations(recommendations, network) do
     Logger.info("Applying safe optimizations for #{network}")
-    
-    safe_recommendations = Enum.filter(recommendations, fn opt ->
-      opt.safety_level == :safe and opt.priority >= 7
-    end)
-    
-    applied = Enum.map(safe_recommendations, fn opt ->
-      try do
-        Logger.info("Applying optimization: #{opt.description}")
-        result = opt.implementation.()
-        
-        %{
-          type: opt.type,
-          description: opt.description,
-          result: :applied,
-          details: result
-        }
-      catch
-        :error, reason ->
-          Logger.error("Failed to apply optimization #{opt.type}: #{inspect(reason)}")
-          
+
+    safe_recommendations =
+      Enum.filter(recommendations, fn opt ->
+        opt.safety_level == :safe and opt.priority >= 7
+      end)
+
+    applied =
+      Enum.map(safe_recommendations, fn opt ->
+        try do
+          Logger.info("Applying optimization: #{opt.description}")
+          result = opt.implementation.()
+
           %{
             type: opt.type,
             description: opt.description,
-            result: :failed,
-            error: reason
+            result: :applied,
+            details: result
           }
-      end
-    end)
-    
+        catch
+          :error, reason ->
+            Logger.error("Failed to apply optimization #{opt.type}: #{inspect(reason)}")
+
+            %{
+              type: opt.type,
+              description: opt.description,
+              result: :failed,
+              error: reason
+            }
+        end
+      end)
+
     Logger.info("Applied #{length(applied)} safe optimizations")
     applied
   end
@@ -582,13 +607,13 @@ defmodule ExWire.Layer2.ProductionTuning do
     latency_degraded = metrics.avg_latency_ms > targets.max_latency_ms * 1.2
     memory_critical = metrics.memory_usage_mb > targets.max_memory_mb * 0.95
     cpu_critical = metrics.cpu_usage_percent > targets.max_cpu_percent * 0.95
-    
+
     throughput_degraded or latency_degraded or memory_critical or cpu_critical
   end
 
   defp count_performance_issues(analysis) do
     issue_statuses = [:degraded, :critical]
-    
+
     issues = 0
     issues = if analysis.throughput_status in issue_statuses, do: issues + 1, else: issues
     issues = if analysis.latency_status in issue_statuses, do: issues + 1, else: issues
@@ -598,16 +623,24 @@ defmodule ExWire.Layer2.ProductionTuning do
 
   defp calculate_improvement(old_metrics, new_metrics) do
     %{
-      throughput_change: calculate_percentage_change(old_metrics.throughput_ops_per_sec, new_metrics.throughput_ops_per_sec),
-      latency_change: calculate_percentage_change(old_metrics.avg_latency_ms, new_metrics.avg_latency_ms),
-      memory_change: calculate_percentage_change(old_metrics.memory_usage_mb, new_metrics.memory_usage_mb),
-      cpu_change: calculate_percentage_change(old_metrics.cpu_usage_percent, new_metrics.cpu_usage_percent)
+      throughput_change:
+        calculate_percentage_change(
+          old_metrics.throughput_ops_per_sec,
+          new_metrics.throughput_ops_per_sec
+        ),
+      latency_change:
+        calculate_percentage_change(old_metrics.avg_latency_ms, new_metrics.avg_latency_ms),
+      memory_change:
+        calculate_percentage_change(old_metrics.memory_usage_mb, new_metrics.memory_usage_mb),
+      cpu_change:
+        calculate_percentage_change(old_metrics.cpu_usage_percent, new_metrics.cpu_usage_percent)
     }
   end
 
   defp calculate_percentage_change(old_value, new_value) when old_value > 0 do
-    ((new_value - old_value) / old_value) * 100
+    (new_value - old_value) / old_value * 100
   end
+
   defp calculate_percentage_change(_old_value, _new_value), do: 0
 
   defp get_last_optimization([]), do: nil
@@ -615,7 +648,10 @@ defmodule ExWire.Layer2.ProductionTuning do
 
   # Optimization implementation functions (simplified for this demo)
   defp increase_batch_size, do: %{batch_size_increased: true, new_size: 50}
-  defp optimize_concurrency, do: %{concurrency_optimized: true, worker_count: System.schedulers_online() * 2}
+
+  defp optimize_concurrency,
+    do: %{concurrency_optimized: true, worker_count: System.schedulers_online() * 2}
+
   defp enable_aggressive_caching, do: %{aggressive_caching_enabled: true}
   defp optimize_proof_verification, do: %{proof_verification_optimized: true}
   defp reduce_network_overhead, do: %{network_overhead_reduced: true}

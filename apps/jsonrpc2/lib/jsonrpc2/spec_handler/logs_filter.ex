@@ -4,7 +4,7 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
   """
 
   import JSONRPC2.Response.Helpers
-  
+
   alias Blockchain.{Block, Transaction}
   alias Blockchain.Transaction.Receipt
   alias Block.Header
@@ -12,16 +12,16 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
   alias ExthCrypto.Hash.Keccak
 
   @type filter_params :: %{
-    fromBlock: binary() | nil,
-    toBlock: binary() | nil,
-    address: binary() | list(binary()) | nil,
-    topics: list(binary() | list(binary()) | nil) | nil,
-    blockhash: binary() | nil
-  }
+          fromBlock: binary() | nil,
+          toBlock: binary() | nil,
+          address: binary() | list(binary()) | nil,
+          topics: list(binary() | list(binary()) | nil) | nil,
+          blockhash: binary() | nil
+        }
 
   @doc """
   Filters logs based on the provided parameters.
-  
+
   ## Parameters
     - params: Filter parameters map
     - state_trie: The blockchain state trie
@@ -47,7 +47,7 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
       topics: parse_topics(params["topics"]),
       block_hash: params["blockhash"]
     }
-    
+
     {:ok, filter}
   end
 
@@ -67,14 +67,16 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
           {:ok, block} -> {:ok, [block]}
           _ -> {:ok, []}
         end
-      _ -> {:error, :invalid_block_hash}
+
+      _ ->
+        {:error, :invalid_block_hash}
     end
   end
 
   defp get_blocks_in_range(%{from_block: from, to_block: to}, state_trie) do
     with {:ok, from_number} <- parse_block_number(from, state_trie),
          {:ok, to_number} <- parse_block_number(to, state_trie) do
-      blocks = 
+      blocks =
         from_number..to_number
         |> Enum.map(fn number ->
           case Block.get_block(number, state_trie) do
@@ -83,23 +85,24 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
           end
         end)
         |> Enum.reject(&is_nil/1)
-      
+
       {:ok, blocks}
     end
   end
 
   defp parse_block_number("earliest", _state_trie), do: {:ok, 0}
-  
+
   defp parse_block_number("latest", state_trie) do
     # Get the latest block number from the state
     # This is a simplified implementation
-    {:ok, 0}  # TODO: Get actual latest block
+    # TODO: Get actual latest block
+    {:ok, 0}
   end
-  
+
   defp parse_block_number("pending", state_trie) do
     parse_block_number("latest", state_trie)
   end
-  
+
   defp parse_block_number(hex_number, _state_trie) when is_binary(hex_number) do
     decode_unsigned(hex_number)
   end
@@ -118,6 +121,7 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
       case get_transaction_receipt(transaction, block, state_trie) do
         {:ok, receipt} ->
           filter_receipt_logs(receipt, transaction, block, index, filter)
+
         _ ->
           []
       end
@@ -126,16 +130,18 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
 
   defp get_transaction_receipt(transaction, block, state_trie) do
     # Get the receipt from the receipts trie
-    receipts_trie = MerklePatriciaTree.Trie.new(
-      MerklePatriciaTree.TrieStorage.set_root_hash(state_trie, block.header.receipts_root)
-    )
-    
+    receipts_trie =
+      MerklePatriciaTree.Trie.new(
+        MerklePatriciaTree.TrieStorage.set_root_hash(state_trie, block.header.receipts_root)
+      )
+
     # The key is the RLP-encoded transaction index
     key = ExRLP.encode(transaction.transaction_index || 0)
-    
+
     case MerklePatriciaTree.Trie.get_key(receipts_trie, key) do
       encoded_receipt when not is_nil(encoded_receipt) ->
         {:ok, Receipt.deserialize(encoded_receipt)}
+
       _ ->
         {:error, :receipt_not_found}
     end
@@ -162,10 +168,11 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
 
   defp matches_filter?(log, filter) do
     matches_address?(log, filter.addresses) &&
-    matches_topics?(log, filter.topics)
+      matches_topics?(log, filter.topics)
   end
 
   defp matches_address?(_log, []), do: true
+
   defp matches_address?(log, addresses) do
     Enum.any?(addresses, fn address ->
       case decode_hex(address) do
@@ -176,20 +183,28 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
   end
 
   defp matches_topics?(_log, []), do: true
+
   defp matches_topics?(log, filter_topics) do
     log_topics = log.topics || []
-    
+
     filter_topics
     |> Enum.with_index()
     |> Enum.all?(fn {filter_topic, index} ->
       case {filter_topic, Enum.at(log_topics, index)} do
-        {nil, _} -> true  # null means any topic
-        {_, nil} -> false  # no topic at this position
+        # null means any topic
+        {nil, _} ->
+          true
+
+        # no topic at this position
+        {_, nil} ->
+          false
+
         {filter_topic, log_topic} when is_binary(filter_topic) ->
           case decode_hex(filter_topic) do
             {:ok, decoded} -> decoded == log_topic
             _ -> false
           end
+
         {filter_topics, log_topic} when is_list(filter_topics) ->
           # OR condition for array of topics
           Enum.any?(filter_topics, fn ft ->

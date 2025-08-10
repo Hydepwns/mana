@@ -23,7 +23,7 @@ defmodule ExWire.ProtocolComplianceTest do
       handshake = Handshake.new(remote_id)
       assert handshake.initiator == true
       assert handshake.remote_id == remote_id
-      
+
       # Generate auth message
       handshake_with_auth = Handshake.generate_auth(handshake)
       assert is_binary(handshake_with_auth.encoded_auth_msg)
@@ -55,7 +55,7 @@ defmodule ExWire.ProtocolComplianceTest do
     test "ping/pong message handling" do
       # Create ping message
       ping = %Ping{}
-      
+
       # Test ping serialization
       ping_data = Ping.serialize(ping)
       assert is_list(ping_data)
@@ -64,6 +64,7 @@ defmodule ExWire.ProtocolComplianceTest do
       case Ping.handle(ping) do
         {:send, pong} ->
           assert %Pong{} = pong
+
         other ->
           flunk("Expected ping to return pong, got: #{inspect(other)}")
       end
@@ -91,8 +92,9 @@ defmodule ExWire.ProtocolComplianceTest do
       # Test V66 wrapper functionality
       if Code.ensure_loaded?(Capability.Eth.V66Wrapper) do
         # Simulate eth/66 wrapping
-        {wrapped_packet, request_id} = Capability.Eth.V66Wrapper.wrap_packet(get_block_headers, 66)
-        
+        {wrapped_packet, request_id} =
+          Capability.Eth.V66Wrapper.wrap_packet(get_block_headers, 66)
+
         assert request_id != nil
         assert is_integer(request_id)
 
@@ -101,12 +103,13 @@ defmodule ExWire.ProtocolComplianceTest do
         assert is_binary(serialized)
 
         # Test deserialization
-        deserialized = Capability.Eth.V66Wrapper.deserialize(
-          serialized,
-          Capability.Eth.GetBlockHeaders,
-          66
-        )
-        
+        deserialized =
+          Capability.Eth.V66Wrapper.deserialize(
+            serialized,
+            Capability.Eth.GetBlockHeaders,
+            66
+          )
+
         # Should return the original message
         assert deserialized.block_identifier == get_block_headers.block_identifier
         assert deserialized.max_headers == get_block_headers.max_headers
@@ -117,11 +120,11 @@ defmodule ExWire.ProtocolComplianceTest do
       # Test eth/67 specific features if implemented
       # For now, verify we can handle eth/67 capability negotiation
       caps = [{"eth", 67}, {"eth", 66}]
-      
+
       # Simulate capability negotiation
       negotiated_version = determine_negotiated_version(caps, [{"eth", 67}])
       assert negotiated_version == 67
-      
+
       # Test fallback to eth/66
       negotiated_version_fallback = determine_negotiated_version(caps, [{"eth", 66}])
       assert negotiated_version_fallback == 66
@@ -137,13 +140,14 @@ defmodule ExWire.ProtocolComplianceTest do
       # Test message size limits (ping should be small)
       ping_data = Ping.serialize(valid_ping)
       serialized_size = :erlang.iolist_size(ping_data)
-      assert serialized_size < 1024  # Ping should be under 1KB
+      # Ping should be under 1KB
+      assert serialized_size < 1024
     end
 
     test "handles malformed messages gracefully" do
       # Test with invalid RLP data
       invalid_data = <<255, 255, 255>>
-      
+
       # Should not crash when deserializing invalid data
       assert_raise ExRLP.DecodeError, fn ->
         Ping.deserialize(invalid_data)
@@ -153,7 +157,7 @@ defmodule ExWire.ProtocolComplianceTest do
     test "validates capability announcements" do
       # Test valid capabilities
       valid_caps = [{"eth", 66}, {"eth", 67}, {"par", 1}]
-      
+
       for {name, version} <- valid_caps do
         assert is_binary(name)
         assert is_integer(version)
@@ -186,7 +190,8 @@ defmodule ExWire.ProtocolComplianceTest do
 
       assert connection.peer == peer
       assert connection.is_outbound == true
-      assert connection.secrets == nil  # Not yet established
+      # Not yet established
+      assert connection.secrets == nil
 
       # Test outbound connection initialization
       updated_connection = Manager.new_outbound_connection(connection)
@@ -201,12 +206,12 @@ defmodule ExWire.ProtocolComplianceTest do
 
       # Test hello message handling
       hello = create_test_hello()
-      
+
       case Session.handle_hello(session, hello) do
         {:ok, updated_session} ->
           assert updated_session.state != :inactive
           assert length(updated_session.negotiated_caps) > 0
-        
+
         {:error, reason} ->
           # In test environment, hello handling might fail due to missing setup
           # This is acceptable for unit testing
@@ -219,7 +224,7 @@ defmodule ExWire.ProtocolComplianceTest do
     test "handles connection errors gracefully" do
       # Test connection timeout handling
       connection = create_test_connection()
-      
+
       # Simulate timeout
       result = handle_connection_error(connection, :timeout)
       assert result.last_error == :timeout
@@ -228,12 +233,13 @@ defmodule ExWire.ProtocolComplianceTest do
     test "handles protocol violations" do
       # Test handling of invalid protocol messages
       invalid_message_data = <<0, 0, 0>>
-      
+
       # Should not crash the connection
-      log_output = capture_log(fn ->
-        handle_invalid_message(invalid_message_data)
-      end)
-      
+      log_output =
+        capture_log(fn ->
+          handle_invalid_message(invalid_message_data)
+        end)
+
       assert log_output =~ "invalid" or log_output =~ "error"
     end
 
@@ -241,11 +247,11 @@ defmodule ExWire.ProtocolComplianceTest do
       # Test handshake failure recovery
       handshake = Handshake.new(:crypto.strong_rand_bytes(64))
       invalid_ack_data = <<255, 255, 255>>
-      
+
       case Handshake.handle_ack(handshake, invalid_ack_data) do
         {:invalid, reason} ->
           assert is_atom(reason)
-        
+
         {:ok, _, _, _} ->
           flunk("Expected handshake to fail with invalid data")
       end
@@ -257,13 +263,14 @@ defmodule ExWire.ProtocolComplianceTest do
       # Test that message processing is reasonably fast
       ping = %Ping{}
       serialized_ping = Ping.serialize(ping)
-      
-      {time_us, _result} = :timer.tc(fn ->
-        for _i <- 1..1000 do
-          Ping.deserialize(serialized_ping)
-        end
-      end)
-      
+
+      {time_us, _result} =
+        :timer.tc(fn ->
+          for _i <- 1..1000 do
+            Ping.deserialize(serialized_ping)
+          end
+        end)
+
       # Should process 1000 pings in under 100ms
       assert time_us < 100_000
     end
@@ -271,19 +278,20 @@ defmodule ExWire.ProtocolComplianceTest do
     test "memory usage during message processing" do
       # Test that message processing doesn't leak memory
       initial_memory = :erlang.memory(:total)
-      
+
       # Process many messages
       for _i <- 1..1000 do
         ping = %Ping{}
         _serialized = Ping.serialize(ping)
       end
-      
+
       :erlang.garbage_collect()
       final_memory = :erlang.memory(:total)
-      
+
       # Memory usage shouldn't increase significantly
       memory_increase = final_memory - initial_memory
-      assert memory_increase < 1_000_000  # Less than 1MB increase
+      # Less than 1MB increase
+      assert memory_increase < 1_000_000
     end
   end
 
@@ -315,7 +323,7 @@ defmodule ExWire.ProtocolComplianceTest do
 
   defp create_test_connection() do
     peer = TestHelper.random_node() |> node_to_peer()
-    
+
     %Connection{
       peer: peer,
       socket: create_mock_socket(),
@@ -327,17 +335,20 @@ defmodule ExWire.ProtocolComplianceTest do
 
   defp determine_negotiated_version(our_caps, their_caps) do
     # Find highest common eth version
-    our_eth_versions = our_caps
-                      |> Enum.filter(fn {name, _version} -> name == "eth" end)
-                      |> Enum.map(fn {_name, version} -> version end)
-    
-    their_eth_versions = their_caps
-                        |> Enum.filter(fn {name, _version} -> name == "eth" end)
-                        |> Enum.map(fn {_name, version} -> version end)
-    
-    common_versions = our_eth_versions
-                     |> Enum.filter(fn version -> version in their_eth_versions end)
-    
+    our_eth_versions =
+      our_caps
+      |> Enum.filter(fn {name, _version} -> name == "eth" end)
+      |> Enum.map(fn {_name, version} -> version end)
+
+    their_eth_versions =
+      their_caps
+      |> Enum.filter(fn {name, _version} -> name == "eth" end)
+      |> Enum.map(fn {_name, version} -> version end)
+
+    common_versions =
+      our_eth_versions
+      |> Enum.filter(fn version -> version in their_eth_versions end)
+
     if length(common_versions) > 0 do
       Enum.max(common_versions)
     else
@@ -346,13 +357,15 @@ defmodule ExWire.ProtocolComplianceTest do
   end
 
   defp validate_capabilities(caps) do
-    valid = Enum.all?(caps, fn
-      {name, version} when is_binary(name) and is_integer(version) and version > 0 ->
-        String.length(name) > 0
-      _ ->
-        false
-    end)
-    
+    valid =
+      Enum.all?(caps, fn
+        {name, version} when is_binary(name) and is_integer(version) and version > 0 ->
+          String.length(name) > 0
+
+        _ ->
+          false
+      end)
+
     if valid, do: :ok, else: {:error, :invalid_capabilities}
   end
 

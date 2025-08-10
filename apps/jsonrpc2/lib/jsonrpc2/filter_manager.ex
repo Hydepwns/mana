@@ -5,7 +5,7 @@ defmodule JSONRPC2.FilterManager do
   """
 
   use GenServer
-  
+
   import JSONRPC2.Response.Helpers
 
   # Client API
@@ -69,17 +69,17 @@ defmodule JSONRPC2.FilterManager do
       # Filters expire after 5 minutes of inactivity
       timeout_ms: 5 * 60 * 1000
     }
-    
+
     # Schedule periodic cleanup
     schedule_cleanup()
-    
+
     {:ok, state}
   end
 
   @impl true
   def handle_call({:new_filter, type, params}, _from, state) do
     filter_id = generate_filter_id(state.next_id)
-    
+
     filter = %{
       id: filter_id,
       type: type,
@@ -89,10 +89,10 @@ defmodule JSONRPC2.FilterManager do
       last_block: get_current_block_number(),
       changes: []
     }
-    
+
     new_filters = Map.put(state.filters, filter_id, filter)
     new_state = %{state | filters: new_filters, next_id: state.next_id + 1}
-    
+
     {:reply, {:ok, filter_id}, new_state}
   end
 
@@ -101,7 +101,7 @@ defmodule JSONRPC2.FilterManager do
     case Map.get(state.filters, filter_id) do
       nil ->
         {:reply, false, state}
-      
+
       _filter ->
         new_filters = Map.delete(state.filters, filter_id)
         {:reply, true, %{state | filters: new_filters}}
@@ -113,20 +113,21 @@ defmodule JSONRPC2.FilterManager do
     case Map.get(state.filters, filter_id) do
       nil ->
         {:reply, {:error, :filter_not_found}, state}
-      
+
       filter ->
         # Get changes since last poll
         changes = get_changes_for_filter(filter)
-        
+
         # Update filter with new last_poll time and clear changes
-        updated_filter = %{filter | 
-          last_poll: System.system_time(:second),
-          last_block: get_current_block_number(),
-          changes: []
+        updated_filter = %{
+          filter
+          | last_poll: System.system_time(:second),
+            last_block: get_current_block_number(),
+            changes: []
         }
-        
+
         new_filters = Map.put(state.filters, filter_id, updated_filter)
-        
+
         {:reply, {:ok, changes}, %{state | filters: new_filters}}
     end
   end
@@ -136,17 +137,17 @@ defmodule JSONRPC2.FilterManager do
     case Map.get(state.filters, filter_id) do
       nil ->
         {:reply, {:error, :filter_not_found}, state}
-      
+
       %{type: :log, params: params} = filter ->
         # Get all logs matching the filter
         logs = get_all_logs_for_filter(params)
-        
+
         # Update last poll time
         updated_filter = %{filter | last_poll: System.system_time(:second)}
         new_filters = Map.put(state.filters, filter_id, updated_filter)
-        
+
         {:reply, {:ok, logs}, %{state | filters: new_filters}}
-      
+
       _ ->
         # This method only works for log filters
         {:reply, {:error, :invalid_filter_type}, state}
@@ -158,17 +159,17 @@ defmodule JSONRPC2.FilterManager do
     # Remove expired filters
     current_time = System.system_time(:second)
     timeout_seconds = div(state.timeout_ms, 1000)
-    
-    active_filters = 
+
+    active_filters =
       state.filters
       |> Enum.filter(fn {_id, filter} ->
-        (current_time - filter.last_poll) < timeout_seconds
+        current_time - filter.last_poll < timeout_seconds
       end)
       |> Map.new()
-    
+
     # Schedule next cleanup
     schedule_cleanup()
-    
+
     {:noreply, %{state | filters: active_filters}}
   end
 
@@ -182,9 +183,12 @@ defmodule JSONRPC2.FilterManager do
   defp get_current_block_number() do
     # Get from sync state
     case Process.whereis(ExWire.Sync) do
-      nil -> 0
+      nil ->
+        0
+
       _ ->
         sync_data = JSONRPC2.Bridge.Sync.last_sync_state()
+
         case sync_data do
           %{highest_block_number: number} -> number
           _ -> 0
@@ -195,7 +199,7 @@ defmodule JSONRPC2.FilterManager do
   defp get_changes_for_filter(%{type: :block} = filter) do
     # Return block hashes for new blocks since last poll
     current_block = get_current_block_number()
-    
+
     if current_block > filter.last_block do
       # Get block hashes from filter.last_block + 1 to current_block
       # This is simplified - should actually fetch the block hashes
@@ -218,13 +222,14 @@ defmodule JSONRPC2.FilterManager do
   defp get_changes_for_filter(%{type: :log, params: params} = filter) do
     # Get logs that match the filter since last poll
     sync_data = JSONRPC2.Bridge.Sync.last_sync_state()
-    
+
     # Update params to only get logs since last poll
-    updated_params = Map.merge(params, %{
-      "fromBlock" => encode_quantity(filter.last_block + 1),
-      "toBlock" => "latest"
-    })
-    
+    updated_params =
+      Map.merge(params, %{
+        "fromBlock" => encode_quantity(filter.last_block + 1),
+        "toBlock" => "latest"
+      })
+
     case JSONRPC2.SpecHandler.LogsFilter.filter_logs(updated_params, sync_data.trie) do
       {:ok, logs} -> logs
       _ -> []
@@ -233,7 +238,7 @@ defmodule JSONRPC2.FilterManager do
 
   defp get_all_logs_for_filter(params) do
     sync_data = JSONRPC2.Bridge.Sync.last_sync_state()
-    
+
     case JSONRPC2.SpecHandler.LogsFilter.filter_logs(params, sync_data.trie) do
       {:ok, logs} -> logs
       _ -> []

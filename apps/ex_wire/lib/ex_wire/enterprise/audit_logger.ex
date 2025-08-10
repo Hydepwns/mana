@@ -18,23 +18,23 @@ defmodule ExWire.Enterprise.AuditLogger do
   ]
 
   @type log_entry :: %{
-    id: String.t(),
-    timestamp: DateTime.t(),
-    event_type: atom(),
-    actor: String.t() | nil,
-    details: map(),
-    hash: binary(),
-    previous_hash: binary(),
-    signature: binary(),
-    metadata: map()
-  }
+          id: String.t(),
+          timestamp: DateTime.t(),
+          event_type: atom(),
+          actor: String.t() | nil,
+          details: map(),
+          hash: binary(),
+          previous_hash: binary(),
+          signature: binary(),
+          metadata: map()
+        }
 
   @type anchor :: %{
-    block_height: non_neg_integer(),
-    transaction_hash: binary(),
-    merkle_root: binary(),
-    timestamp: DateTime.t()
-  }
+          block_height: non_neg_integer(),
+          transaction_hash: binary(),
+          merkle_root: binary(),
+          timestamp: DateTime.t()
+        }
 
   # Client API
 
@@ -103,10 +103,10 @@ defmodule ExWire.Enterprise.AuditLogger do
   @impl true
   def init(opts) do
     Logger.info("Starting Audit Logger with immutable storage")
-    
+
     # Generate or load signature key
     signature_key = load_or_generate_key(opts)
-    
+
     state = %__MODULE__{
       log_store: initialize_storage(opts),
       current_hash: get_last_hash(),
@@ -116,12 +116,12 @@ defmodule ExWire.Enterprise.AuditLogger do
       config: build_config(opts),
       metrics: initialize_metrics()
     }
-    
+
     # Schedule periodic operations
     schedule_flush()
     schedule_anchoring()
     schedule_rotation()
-    
+
     {:ok, state}
   end
 
@@ -129,14 +129,15 @@ defmodule ExWire.Enterprise.AuditLogger do
   def handle_cast({:log, event_type, details, opts}, state) do
     entry = create_log_entry(event_type, details, opts, state)
     state = add_to_buffer(state, entry)
-    
+
     # Flush if buffer is full
-    state = if length(state.buffer) >= state.config.buffer_size do
-      flush_buffer(state)
-    else
-      state
-    end
-    
+    state =
+      if length(state.buffer) >= state.config.buffer_size do
+        flush_buffer(state)
+      else
+        state
+      end
+
     {:noreply, state}
   end
 
@@ -145,7 +146,7 @@ defmodule ExWire.Enterprise.AuditLogger do
     entry = create_log_entry(event_type, details, opts, state)
     state = add_to_buffer(state, entry)
     state = flush_buffer(state)
-    
+
     {:reply, {:ok, entry.id}, state}
   end
 
@@ -153,7 +154,7 @@ defmodule ExWire.Enterprise.AuditLogger do
   def handle_call({:query, filters}, _from, state) do
     # Flush buffer first to ensure all logs are queryable
     state = flush_buffer(state)
-    
+
     logs = query_logs(state.log_store, filters)
     {:reply, {:ok, logs}, state}
   end
@@ -168,25 +169,27 @@ defmodule ExWire.Enterprise.AuditLogger do
   def handle_call({:export, format, filters}, _from, state) do
     state = flush_buffer(state)
     logs = query_logs(state.log_store, filters)
-    
-    exported = case format do
-      :json -> export_as_json(logs)
-      :csv -> export_as_csv(logs)
-      :syslog -> export_as_syslog(logs)
-      _ -> {:error, :unsupported_format}
-    end
-    
+
+    exported =
+      case format do
+        :json -> export_as_json(logs)
+        :csv -> export_as_csv(logs)
+        :syslog -> export_as_syslog(logs)
+        _ -> {:error, :unsupported_format}
+      end
+
     {:reply, exported, state}
   end
 
   @impl true
   def handle_call(:get_metrics, _from, state) do
-    metrics = Map.merge(state.metrics, %{
-      buffer_size: length(state.buffer),
-      last_anchor: state.blockchain_anchor,
-      storage_size: get_storage_size(state.log_store)
-    })
-    
+    metrics =
+      Map.merge(state.metrics, %{
+        buffer_size: length(state.buffer),
+        last_anchor: state.blockchain_anchor,
+        storage_size: get_storage_size(state.log_store)
+      })
+
     {:reply, {:ok, metrics}, state}
   end
 
@@ -196,7 +199,7 @@ defmodule ExWire.Enterprise.AuditLogger do
       {:ok, anchor} ->
         state = %{state | blockchain_anchor: anchor}
         {:reply, {:ok, anchor}, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -221,11 +224,11 @@ defmodule ExWire.Enterprise.AuditLogger do
       {:ok, anchor} ->
         state = %{state | blockchain_anchor: anchor}
         Logger.info("Audit logs anchored to blockchain: #{inspect(anchor)}")
-      
+
       {:error, reason} ->
         Logger.error("Failed to anchor logs: #{inspect(reason)}")
     end
-    
+
     schedule_anchoring()
     {:noreply, state}
   end
@@ -242,7 +245,7 @@ defmodule ExWire.Enterprise.AuditLogger do
   defp create_log_entry(event_type, details, opts, state) do
     timestamp = DateTime.utc_now()
     actor = Keyword.get(opts, :actor, get_current_actor())
-    
+
     entry_data = %{
       id: generate_log_id(),
       timestamp: timestamp,
@@ -252,23 +255,21 @@ defmodule ExWire.Enterprise.AuditLogger do
       previous_hash: state.current_hash,
       metadata: build_metadata(opts)
     }
-    
+
     # Calculate hash
     hash = calculate_hash(entry_data)
-    
+
     # Sign the hash
     signature = sign_entry(hash, state.signature_key)
-    
-    %{entry_data | 
-      hash: hash,
-      signature: signature
-    }
+
+    %{entry_data | hash: hash, signature: signature}
   end
 
   defp calculate_hash(entry_data) do
-    content = "#{entry_data.id}|#{entry_data.timestamp}|#{entry_data.event_type}|" <>
-              "#{inspect(entry_data.details)}|#{entry_data.previous_hash}"
-    
+    content =
+      "#{entry_data.id}|#{entry_data.timestamp}|#{entry_data.event_type}|" <>
+        "#{inspect(entry_data.details)}|#{entry_data.previous_hash}"
+
     :crypto.hash(:sha256, content)
   end
 
@@ -282,10 +283,7 @@ defmodule ExWire.Enterprise.AuditLogger do
   end
 
   defp add_to_buffer(state, entry) do
-    %{state | 
-      buffer: [entry | state.buffer],
-      current_hash: entry.hash
-    }
+    %{state | buffer: [entry | state.buffer], current_hash: entry.hash}
     |> update_metrics(:entries_buffered)
   end
 
@@ -293,7 +291,7 @@ defmodule ExWire.Enterprise.AuditLogger do
     if length(state.buffer) > 0 do
       # Write to persistent storage
       :ok = write_logs(state.log_store, Enum.reverse(state.buffer))
-      
+
       %{state | buffer: []}
       |> update_metrics(:entries_flushed, length(state.buffer))
     else
@@ -303,19 +301,19 @@ defmodule ExWire.Enterprise.AuditLogger do
 
   defp initialize_storage(opts) do
     storage_type = Keyword.get(opts, :storage, :file)
-    
+
     case storage_type do
       :file ->
         path = Keyword.get(opts, :path, "data/audit_logs")
         File.mkdir_p!(path)
         %{type: :file, path: path, current_file: current_log_file(path)}
-      
+
       :database ->
         %{type: :database, connection: opts[:connection]}
-      
+
       :s3 ->
         %{type: :s3, bucket: opts[:bucket], prefix: opts[:prefix]}
-      
+
       _ ->
         %{type: :memory, logs: []}
     end
@@ -325,13 +323,13 @@ defmodule ExWire.Enterprise.AuditLogger do
     case store.type do
       :file ->
         write_to_file(store.current_file, entries)
-      
+
       :database ->
         write_to_database(store.connection, entries)
-      
+
       :s3 ->
         write_to_s3(store.bucket, store.prefix, entries)
-      
+
       :memory ->
         :ok
     end
@@ -354,7 +352,7 @@ defmodule ExWire.Enterprise.AuditLogger do
 
   defp query_logs(store, filters) do
     all_logs = read_all_logs(store)
-    
+
     all_logs
     |> filter_by_time(filters[:from], filters[:to])
     |> filter_by_event_type(filters[:event_type])
@@ -366,13 +364,13 @@ defmodule ExWire.Enterprise.AuditLogger do
     case store.type do
       :file ->
         read_from_files(store.path)
-      
+
       :database ->
         read_from_database(store.connection)
-      
+
       :s3 ->
         read_from_s3(store.bucket, store.prefix)
-      
+
       :memory ->
         store.logs
     end
@@ -391,26 +389,28 @@ defmodule ExWire.Enterprise.AuditLogger do
 
   defp verify_log_chain(store, from_id, to_id) do
     logs = query_logs(store, %{from_id: from_id, to_id: to_id})
-    
-    result = Enum.reduce_while(logs, {:ok, nil}, fn log, {:ok, prev_hash} ->
-      if prev_hash == nil || log.previous_hash == prev_hash do
-        # Verify hash
-        calculated = calculate_hash(log)
-        if calculated == log.hash do
-          # Verify signature
-          if verify_signature(log.hash, log.signature, get_public_key()) do
-            {:cont, {:ok, log.hash}}
+
+    result =
+      Enum.reduce_while(logs, {:ok, nil}, fn log, {:ok, prev_hash} ->
+        if prev_hash == nil || log.previous_hash == prev_hash do
+          # Verify hash
+          calculated = calculate_hash(log)
+
+          if calculated == log.hash do
+            # Verify signature
+            if verify_signature(log.hash, log.signature, get_public_key()) do
+              {:cont, {:ok, log.hash}}
+            else
+              {:halt, {:error, :invalid_signature, log.id}}
+            end
           else
-            {:halt, {:error, :invalid_signature, log.id}}
+            {:halt, {:error, :invalid_hash, log.id}}
           end
         else
-          {:halt, {:error, :invalid_hash, log.id}}
+          {:halt, {:error, :broken_chain, log.id}}
         end
-      else
-        {:halt, {:error, :broken_chain, log.id}}
-      end
-    end)
-    
+      end)
+
     case result do
       {:ok, _} -> {:ok, :valid}
       error -> error
@@ -420,16 +420,17 @@ defmodule ExWire.Enterprise.AuditLogger do
   defp create_blockchain_anchor(state) do
     # Flush buffer first
     state = flush_buffer(state)
-    
+
     # Get recent logs
-    recent_logs = query_logs(state.log_store, %{
-      from: DateTime.add(DateTime.utc_now(), -3600, :second)
-    })
-    
+    recent_logs =
+      query_logs(state.log_store, %{
+        from: DateTime.add(DateTime.utc_now(), -3600, :second)
+      })
+
     if length(recent_logs) > 0 do
       # Calculate merkle root
       merkle_root = calculate_merkle_root(recent_logs)
-      
+
       # Submit to blockchain
       case submit_to_blockchain(merkle_root) do
         {:ok, tx_hash} ->
@@ -440,9 +441,9 @@ defmodule ExWire.Enterprise.AuditLogger do
             timestamp: DateTime.utc_now(),
             log_count: length(recent_logs)
           }
-          
+
           {:ok, anchor}
-        
+
         error ->
           error
       end
@@ -457,11 +458,15 @@ defmodule ExWire.Enterprise.AuditLogger do
   end
 
   defp build_merkle_tree([single]), do: single
+
   defp build_merkle_tree(hashes) do
     paired = pair_hashes(hashes)
-    next_level = Enum.map(paired, fn {left, right} ->
-      :crypto.hash(:sha256, left <> right)
-    end)
+
+    next_level =
+      Enum.map(paired, fn {left, right} ->
+        :crypto.hash(:sha256, left <> right)
+      end)
+
     build_merkle_tree(next_level)
   end
 
@@ -490,16 +495,16 @@ defmodule ExWire.Enterprise.AuditLogger do
       :file ->
         current_file = state.log_store.current_file
         new_file = current_log_file(state.log_store.path)
-        
+
         if current_file != new_file do
           # Compress old file
           compress_log_file(current_file)
-          
+
           put_in(state.log_store.current_file, new_file)
         else
           state
         end
-      
+
       _ ->
         state
     end
@@ -536,23 +541,25 @@ defmodule ExWire.Enterprise.AuditLogger do
 
   defp export_as_csv(logs) do
     headers = "id,timestamp,event_type,actor,details_summary,hash\n"
-    
-    rows = Enum.map(logs, fn log ->
-      "#{log.id},#{log.timestamp},#{log.event_type},#{log.actor}," <>
-      "#{summarize_details(log.details)},#{Base.encode16(log.hash)}"
-    end)
-    |> Enum.join("\n")
-    
+
+    rows =
+      Enum.map(logs, fn log ->
+        "#{log.id},#{log.timestamp},#{log.event_type},#{log.actor}," <>
+          "#{summarize_details(log.details)},#{Base.encode16(log.hash)}"
+      end)
+      |> Enum.join("\n")
+
     {:ok, headers <> rows}
   end
 
   defp export_as_syslog(logs) do
-    messages = Enum.map(logs, fn log ->
-      "<165>1 #{log.timestamp} mana-ethereum audit #{log.id} - " <>
-      "event=#{log.event_type} actor=#{log.actor} details=#{inspect(log.details)}"
-    end)
-    |> Enum.join("\n")
-    
+    messages =
+      Enum.map(logs, fn log ->
+        "<165>1 #{log.timestamp} mana-ethereum audit #{log.id} - " <>
+          "event=#{log.event_type} actor=#{log.actor} details=#{inspect(log.details)}"
+      end)
+      |> Enum.join("\n")
+
     {:ok, messages}
   end
 
@@ -564,19 +571,22 @@ defmodule ExWire.Enterprise.AuditLogger do
   end
 
   defp filter_by_time(logs, nil, nil), do: logs
+
   defp filter_by_time(logs, from, to) do
     Enum.filter(logs, fn log ->
       (from == nil || DateTime.compare(log.timestamp, from) in [:gt, :eq]) &&
-      (to == nil || DateTime.compare(log.timestamp, to) in [:lt, :eq])
+        (to == nil || DateTime.compare(log.timestamp, to) in [:lt, :eq])
     end)
   end
 
   defp filter_by_event_type(logs, nil), do: logs
+
   defp filter_by_event_type(logs, event_type) do
     Enum.filter(logs, fn log -> log.event_type == event_type end)
   end
 
   defp filter_by_actor(logs, nil), do: logs
+
   defp filter_by_actor(logs, actor) do
     Enum.filter(logs, fn log -> log.actor == actor end)
   end
@@ -611,7 +621,7 @@ defmodule ExWire.Enterprise.AuditLogger do
         |> Enum.map(&File.stat!/1)
         |> Enum.map(& &1.size)
         |> Enum.sum()
-      
+
       _ ->
         0
     end
@@ -623,7 +633,7 @@ defmodule ExWire.Enterprise.AuditLogger do
         # Generate new key
         {_public, private} = :crypto.generate_key(:ecdh, :secp256k1)
         private
-      
+
       key ->
         key
     end

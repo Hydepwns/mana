@@ -135,11 +135,15 @@ defmodule EVM.ExecEnv do
   Transient storage is discarded at the end of the transaction.
   """
   @spec put_transient_storage(t(), integer(), integer()) :: t()
-  def put_transient_storage(exec_env = %{address: address, transient_storage: transient_storage}, key, value) do
+  def put_transient_storage(
+        exec_env = %{address: address, transient_storage: transient_storage},
+        key,
+        value
+      ) do
     contract_storage = Map.get(transient_storage, address, %{})
     updated_contract_storage = Map.put(contract_storage, key, value)
     updated_transient_storage = Map.put(transient_storage, address, updated_contract_storage)
-    
+
     %{exec_env | transient_storage: updated_transient_storage}
   end
 
@@ -148,12 +152,15 @@ defmodule EVM.ExecEnv do
   Returns 0 if the key doesn't exist.
   """
   @spec get_transient_storage(t(), integer()) :: {t(), integer()}
-  def get_transient_storage(exec_env = %{address: address, transient_storage: transient_storage}, key) do
-    value = 
+  def get_transient_storage(
+        exec_env = %{address: address, transient_storage: transient_storage},
+        key
+      ) do
+    value =
       transient_storage
       |> Map.get(address, %{})
       |> Map.get(key, 0)
-    
+
     {exec_env, value}
   end
 

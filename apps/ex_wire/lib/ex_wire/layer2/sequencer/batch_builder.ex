@@ -11,17 +11,18 @@ defmodule ExWire.Layer2.Sequencer.BatchBuilder do
   def build(transactions, sequence_number, rollup_id) do
     previous_root = get_previous_root(rollup_id)
     sequencer_address = get_sequencer_address()
-    
-    batch = Batch.new(
-      sequence_number,
-      transactions,
-      previous_root,
-      sequencer_address
-    )
-    
+
+    batch =
+      Batch.new(
+        sequence_number,
+        transactions,
+        previous_root,
+        sequencer_address
+      )
+
     # Compute state root (simplified for testing)
     state_root = compute_state_root(batch)
-    
+
     %{batch | state_root: state_root}
   end
 

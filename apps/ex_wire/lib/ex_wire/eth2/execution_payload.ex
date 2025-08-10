@@ -1,11 +1,11 @@
 defmodule ExWire.Eth2.ExecutionPayload do
   @moduledoc """
   Execution payload for Ethereum 2.0 beacon blocks.
-  
+
   Contains the execution layer block data that is committed to
   by the beacon chain consensus layer.
   """
-  
+
   defstruct [
     :parent_hash,
     :fee_recipient,
@@ -25,27 +25,27 @@ defmodule ExWire.Eth2.ExecutionPayload do
     :blob_gas_used,
     :excess_blob_gas
   ]
-  
+
   @type t :: %__MODULE__{
-    parent_hash: binary(),
-    fee_recipient: binary(),
-    state_root: binary(),
-    receipts_root: binary(),
-    logs_bloom: binary(),
-    prev_randao: binary(),
-    block_number: non_neg_integer(),
-    gas_limit: non_neg_integer(),
-    gas_used: non_neg_integer(),
-    timestamp: non_neg_integer(),
-    extra_data: binary(),
-    base_fee_per_gas: non_neg_integer(),
-    block_hash: binary(),
-    transactions: [binary()],
-    withdrawals: [map()],
-    blob_gas_used: non_neg_integer(),
-    excess_blob_gas: non_neg_integer()
-  }
-  
+          parent_hash: binary(),
+          fee_recipient: binary(),
+          state_root: binary(),
+          receipts_root: binary(),
+          logs_bloom: binary(),
+          prev_randao: binary(),
+          block_number: non_neg_integer(),
+          gas_limit: non_neg_integer(),
+          gas_used: non_neg_integer(),
+          timestamp: non_neg_integer(),
+          extra_data: binary(),
+          base_fee_per_gas: non_neg_integer(),
+          block_hash: binary(),
+          transactions: [binary()],
+          withdrawals: [map()],
+          blob_gas_used: non_neg_integer(),
+          excess_blob_gas: non_neg_integer()
+        }
+
   @doc """
   Create an empty execution payload.
   """
@@ -71,7 +71,7 @@ defmodule ExWire.Eth2.ExecutionPayload do
       excess_blob_gas: 0
     }
   end
-  
+
   @doc """
   Check if the execution payload contains blob transactions.
   """

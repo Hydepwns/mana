@@ -29,45 +29,52 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
   """
   def benchmark_proof_verification do
     IO.puts("🔍 Benchmarking Proof Verification Systems...")
-    
+
     proof_systems = [:groth16, :plonk, :stark, :fflonk, :halo2]
-    iterations = 50  # Reduced for faster execution
-    
-    results = Enum.map(proof_systems, fn system ->
-      proof = :crypto.strong_rand_bytes(256)
-      public_inputs = :crypto.strong_rand_bytes(128)
-      config = %{verifying_key: :crypto.strong_rand_bytes(128)}
+    # Reduced for faster execution
+    iterations = 50
 
-      # Warm-up
-      verify_proof(system, proof, public_inputs, config)
+    results =
+      Enum.map(proof_systems, fn system ->
+        proof = :crypto.strong_rand_bytes(256)
+        public_inputs = :crypto.strong_rand_bytes(128)
+        config = %{verifying_key: :crypto.strong_rand_bytes(128)}
 
-      {time_microseconds, verification_results} = :timer.tc(fn ->
-        Enum.map(1..iterations, fn _ ->
-          verify_proof(system, proof, public_inputs, config)
-        end)
+        # Warm-up
+        verify_proof(system, proof, public_inputs, config)
+
+        {time_microseconds, verification_results} =
+          :timer.tc(fn ->
+            Enum.map(1..iterations, fn _ ->
+              verify_proof(system, proof, public_inputs, config)
+            end)
+          end)
+
+        success_count =
+          Enum.count(verification_results, fn
+            {:ok, true} -> true
+            _ -> false
+          end)
+
+        success_rate = success_count / iterations * 100
+        avg_time_per_verification = time_microseconds / iterations
+        verifications_per_second = 1_000_000 / avg_time_per_verification
+
+        result = %{
+          system: system,
+          iterations: iterations,
+          total_time_ms: time_microseconds / 1000,
+          avg_time_microseconds: Float.round(avg_time_per_verification, 2),
+          verifications_per_second: Float.round(verifications_per_second, 2),
+          success_rate: Float.round(success_rate, 1)
+        }
+
+        IO.puts(
+          "  #{system}: #{result.verifications_per_second} ops/sec, #{result.success_rate}% success"
+        )
+
+        result
       end)
-
-      success_count = Enum.count(verification_results, fn 
-        {:ok, true} -> true
-        _ -> false
-      end)
-      
-      success_rate = success_count / iterations * 100
-      avg_time_per_verification = time_microseconds / iterations
-      verifications_per_second = 1_000_000 / avg_time_per_verification
-
-      result = %{
-        system: system,
-        iterations: iterations,
-        total_time_ms: time_microseconds / 1000,
-        avg_time_microseconds: Float.round(avg_time_per_verification, 2),
-        verifications_per_second: Float.round(verifications_per_second, 2),
-        success_rate: Float.round(success_rate, 1)
-      }
-
-      IO.puts("  #{system}: #{result.verifications_per_second} ops/sec, #{result.success_rate}% success")
-      result
-    end)
 
     IO.puts("")
     results
@@ -78,37 +85,40 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
   """
   def benchmark_batch_operations do
     IO.puts("📦 Benchmarking Batch Operations...")
-    
+
     batch_sizes = [5, 10, 20, 50]
     system = "plonk"
-    
-    results = Enum.map(batch_sizes, fn batch_size ->
-      proofs_and_inputs = Enum.map(1..batch_size, fn _ ->
-        {
-          :crypto.strong_rand_bytes(256),
-          :crypto.strong_rand_bytes(128),
-          :crypto.strong_rand_bytes(128)
+
+    results =
+      Enum.map(batch_sizes, fn batch_size ->
+        proofs_and_inputs =
+          Enum.map(1..batch_size, fn _ ->
+            {
+              :crypto.strong_rand_bytes(256),
+              :crypto.strong_rand_bytes(128),
+              :crypto.strong_rand_bytes(128)
+            }
+          end)
+
+        {time_microseconds, {:ok, batch_results}} =
+          :timer.tc(fn ->
+            ProofVerifier.batch_verify(proofs_and_inputs, system)
+          end)
+
+        success_count = Enum.count(batch_results, & &1)
+        success_rate = success_count / batch_size * 100
+        verifications_per_second = batch_size * 1_000_000 / time_microseconds
+
+        result = %{
+          batch_size: batch_size,
+          total_time_ms: time_microseconds / 1000,
+          verifications_per_second: Float.round(verifications_per_second, 2),
+          success_rate: Float.round(success_rate, 1)
         }
+
+        IO.puts("  Batch #{batch_size}: #{result.verifications_per_second} ops/sec")
+        result
       end)
-
-      {time_microseconds, {:ok, batch_results}} = :timer.tc(fn ->
-        ProofVerifier.batch_verify(proofs_and_inputs, system)
-      end)
-
-      success_count = Enum.count(batch_results, & &1)
-      success_rate = success_count / batch_size * 100
-      verifications_per_second = batch_size * 1_000_000 / time_microseconds
-
-      result = %{
-        batch_size: batch_size,
-        total_time_ms: time_microseconds / 1000,
-        verifications_per_second: Float.round(verifications_per_second, 2),
-        success_rate: Float.round(success_rate, 1)
-      }
-
-      IO.puts("  Batch #{batch_size}: #{result.verifications_per_second} ops/sec")
-      result
-    end)
 
     IO.puts("")
     results
@@ -119,33 +129,36 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
   """
   def benchmark_proof_aggregation do
     IO.puts("🔗 Benchmarking Proof Aggregation...")
-    
+
     aggregation_sizes = [5, 10, 20]
     systems = ["plonk", "stark", "fflonk", "halo2"]
-    
-    results = Enum.flat_map(systems, fn system ->
-      Enum.map(aggregation_sizes, fn size ->
-        proofs = Enum.map(1..size, fn _ ->
-          :crypto.strong_rand_bytes(256)
+
+    results =
+      Enum.flat_map(systems, fn system ->
+        Enum.map(aggregation_sizes, fn size ->
+          proofs =
+            Enum.map(1..size, fn _ ->
+              :crypto.strong_rand_bytes(256)
+            end)
+
+          {time_microseconds, {:ok, _aggregated_proof}} =
+            :timer.tc(fn ->
+              ProofVerifier.aggregate_proofs(proofs, system)
+            end)
+
+          aggregations_per_second = 1_000_000 / time_microseconds
+
+          result = %{
+            system: system,
+            proof_count: size,
+            total_time_ms: time_microseconds / 1000,
+            aggregations_per_second: Float.round(aggregations_per_second, 2)
+          }
+
+          IO.puts("  #{system} (#{size} proofs): #{result.aggregations_per_second} agg/sec")
+          result
         end)
-
-        {time_microseconds, {:ok, _aggregated_proof}} = :timer.tc(fn ->
-          ProofVerifier.aggregate_proofs(proofs, system)
-        end)
-
-        aggregations_per_second = 1_000_000 / time_microseconds
-
-        result = %{
-          system: system,
-          proof_count: size,
-          total_time_ms: time_microseconds / 1000,
-          aggregations_per_second: Float.round(aggregations_per_second, 2)
-        }
-
-        IO.puts("  #{system} (#{size} proofs): #{result.aggregations_per_second} agg/sec")
-        result
       end)
-    end)
 
     IO.puts("")
     results
@@ -156,7 +169,7 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
   """
   def benchmark_system_throughput do
     IO.puts("⚡ Benchmarking System Throughput...")
-    
+
     # Simulate realistic Layer 2 operations
     operations = [
       {"Transaction Processing", fn -> simulate_transaction_processing(10) end},
@@ -165,29 +178,39 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
       {"Batch Finalization", fn -> simulate_batch_finalization() end}
     ]
 
-    results = Enum.map(operations, fn {name, operation} ->
-      {time_microseconds, _result} = :timer.tc(operation)
-      
-      result = %{
-        operation: name,
-        time_ms: time_microseconds / 1000,
-        operations_per_second: Float.round(1_000_000 / time_microseconds, 2)
-      }
+    results =
+      Enum.map(operations, fn {name, operation} ->
+        {time_microseconds, _result} = :timer.tc(operation)
 
-      IO.puts("  #{name}: #{result.operations_per_second} ops/sec")
-      result
-    end)
+        result = %{
+          operation: name,
+          time_ms: time_microseconds / 1000,
+          operations_per_second: Float.round(1_000_000 / time_microseconds, 2)
+        }
+
+        IO.puts("  #{name}: #{result.operations_per_second} ops/sec")
+        result
+      end)
 
     IO.puts("")
     results
   end
 
   # Helper function to verify proofs based on system type
-  defp verify_proof(:groth16, proof, inputs, config), do: ProofVerifier.verify_groth16(proof, inputs, config)
-  defp verify_proof(:plonk, proof, inputs, config), do: ProofVerifier.verify_plonk(proof, inputs, config)
-  defp verify_proof(:stark, proof, inputs, config), do: ProofVerifier.verify_stark(proof, inputs, config)
-  defp verify_proof(:fflonk, proof, inputs, config), do: ProofVerifier.verify_fflonk(proof, inputs, config)
-  defp verify_proof(:halo2, proof, inputs, config), do: ProofVerifier.verify_halo2(proof, inputs, config)
+  defp verify_proof(:groth16, proof, inputs, config),
+    do: ProofVerifier.verify_groth16(proof, inputs, config)
+
+  defp verify_proof(:plonk, proof, inputs, config),
+    do: ProofVerifier.verify_plonk(proof, inputs, config)
+
+  defp verify_proof(:stark, proof, inputs, config),
+    do: ProofVerifier.verify_stark(proof, inputs, config)
+
+  defp verify_proof(:fflonk, proof, inputs, config),
+    do: ProofVerifier.verify_fflonk(proof, inputs, config)
+
+  defp verify_proof(:halo2, proof, inputs, config),
+    do: ProofVerifier.verify_halo2(proof, inputs, config)
 
   # Simulation functions for realistic workloads
   defp simulate_transaction_processing(tx_count) do
@@ -195,6 +218,7 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
       # Simulate transaction validation and state updates
       :crypto.hash(:sha256, :crypto.strong_rand_bytes(256))
     end)
+
     :ok
   end
 
@@ -212,6 +236,7 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
       to: :crypto.strong_rand_bytes(20),
       data: :crypto.strong_rand_bytes(128)
     }
+
     _encoded = :erlang.term_to_binary(message)
     :ok
   end
@@ -224,13 +249,15 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
   end
 
   defp calculate_merkle_root([leaf]), do: leaf
+
   defp calculate_merkle_root(leaves) do
     leaves
     |> Enum.chunk_every(2, 2, [:empty])
     |> Enum.map(fn
-      [left, right] when right != :empty -> 
+      [left, right] when right != :empty ->
         :crypto.hash(:sha256, left <> right)
-      [left, :empty] -> 
+
+      [left, :empty] ->
         left
     end)
     |> calculate_merkle_root()
@@ -239,22 +266,25 @@ defmodule ExWire.Layer2.PerformanceBenchmark do
   defp generate_performance_report(results) do
     IO.puts("📊 Performance Summary Report")
     IO.puts("============================")
-    
+
     # Proof verification summary
     if results[:proof_verification] do
-      avg_ops_per_sec = results[:proof_verification]
-                       |> Enum.map(& &1.verifications_per_second)
-                       |> Enum.sum()
-                       |> Kernel./(length(results[:proof_verification]))
+      avg_ops_per_sec =
+        results[:proof_verification]
+        |> Enum.map(& &1.verifications_per_second)
+        |> Enum.sum()
+        |> Kernel./(length(results[:proof_verification]))
 
       IO.puts("Average Proof Verification: #{Float.round(avg_ops_per_sec, 2)} ops/sec")
     end
 
     # Batch operations summary  
     if results[:batch_operations] do
-      max_batch_throughput = results[:batch_operations]
-                            |> Enum.map(& &1.verifications_per_second)
-                            |> Enum.max()
+      max_batch_throughput =
+        results[:batch_operations]
+        |> Enum.map(& &1.verifications_per_second)
+        |> Enum.max()
+
       IO.puts("Maximum Batch Throughput: #{max_batch_throughput} ops/sec")
     end
 

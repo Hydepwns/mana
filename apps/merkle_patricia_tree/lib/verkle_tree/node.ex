@@ -1,7 +1,7 @@
 defmodule VerkleTree.Node do
   @moduledoc """
   Verkle tree node implementation with 256-width nodes.
-  
+
   Unlike Merkle Patricia Trees with 17-width nodes, verkle trees use
   256-width nodes to optimize for vector commitment efficiency.
   """
@@ -11,10 +11,12 @@ defmodule VerkleTree.Node do
 
   @type commitment :: binary()
   @type node_type :: :empty | :leaf | :internal
-  @type verkle_node :: 
+  @type verkle_node ::
           :empty
-          | {:leaf, commitment(), binary()}  # {commitment, value}
-          | {:internal, [commitment()]}      # Array of 256 child commitments
+          # {commitment, value}
+          | {:leaf, commitment(), binary()}
+          # Array of 256 child commitments
+          | {:internal, [commitment()]}
 
   @verkle_node_width 256
 
@@ -56,16 +58,22 @@ defmodule VerkleTree.Node do
   def get_value({:internal, children}, key, tree) do
     # Extract the first byte as the child index
     <<child_index, rest::binary>> = key
-    
+
     case Enum.at(children, child_index) do
-      nil -> :not_found
-      <<0::256>> -> :not_found  # Empty commitment
+      nil ->
+        :not_found
+
+      # Empty commitment
+      <<0::256>> ->
+        :not_found
+
       child_commitment ->
         # Recursively traverse to child node
         case DB.get(tree.db, child_commitment) do
           {:ok, encoded_child} ->
             child_node = decode(encoded_child)
             get_value(child_node, rest, tree)
+
           :not_found ->
             :not_found
         end
@@ -88,25 +96,31 @@ defmodule VerkleTree.Node do
 
   def put_value({:internal, children}, key, value, tree) do
     <<child_index, rest::binary>> = key
-    
+
     # Get or create child node
-    child_node = case Enum.at(children, child_index) do
-      nil -> empty()
-      <<0::256>> -> empty()  # Empty commitment
-      child_commitment ->
-        case DB.get(tree.db, child_commitment) do
-          {:ok, encoded_child} -> decode(encoded_child)
-          :not_found -> empty()
-        end
-    end
-    
+    child_node =
+      case Enum.at(children, child_index) do
+        nil ->
+          empty()
+
+        # Empty commitment
+        <<0::256>> ->
+          empty()
+
+        child_commitment ->
+          case DB.get(tree.db, child_commitment) do
+            {:ok, encoded_child} -> decode(encoded_child)
+            :not_found -> empty()
+          end
+      end
+
     # Recursively update child
     updated_child = put_value(child_node, rest, value, tree)
     updated_commitment = compute_commitment(updated_child)
-    
+
     # Store updated child
     DB.put!(tree.db, updated_commitment, encode(updated_child))
-    
+
     # Update children array
     updated_children = List.replace_at(children, child_index, updated_commitment)
     {:internal, updated_children}
@@ -125,21 +139,28 @@ defmodule VerkleTree.Node do
 
   def remove_value({:internal, children}, key, tree) do
     <<child_index, rest::binary>> = key
-    
+
     case Enum.at(children, child_index) do
-      nil -> {:internal, children}  # Key not found, no change
-      <<0::256>> -> {:internal, children}  # Empty child, no change
+      # Key not found, no change
+      nil ->
+        {:internal, children}
+
+      # Empty child, no change
+      <<0::256>> ->
+        {:internal, children}
+
       child_commitment ->
         case DB.get(tree.db, child_commitment) do
           {:ok, encoded_child} ->
             child_node = decode(encoded_child)
             updated_child = remove_value(child_node, rest, tree)
-            
+
             case updated_child do
               :empty ->
                 # Child became empty, set commitment to zero
                 updated_children = List.replace_at(children, child_index, <<0::256>>)
                 {:internal, updated_children}
+
               _ ->
                 # Update child commitment
                 updated_commitment = compute_commitment(updated_child)
@@ -147,8 +168,10 @@ defmodule VerkleTree.Node do
                 updated_children = List.replace_at(children, child_index, updated_commitment)
                 {:internal, updated_children}
             end
+
           :not_found ->
-            {:internal, children}  # Child not found, no change
+            # Child not found, no change
+            {:internal, children}
         end
     end
   end
@@ -158,9 +181,9 @@ defmodule VerkleTree.Node do
   """
   @spec compute_commitment(verkle_node()) :: commitment()
   def compute_commitment(:empty), do: <<0::256>>
-  
+
   def compute_commitment({:leaf, commitment, _value}), do: commitment
-  
+
   def compute_commitment({:internal, children}) do
     Crypto.commit_to_children(children)
   end
@@ -170,14 +193,14 @@ defmodule VerkleTree.Node do
   """
   @spec encode(verkle_node()) :: binary()
   def encode(:empty), do: <<0>>
-  
+
   def encode({:leaf, commitment, value}) do
     value_length = byte_size(value)
     <<1, commitment::binary-size(32), value_length::32, value::binary>>
   end
-  
+
   def encode({:internal, children}) do
-    children_binary = children |> Enum.map(&(&1)) |> :erlang.list_to_binary()
+    children_binary = children |> Enum.map(& &1) |> :erlang.list_to_binary()
     <<2, children_binary::binary>>
   end
 
@@ -186,11 +209,13 @@ defmodule VerkleTree.Node do
   """
   @spec decode(binary()) :: verkle_node()
   def decode(<<0>>), do: :empty
-  
-  def decode(<<1, commitment::binary-size(32), value_length::32, value::binary-size(value_length)>>) do
+
+  def decode(
+        <<1, commitment::binary-size(32), value_length::32, value::binary-size(value_length)>>
+      ) do
     {:leaf, commitment, value}
   end
-  
+
   def decode(<<2, children_binary::binary>>) do
     children = for <<child::binary-size(32) <- children_binary>>, do: child
     {:internal, children}

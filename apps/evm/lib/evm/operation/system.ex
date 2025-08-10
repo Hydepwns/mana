@@ -240,7 +240,7 @@ defmodule EVM.Operation.System do
     to = Address.new(refund_address)
 
     # Check if Shanghai+ and if contract was created in this transaction
-    should_delete = 
+    should_delete =
       if Map.get(exec_env.config, :has_modified_selfdestruct, false) do
         # EIP-6780: Only delete if created in same transaction
         MapSet.member?(exec_env.created_contracts, exec_env.address)
@@ -329,9 +329,12 @@ defmodule EVM.Operation.System do
     exec_env = %{exec_env | account_repo: updated_account_repo}
 
     # Track created contracts for EIP-6780 SELFDESTRUCT behavior
-    exec_env = 
+    exec_env =
       if status == :ok do
-        %{exec_env | created_contracts: MapSet.put(exec_env.created_contracts, new_account_address)}
+        %{
+          exec_env
+          | created_contracts: MapSet.put(exec_env.created_contracts, new_account_address)
+        }
       else
         exec_env
       end

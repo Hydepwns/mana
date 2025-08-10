@@ -26,29 +26,29 @@ defmodule ExWire.Enterprise.MultisigWallet do
   ]
 
   @type owner :: %{
-    address: binary(),
-    name: String.t(),
-    public_key: binary(),
-    permissions: list(atom()),
-    added_at: DateTime.t()
-  }
+          address: binary(),
+          name: String.t(),
+          public_key: binary(),
+          permissions: list(atom()),
+          added_at: DateTime.t()
+        }
 
   @type pending_tx :: %{
-    tx_id: String.t(),
-    transaction: Transaction.t(),
-    approvals: list(binary()),
-    rejections: list(binary()),
-    created_by: binary(),
-    created_at: DateTime.t(),
-    expires_at: DateTime.t() | nil,
-    metadata: map()
-  }
+          tx_id: String.t(),
+          transaction: Transaction.t(),
+          approvals: list(binary()),
+          rejections: list(binary()),
+          created_by: binary(),
+          created_at: DateTime.t(),
+          expires_at: DateTime.t() | nil,
+          metadata: map()
+        }
 
   @type policy :: %{
-    type: :daily_limit | :whitelist | :time_lock | :value_threshold,
-    value: any(),
-    enabled: boolean()
-  }
+          type: :daily_limit | :whitelist | :time_lock | :value_threshold,
+          value: any(),
+          enabled: boolean()
+        }
 
   # Client API
 
@@ -131,13 +131,13 @@ defmodule ExWire.Enterprise.MultisigWallet do
   @impl true
   def init(opts) do
     Logger.info("Starting MultisigWallet manager")
-    
+
     state = %{
       wallets: %{},
       wallet_by_address: %{},
       config: Keyword.get(opts, :config, default_config())
     }
-    
+
     schedule_cleanup()
     {:ok, state}
   end
@@ -145,7 +145,7 @@ defmodule ExWire.Enterprise.MultisigWallet do
   @impl true
   def handle_call({:create_wallet, name, owners, required_signatures, opts}, _from, state) do
     wallet_id = generate_wallet_id()
-    
+
     wallet = %__MODULE__{
       wallet_id: wallet_id,
       name: name,
@@ -159,13 +159,13 @@ defmodule ExWire.Enterprise.MultisigWallet do
       created_at: DateTime.utc_now(),
       metadata: Keyword.get(opts, :metadata, %{})
     }
-    
+
     # Validate configuration
     if required_signatures > length(owners) do
       {:reply, {:error, :invalid_threshold}, state}
     else
       state = put_in(state.wallets[wallet_id], wallet)
-      
+
       # Log wallet creation
       AuditLogger.log(:wallet_created, %{
         wallet_id: wallet_id,
@@ -173,7 +173,7 @@ defmodule ExWire.Enterprise.MultisigWallet do
         owners: length(owners),
         threshold: required_signatures
       })
-      
+
       {:reply, {:ok, wallet}, state}
     end
   end
@@ -183,18 +183,18 @@ defmodule ExWire.Enterprise.MultisigWallet do
     case Map.get(state.wallets, wallet_id) do
       nil ->
         {:reply, {:error, :wallet_not_found}, state}
-      
+
       wallet ->
         if is_owner?(wallet, approver) do
           updated_wallet = update_in(wallet.owners, &[validate_owner(new_owner) | &1])
           state = put_in(state.wallets[wallet_id], updated_wallet)
-          
+
           AuditLogger.log(:owner_added, %{
             wallet_id: wallet_id,
             new_owner: new_owner.address,
             approver: approver
           })
-          
+
           {:reply, {:ok, updated_wallet}, state}
         else
           {:reply, {:error, :unauthorized}, state}
@@ -207,11 +207,11 @@ defmodule ExWire.Enterprise.MultisigWallet do
     case Map.get(state.wallets, wallet_id) do
       nil ->
         {:reply, {:error, :wallet_not_found}, state}
-      
+
       wallet ->
         if is_owner?(wallet, submitter) do
           tx_id = generate_tx_id()
-          
+
           pending_tx = %{
             tx_id: tx_id,
             transaction: transaction,
@@ -222,25 +222,25 @@ defmodule ExWire.Enterprise.MultisigWallet do
             expires_at: calculate_expiry(wallet),
             metadata: %{}
           }
-          
+
           # Check policies
           case check_policies(wallet, transaction) do
             :ok ->
               updated_wallet = put_in(wallet.pending_transactions[tx_id], pending_tx)
               state = put_in(state.wallets[wallet_id], updated_wallet)
-              
+
               AuditLogger.log(:transaction_submitted, %{
                 wallet_id: wallet_id,
                 tx_id: tx_id,
                 submitter: submitter,
                 value: transaction.value
               })
-              
+
               # Check if auto-executable
               state = maybe_auto_execute(state, wallet_id, tx_id)
-              
+
               {:reply, {:ok, tx_id}, state}
-            
+
             {:error, reason} ->
               {:reply, {:error, reason}, state}
           end
@@ -255,18 +255,18 @@ defmodule ExWire.Enterprise.MultisigWallet do
     case get_in(state, [:wallets, wallet_id]) do
       nil ->
         {:reply, {:error, :wallet_not_found}, state}
-      
+
       wallet ->
         case Map.get(wallet.pending_transactions, tx_id) do
           nil ->
             {:reply, {:error, :transaction_not_found}, state}
-          
+
           pending_tx ->
             if is_owner?(wallet, approver) && approver not in pending_tx.approvals do
               updated_tx = update_in(pending_tx.approvals, &[approver | &1])
               updated_wallet = put_in(wallet.pending_transactions[tx_id], updated_tx)
               state = put_in(state.wallets[wallet_id], updated_wallet)
-              
+
               AuditLogger.log(:transaction_approved, %{
                 wallet_id: wallet_id,
                 tx_id: tx_id,
@@ -274,10 +274,10 @@ defmodule ExWire.Enterprise.MultisigWallet do
                 approvals: length(updated_tx.approvals),
                 required: wallet.required_signatures
               })
-              
+
               # Check if ready to execute
               state = maybe_auto_execute(state, wallet_id, tx_id)
-              
+
               {:reply, {:ok, updated_tx}, state}
             else
               {:reply, {:error, :unauthorized_or_duplicate}, state}
@@ -291,12 +291,12 @@ defmodule ExWire.Enterprise.MultisigWallet do
     case get_in(state, [:wallets, wallet_id]) do
       nil ->
         {:reply, {:error, :wallet_not_found}, state}
-      
+
       wallet ->
         case Map.get(wallet.pending_transactions, tx_id) do
           nil ->
             {:reply, {:error, :transaction_not_found}, state}
-          
+
           pending_tx ->
             if length(pending_tx.approvals) >= wallet.required_signatures do
               # Execute the transaction
@@ -305,23 +305,24 @@ defmodule ExWire.Enterprise.MultisigWallet do
                   # Move to executed
                   executed_tx = Map.put(pending_tx, :executed_at, DateTime.utc_now())
                   executed_tx = Map.put(executed_tx, :tx_hash, tx_hash)
-                  
-                  updated_wallet = wallet
+
+                  updated_wallet =
+                    wallet
                     |> update_in([Access.key(:pending_transactions)], &Map.delete(&1, tx_id))
                     |> update_in([Access.key(:executed_transactions)], &[executed_tx | &1])
                     |> update_daily_spent(pending_tx.transaction.value)
-                  
+
                   state = put_in(state.wallets[wallet_id], updated_wallet)
-                  
+
                   AuditLogger.log(:transaction_executed, %{
                     wallet_id: wallet_id,
                     tx_id: tx_id,
                     tx_hash: tx_hash,
                     value: pending_tx.transaction.value
                   })
-                  
+
                   {:reply, {:ok, tx_hash}, state}
-                
+
                 {:error, reason} ->
                   {:reply, {:error, reason}, state}
               end
@@ -343,8 +344,9 @@ defmodule ExWire.Enterprise.MultisigWallet do
   @impl true
   def handle_call({:list_pending_transactions, wallet_id}, _from, state) do
     case Map.get(state.wallets, wallet_id) do
-      nil -> 
+      nil ->
         {:reply, {:error, :wallet_not_found}, state}
+
       wallet ->
         pending = Map.values(wallet.pending_transactions)
         {:reply, {:ok, pending}, state}
@@ -406,20 +408,20 @@ defmodule ExWire.Enterprise.MultisigWallet do
   defp check_policies(wallet, transaction) do
     cond do
       # Check daily limit
-      wallet.policies.daily_limit.enabled and 
-        wallet.daily_spent + transaction.value > wallet.policies.daily_limit.value ->
+      wallet.policies.daily_limit.enabled and
+          wallet.daily_spent + transaction.value > wallet.policies.daily_limit.value ->
         {:error, :daily_limit_exceeded}
-      
+
       # Check whitelist  
-      wallet.policies.whitelist.enabled and 
-        transaction.to not in wallet.policies.whitelist.value ->
+      wallet.policies.whitelist.enabled and
+          transaction.to not in wallet.policies.whitelist.value ->
         {:error, :recipient_not_whitelisted}
-      
+
       # Check value threshold
-      wallet.policies.value_threshold.enabled and 
-        transaction.value > wallet.policies.value_threshold.value ->
+      wallet.policies.value_threshold.enabled and
+          transaction.value > wallet.policies.value_threshold.value ->
         {:error, :value_exceeds_threshold}
-      
+
       true ->
         :ok
     end
@@ -428,18 +430,19 @@ defmodule ExWire.Enterprise.MultisigWallet do
   defp maybe_auto_execute(state, wallet_id, tx_id) do
     wallet = state.wallets[wallet_id]
     pending_tx = wallet.pending_transactions[tx_id]
-    
+
     if pending_tx && length(pending_tx.approvals) >= wallet.required_signatures do
       # Auto-execute if threshold reached
       {:ok, _tx_hash} = execute_blockchain_transaction(pending_tx.transaction)
-      
+
       executed_tx = Map.put(pending_tx, :executed_at, DateTime.utc_now())
-      
-      updated_wallet = wallet
+
+      updated_wallet =
+        wallet
         |> update_in([Access.key(:pending_transactions)], &Map.delete(&1, tx_id))
         |> update_in([Access.key(:executed_transactions)], &[executed_tx | &1])
         |> update_daily_spent(pending_tx.transaction.value)
-      
+
       put_in(state.wallets[wallet_id], updated_wallet)
     else
       state
@@ -472,19 +475,19 @@ defmodule ExWire.Enterprise.MultisigWallet do
 
   defp cleanup_expired_transactions(state) do
     now = DateTime.utc_now()
-    
-    updated_wallets = 
+
+    updated_wallets =
       Enum.map(state.wallets, fn {wallet_id, wallet} ->
-        pending = 
+        pending =
           Enum.filter(wallet.pending_transactions, fn {_tx_id, tx} ->
             tx.expires_at == nil || DateTime.compare(tx.expires_at, now) == :gt
           end)
           |> Enum.into(%{})
-        
+
         {wallet_id, %{wallet | pending_transactions: pending}}
       end)
       |> Enum.into(%{})
-    
+
     %{state | wallets: updated_wallets}
   end
 

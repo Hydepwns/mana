@@ -1,7 +1,7 @@
 defmodule ExWire.Packet.Capability.Eth.RequestId do
   @moduledoc """
   Support for request IDs in eth/66+ protocol messages.
-  
+
   In eth/66 (EIP-2481), all request-response message pairs have a 64-bit request_id
   prepended to their existing payload. This module handles the encoding/decoding
   of these request IDs.
@@ -23,7 +23,7 @@ defmodule ExWire.Packet.Capability.Eth.RequestId do
 
   @doc """
   Wraps a message payload with a request ID for eth/66+ protocols.
-  
+
   ## Examples
       
       iex> ExWire.Packet.Capability.Eth.RequestId.wrap_message([block_data], 12345)
@@ -36,14 +36,15 @@ defmodule ExWire.Packet.Capability.Eth.RequestId do
 
   @doc """
   Unwraps a message with request ID, returning both the ID and the original payload.
-  
+
   ## Examples
       
       iex> ExWire.Packet.Capability.Eth.RequestId.unwrap_message([12345, block_data])
       {12345, [block_data]}
   """
   @spec unwrap_message(list()) :: {request_id(), list()}
-  def unwrap_message([request_id | payload]) when is_integer(request_id) or is_binary(request_id) do
+  def unwrap_message([request_id | payload])
+      when is_integer(request_id) or is_binary(request_id) do
     id = if is_binary(request_id), do: :binary.decode_unsigned(request_id), else: request_id
     {id, payload}
   end

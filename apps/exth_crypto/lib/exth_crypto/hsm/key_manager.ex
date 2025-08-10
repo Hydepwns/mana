@@ -1,11 +1,11 @@
 defmodule ExthCrypto.HSM.KeyManager do
   @moduledoc """
   Enterprise key manager supporting both software and HSM-backed keys.
-  
+
   This module provides a unified interface for key operations, automatically
   routing requests to the appropriate backend (software libsecp256k1 or HSM)
   based on key configuration and security policies.
-  
+
   Key Features:
   - Seamless fallback between HSM and software keys
   - Role-based key access control
@@ -26,29 +26,29 @@ defmodule ExthCrypto.HSM.KeyManager do
   @type key_backend :: :software | :hsm
   @type key_usage :: :signing | :validation | :encryption | :derivation
   @type key_role :: :validator | :transaction_signer | :node_identity | :admin
-  
+
   @type key_descriptor :: %{
-    id: key_id(),
-    backend: key_backend(),
-    usage: [key_usage()],
-    role: key_role(),
-    label: String.t(),
-    public_key: binary(),
-    hsm_handle: reference() | nil,
-    software_key: binary() | nil,
-    created_at: DateTime.t(),
-    last_used: DateTime.t(),
-    use_count: non_neg_integer(),
-    metadata: map()
-  }
+          id: key_id(),
+          backend: key_backend(),
+          usage: [key_usage()],
+          role: key_role(),
+          label: String.t(),
+          public_key: binary(),
+          hsm_handle: reference() | nil,
+          software_key: binary() | nil,
+          created_at: DateTime.t(),
+          last_used: DateTime.t(),
+          use_count: non_neg_integer(),
+          metadata: map()
+        }
 
   @type manager_state :: %{
-    keys: %{key_id() => key_descriptor()},
-    hsm_available: boolean(),
-    fallback_enabled: boolean(),
-    config: map(),
-    stats: map()
-  }
+          keys: %{key_id() => key_descriptor()},
+          hsm_available: boolean(),
+          fallback_enabled: boolean(),
+          config: map(),
+          stats: map()
+        }
 
   ## GenServer API
 
@@ -77,23 +77,25 @@ defmodule ExthCrypto.HSM.KeyManager do
 
   def handle_continue(:initialize, state) do
     Logger.info("Initializing HSM Key Manager")
-    
+
     # Check HSM availability
     hsm_available = check_hsm_availability()
-    
+
     # Discover existing keys
     discovered_keys = discover_keys(hsm_available)
-    
+
     # Update state
     new_state = %{
-      state | 
-      hsm_available: hsm_available,
-      keys: discovered_keys,
-      stats: Map.put(state.stats, :keys_loaded, map_size(discovered_keys))
+      state
+      | hsm_available: hsm_available,
+        keys: discovered_keys,
+        stats: Map.put(state.stats, :keys_loaded, map_size(discovered_keys))
     }
-    
-    Logger.info("Key Manager initialized - HSM: #{hsm_available}, Keys: #{map_size(discovered_keys)}")
-    
+
+    Logger.info(
+      "Key Manager initialized - HSM: #{hsm_available}, Keys: #{map_size(discovered_keys)}"
+    )
+
     {:noreply, new_state}
   end
 
@@ -106,9 +108,9 @@ defmodule ExthCrypto.HSM.KeyManager do
 
   def handle_call({:sign, key_id, data}, _from, state) do
     case Map.get(state.keys, key_id) do
-      nil -> 
+      nil ->
         {:reply, {:error, "Key not found: #{key_id}"}, state}
-      
+
       key ->
         {result, new_state} = perform_signing(key, data, state)
         {:reply, result, new_state}
@@ -131,23 +133,24 @@ defmodule ExthCrypto.HSM.KeyManager do
   end
 
   def handle_call(:get_stats, _from, state) do
-    stats = Map.merge(state.stats, %{
-      total_keys: map_size(state.keys),
-      hsm_keys: count_keys_by_backend(state.keys, :hsm),
-      software_keys: count_keys_by_backend(state.keys, :software),
-      hsm_available: state.hsm_available
-    })
-    
+    stats =
+      Map.merge(state.stats, %{
+        total_keys: map_size(state.keys),
+        hsm_keys: count_keys_by_backend(state.keys, :hsm),
+        software_keys: count_keys_by_backend(state.keys, :software),
+        hsm_available: state.hsm_available
+      })
+
     {:reply, {:ok, stats}, state}
   end
 
   def handle_info(:health_check, state) do
     # Periodic health check
     hsm_available = check_hsm_availability()
-    
+
     if hsm_available != state.hsm_available do
       Logger.info("HSM availability changed: #{state.hsm_available} -> #{hsm_available}")
-      
+
       # Update fallback status
       new_state = %{state | hsm_available: hsm_available}
       {:noreply, new_state}
@@ -210,7 +213,8 @@ defmodule ExthCrypto.HSM.KeyManager do
   @doc """
   Ethereum-specific helper: Sign a transaction hash using appropriate key.
   """
-  @spec sign_ethereum_transaction(key_id(), binary()) :: {:ok, {integer(), integer(), integer()}} | {:error, String.t()}
+  @spec sign_ethereum_transaction(key_id(), binary()) ::
+          {:ok, {integer(), integer(), integer()}} | {:error, String.t()}
   def sign_ethereum_transaction(key_id, tx_hash) do
     case sign(key_id, tx_hash) do
       {:ok, signature} ->
@@ -221,11 +225,11 @@ defmodule ExthCrypto.HSM.KeyManager do
             # For now, use default recovery ID
             v = 27
             {:ok, {v, r, s}}
-          
+
           {:error, reason} ->
             {:error, "Failed to parse signature: #{reason}"}
         end
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -253,104 +257,107 @@ defmodule ExthCrypto.HSM.KeyManager do
 
   defp discover_keys(hsm_available) do
     keys = %{}
-    
+
     # Discover HSM keys if available
-    keys = if hsm_available do
-      case PKCS11Interface.find_keys(%{key_type: :ec_secp256k1}) do
-        {:ok, hsm_keys} ->
-          Enum.reduce(hsm_keys, keys, fn hsm_key, acc ->
-            key_id = generate_key_id(hsm_key.label)
-            
-            descriptor = %{
-              id: key_id,
-              backend: :hsm,
-              usage: [:signing],
-              role: determine_role_from_label(hsm_key.label),
-              label: hsm_key.label,
-              public_key: get_hsm_public_key(hsm_key.handle),
-              hsm_handle: hsm_key.handle,
-              software_key: nil,
-              created_at: DateTime.utc_now(),
-              last_used: DateTime.utc_now(),
-              use_count: 0,
-              metadata: %{
-                extractable: hsm_key.extractable,
-                hsm_info: hsm_key
+    keys =
+      if hsm_available do
+        case PKCS11Interface.find_keys(%{key_type: :ec_secp256k1}) do
+          {:ok, hsm_keys} ->
+            Enum.reduce(hsm_keys, keys, fn hsm_key, acc ->
+              key_id = generate_key_id(hsm_key.label)
+
+              descriptor = %{
+                id: key_id,
+                backend: :hsm,
+                usage: [:signing],
+                role: determine_role_from_label(hsm_key.label),
+                label: hsm_key.label,
+                public_key: get_hsm_public_key(hsm_key.handle),
+                hsm_handle: hsm_key.handle,
+                software_key: nil,
+                created_at: DateTime.utc_now(),
+                last_used: DateTime.utc_now(),
+                use_count: 0,
+                metadata: %{
+                  extractable: hsm_key.extractable,
+                  hsm_info: hsm_key
+                }
               }
-            }
-            
-            Map.put(acc, key_id, descriptor)
-          end)
-        
-        {:error, reason} ->
-          Logger.warn("Failed to discover HSM keys: #{reason}")
-          keys
+
+              Map.put(acc, key_id, descriptor)
+            end)
+
+          {:error, reason} ->
+            Logger.warn("Failed to discover HSM keys: #{reason}")
+            keys
+        end
+      else
+        keys
       end
-    else
-      keys
-    end
-    
+
     # Add any configured software keys
     keys = load_software_keys(keys)
-    
+
     keys
   end
 
   defp perform_signing(key, data, state) do
-    result = case key.backend do
-      :hsm when state.hsm_available ->
-        Logger.debug("Signing with HSM key: #{key.id}")
-        
-        case PKCS11Interface.sign(data, key.hsm_handle) do
-          {:ok, signature} ->
-            # Update key usage stats
-            updated_key = %{
-              key | 
-              last_used: DateTime.utc_now(),
-              use_count: key.use_count + 1
-            }
-            
-            new_state = %{
-              state |
-              keys: Map.put(state.keys, key.id, updated_key),
-              stats: Map.update(state.stats, :hsm_operations, 1, &(&1 + 1))
-            }
-            
-            audit_log_key_usage(key.id, :hsm_sign, :success)
-            {:ok, signature, new_state}
-          
-          {:error, reason} ->
-            Logger.error("HSM signing failed for key #{key.id}: #{reason}")
-            audit_log_key_usage(key.id, :hsm_sign, {:error, reason})
-            
-            # Attempt fallback to software if enabled and available
-            if state.fallback_enabled && key.software_key do
-              Logger.info("Falling back to software signing for key: #{key.id}")
-              fallback_software_sign(key, data, state)
-            else
-              new_state = Map.update(state, :stats, %{}, fn stats ->
-                Map.update(stats, :errors, 1, &(&1 + 1))
-              end)
-              
-              {:error, "HSM signing failed: #{reason}", new_state}
-            end
-        end
-      
-      :hsm when not state.hsm_available ->
-        Logger.warn("HSM not available for key: #{key.id}")
-        
-        if state.fallback_enabled && key.software_key do
-          Logger.info("Using software fallback for HSM key: #{key.id}")
-          fallback_software_sign(key, data, state)
-        else
-          {:error, "HSM not available and no fallback configured", state}
-        end
-      
-      :software ->
-        Logger.debug("Signing with software key: #{key.id}")
-        software_sign(key, data, state)
-    end
-    
+    result =
+      case key.backend do
+        :hsm when state.hsm_available ->
+          Logger.debug("Signing with HSM key: #{key.id}")
+
+          case PKCS11Interface.sign(data, key.hsm_handle) do
+            {:ok, signature} ->
+              # Update key usage stats
+              updated_key = %{
+                key
+                | last_used: DateTime.utc_now(),
+                  use_count: key.use_count + 1
+              }
+
+              new_state = %{
+                state
+                | keys: Map.put(state.keys, key.id, updated_key),
+                  stats: Map.update(state.stats, :hsm_operations, 1, &(&1 + 1))
+              }
+
+              audit_log_key_usage(key.id, :hsm_sign, :success)
+              {:ok, signature, new_state}
+
+            {:error, reason} ->
+              Logger.error("HSM signing failed for key #{key.id}: #{reason}")
+              audit_log_key_usage(key.id, :hsm_sign, {:error, reason})
+
+              # Attempt fallback to software if enabled and available
+              if state.fallback_enabled && key.software_key do
+                Logger.info("Falling back to software signing for key: #{key.id}")
+                fallback_software_sign(key, data, state)
+              else
+                new_state =
+                  Map.update(state, :stats, %{}, fn stats ->
+                    Map.update(stats, :errors, 1, &(&1 + 1))
+                  end)
+
+                {:error, "HSM signing failed: #{reason}", new_state}
+              end
+          end
+
+        :hsm when not state.hsm_available ->
+          Logger.warn("HSM not available for key: #{key.id}")
+
+          if state.fallback_enabled && key.software_key do
+            Logger.info("Using software fallback for HSM key: #{key.id}")
+            fallback_software_sign(key, data, state)
+          else
+            {:error, "HSM not available and no fallback configured", state}
+          end
+
+        :software ->
+          Logger.debug("Signing with software key: #{key.id}")
+          software_sign(key, data, state)
+      end
+
     case result do
       {:ok, signature, new_state} -> {{:ok, signature}, new_state}
       {:error, reason, new_state} -> {{:error, reason}, new_state}
@@ -362,37 +369,39 @@ defmodule ExthCrypto.HSM.KeyManager do
       {signature, _r, _s, _recovery_id} ->
         # Update key usage stats
         updated_key = %{
-          key | 
-          last_used: DateTime.utc_now(),
-          use_count: key.use_count + 1
+          key
+          | last_used: DateTime.utc_now(),
+            use_count: key.use_count + 1
         }
-        
+
         new_state = %{
-          state |
-          keys: Map.put(state.keys, key.id, updated_key),
-          stats: Map.update(state.stats, :software_operations, 1, &(&1 + 1))
+          state
+          | keys: Map.put(state.keys, key.id, updated_key),
+            stats: Map.update(state.stats, :software_operations, 1, &(&1 + 1))
         }
-        
+
         audit_log_key_usage(key.id, :software_sign, :success)
         {:ok, signature, new_state}
-      
+
       error ->
         Logger.error("Software signing failed for key #{key.id}: #{inspect(error)}")
         audit_log_key_usage(key.id, :software_sign, {:error, error})
-        
-        new_state = Map.update(state, :stats, %{}, fn stats ->
-          Map.update(stats, :errors, 1, &(&1 + 1))
-        end)
-        
+
+        new_state =
+          Map.update(state, :stats, %{}, fn stats ->
+            Map.update(stats, :errors, 1, &(&1 + 1))
+          end)
+
         {:error, "Software signing failed", new_state}
     end
   end
 
   defp fallback_software_sign(key, data, state) do
-    new_state = Map.update(state, :stats, %{}, fn stats ->
-      Map.update(stats, :fallback_activations, 1, &(&1 + 1))
-    end)
-    
+    new_state =
+      Map.update(state, :stats, %{}, fn stats ->
+        Map.update(stats, :fallback_activations, 1, &(&1 + 1))
+      end)
+
     software_sign(key, data, new_state)
   end
 
@@ -401,28 +410,35 @@ defmodule ExthCrypto.HSM.KeyManager do
     label = Map.get(params, :label, "ethereum-key-#{System.unique_integer([:positive])}")
     role = Map.get(params, :role, :transaction_signer)
     usage = Map.get(params, :usage, [:signing])
-    
+
     # Determine actual backend
-    actual_backend = case backend do
-      :auto -> if state.hsm_available, do: :hsm, else: :software
-      :hsm when state.hsm_available -> :hsm
-      :hsm when not state.hsm_available -> 
-        if state.fallback_enabled do
-          Logger.warn("HSM requested but not available, falling back to software")
+    actual_backend =
+      case backend do
+        :auto ->
+          if state.hsm_available, do: :hsm, else: :software
+
+        :hsm when state.hsm_available ->
+          :hsm
+
+        :hsm when not state.hsm_available ->
+          if state.fallback_enabled do
+            Logger.warn("HSM requested but not available, falling back to software")
+            :software
+          else
+            :error
+          end
+
+        :software ->
           :software
-        else
-          :error
-        end
-      :software -> :software
-    end
-    
+      end
+
     case actual_backend do
       :hsm ->
         generate_hsm_key(label, role, usage, state)
-      
+
       :software ->
         generate_software_key(label, role, usage, state)
-        
+
       :error ->
         {{:error, "HSM not available"}, state}
     end
@@ -434,7 +450,7 @@ defmodule ExthCrypto.HSM.KeyManager do
         case PKCS11Interface.get_public_key(private_handle) do
           {:ok, public_key} ->
             key_id = generate_key_id(label)
-            
+
             descriptor = %{
               id: key_id,
               backend: :hsm,
@@ -452,23 +468,23 @@ defmodule ExthCrypto.HSM.KeyManager do
                 generated_on_hsm: true
               }
             }
-            
+
             new_state = %{
-              state |
-              keys: Map.put(state.keys, key_id, descriptor),
-              stats: Map.update(state.stats, :keys_loaded, 1, &(&1 + 1))
+              state
+              | keys: Map.put(state.keys, key_id, descriptor),
+                stats: Map.update(state.stats, :keys_loaded, 1, &(&1 + 1))
             }
-            
+
             Logger.info("Generated new HSM key: #{key_id}")
             audit_log_key_generation(key_id, :hsm, label)
-            
+
             {{:ok, descriptor}, new_state}
-          
+
           {:error, reason} ->
             Logger.error("Failed to get public key for generated HSM key: #{reason}")
             {{:error, "Failed to retrieve public key"}, state}
         end
-      
+
       {:error, reason} ->
         Logger.error("Failed to generate HSM key pair: #{reason}")
         {{:error, "HSM key generation failed: #{reason}"}, state}
@@ -478,11 +494,11 @@ defmodule ExthCrypto.HSM.KeyManager do
   defp generate_software_key(label, role, usage, state) do
     # Generate random private key
     private_key = :crypto.strong_rand_bytes(32)
-    
+
     case Signature.get_public_key(private_key) do
       {:ok, public_key} ->
         key_id = generate_key_id(label)
-        
+
         descriptor = %{
           id: key_id,
           backend: :software,
@@ -499,18 +515,18 @@ defmodule ExthCrypto.HSM.KeyManager do
             generated_in_memory: true
           }
         }
-        
+
         new_state = %{
-          state |
-          keys: Map.put(state.keys, key_id, descriptor),
-          stats: Map.update(state.stats, :keys_loaded, 1, &(&1 + 1))
+          state
+          | keys: Map.put(state.keys, key_id, descriptor),
+            stats: Map.update(state.stats, :keys_loaded, 1, &(&1 + 1))
         }
-        
+
         Logger.info("Generated new software key: #{key_id}")
         audit_log_key_generation(key_id, :software, label)
-        
+
         {{:ok, descriptor}, new_state}
-      
+
       {:error, reason} ->
         Logger.error("Failed to generate public key from private key: #{reason}")
         {{:error, "Software key generation failed"}, state}
@@ -521,20 +537,20 @@ defmodule ExthCrypto.HSM.KeyManager do
     case Map.get(state.keys, key_id) do
       nil ->
         {{:error, "Key not found: #{key_id}"}, state}
-      
+
       key ->
         case key.backend do
           :hsm ->
             Logger.warn("Cannot delete HSM key #{key_id} - use HSM management tools")
             {{:error, "HSM keys must be deleted using HSM management tools"}, state}
-          
+
           :software ->
             new_keys = Map.delete(state.keys, key_id)
             new_state = %{state | keys: new_keys}
-            
+
             Logger.info("Deleted software key: #{key_id}")
             audit_log_key_deletion(key_id, :software)
-            
+
             {:ok, new_state}
         end
     end
@@ -543,7 +559,7 @@ defmodule ExthCrypto.HSM.KeyManager do
   # Helper functions
 
   defp filter_keys(keys, filters) when map_size(filters) == 0, do: Map.values(keys)
-  
+
   defp filter_keys(keys, filters) do
     keys
     |> Map.values()
@@ -570,7 +586,7 @@ defmodule ExthCrypto.HSM.KeyManager do
     # Generate deterministic key ID from label and timestamp
     timestamp = DateTime.utc_now() |> DateTime.to_unix()
     content = "#{label}-#{timestamp}"
-    
+
     content
     |> Keccak.kec()
     |> Base.encode16(case: :lower)
@@ -589,7 +605,8 @@ defmodule ExthCrypto.HSM.KeyManager do
   defp get_hsm_public_key(hsm_handle) do
     case PKCS11Interface.get_public_key(hsm_handle) do
       {:ok, public_key} -> public_key
-      {:error, _} -> <<>>  # Placeholder - in production this should be handled properly
+      # Placeholder - in production this should be handled properly
+      {:error, _} -> <<>>
     end
   end
 
@@ -602,12 +619,12 @@ defmodule ExthCrypto.HSM.KeyManager do
   defp parse_der_signature(der_signature) do
     # Simple DER parsing - in production use proper ASN.1 library
     try do
-      <<0x30, _length, 0x02, r_length, r::binary-size(r_length), 
-        0x02, s_length, s::binary-size(s_length), _rest::binary>> = der_signature
-      
+      <<0x30, _length, 0x02, r_length, r::binary-size(r_length), 0x02, s_length,
+        s::binary-size(s_length), _rest::binary>> = der_signature
+
       r_int = :binary.decode_unsigned(r)
       s_int = :binary.decode_unsigned(s)
-      
+
       {:ok, r_int, s_int}
     rescue
       _ -> {:error, "Invalid DER signature format"}

@@ -95,7 +95,7 @@ defmodule ExWire.Layer2.NetworkInterface do
       {:stop, {:unsupported_network, network_name}}
     else
       network_config = load_network_config(network_name, config)
-      
+
       state = %__MODULE__{
         network_name: network_name,
         network_type: network_config.network_type,
@@ -116,12 +116,12 @@ defmodule ExWire.Layer2.NetworkInterface do
       {:ok, updated_state} ->
         {:ok, rollup_state} = start_rollup_handler(updated_state)
         {:ok, bridge_state} = start_bridge_handler(rollup_state)
-        
+
         final_state = %{bridge_state | status: :connected}
         Logger.info("Connected to #{final_state.network_name}")
-        
+
         {:reply, {:ok, :connected}, final_state}
-        
+
       {:error, reason} ->
         Logger.error("Failed to connect to #{state.network_name}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -147,6 +147,7 @@ defmodule ExWire.Layer2.NetworkInterface do
       rollup_active: state.rollup_pid != nil,
       bridge_active: state.bridge_pid != nil
     }
+
     {:reply, status_info, state}
   end
 
@@ -157,7 +158,7 @@ defmodule ExWire.Layer2.NetworkInterface do
         result = submit_to_l2(state, transaction)
         update_metrics(state, :transaction_submitted)
         {:reply, result, state}
-        
+
       _ ->
         {:reply, {:error, :not_connected}, state}
     end
@@ -170,7 +171,7 @@ defmodule ExWire.Layer2.NetworkInterface do
         result = query_l2_state(state, address, slot)
         update_metrics(state, :state_query)
         {:reply, result, state}
-        
+
       _ ->
         {:reply, {:error, :not_connected}, state}
     end
@@ -183,7 +184,7 @@ defmodule ExWire.Layer2.NetworkInterface do
         result = initiate_l2_withdrawal(state, params)
         update_metrics(state, :withdrawal_initiated)
         {:reply, result, state}
-        
+
       _ ->
         {:reply, {:error, :not_connected}, state}
     end
@@ -222,15 +223,17 @@ defmodule ExWire.Layer2.NetworkInterface do
 
   defp load_network_config(network_name, override_config) do
     config_file = "config/layer2/#{network_name}.yaml"
-    
-    base_config = case File.read(config_file) do
-      {:ok, content} ->
-        YamlElixir.read_from_string!(content)
-      {:error, _} ->
-        Logger.warn("Config file not found: #{config_file}, using defaults")
-        default_config(network_name)
-    end
-    
+
+    base_config =
+      case File.read(config_file) do
+        {:ok, content} ->
+          YamlElixir.read_from_string!(content)
+
+        {:error, _} ->
+          Logger.warn("Config file not found: #{config_file}, using defaults")
+          default_config(network_name)
+      end
+
     # Deep merge with override config
     deep_merge(base_config, override_config)
   end
@@ -247,7 +250,7 @@ defmodule ExWire.Layer2.NetworkInterface do
 
   defp default_config(:arbitrum_mainnet) do
     %{
-      "name" => "arbitrum_mainnet", 
+      "name" => "arbitrum_mainnet",
       "network_type" => "optimistic_rollup",
       "chain_id" => 42161,
       "l1_network" => %{"chain_id" => 1},
@@ -258,7 +261,7 @@ defmodule ExWire.Layer2.NetworkInterface do
   defp default_config(:zksync_era_mainnet) do
     %{
       "name" => "zksync_era_mainnet",
-      "network_type" => "zk_rollup", 
+      "network_type" => "zk_rollup",
       "chain_id" => 324,
       "l1_network" => %{"chain_id" => 1},
       "l2_network" => %{"chain_id" => 324}
@@ -268,10 +271,7 @@ defmodule ExWire.Layer2.NetworkInterface do
   defp establish_connections(state) do
     with {:ok, l1_conn} <- connect_to_l1(state.config),
          {:ok, l2_conn} <- connect_to_l2(state.config) do
-      updated_state = %{state | 
-        l1_connection: l1_conn,
-        l2_connection: l2_conn
-      }
+      updated_state = %{state | l1_connection: l1_conn, l2_connection: l2_conn}
       {:ok, updated_state}
     else
       {:error, reason} -> {:error, reason}
@@ -280,6 +280,7 @@ defmodule ExWire.Layer2.NetworkInterface do
 
   defp connect_to_l1(config) do
     endpoint = get_in(config, ["l1_network", "endpoint"])
+
     if endpoint do
       # Simulate connection establishment
       Logger.info("Connecting to L1 at #{endpoint}")
@@ -291,6 +292,7 @@ defmodule ExWire.Layer2.NetworkInterface do
 
   defp connect_to_l2(config) do
     endpoint = get_in(config, ["l2_network", "endpoint"])
+
     if endpoint do
       # Simulate connection establishment
       Logger.info("Connecting to L2 at #{endpoint}")
@@ -302,24 +304,25 @@ defmodule ExWire.Layer2.NetworkInterface do
 
   defp start_rollup_handler(state) do
     rollup_name = :"#{state.network_name}_rollup"
-    
-    rollup_pid = case state.network_type do
-      "optimistic_rollup" ->
-        {:ok, pid} = OptimisticRollup.start_link(rollup_name, state.config)
-        pid
-        
-      "zk_rollup" ->
-        {:ok, pid} = ZKRollup.start_link(rollup_name, state.config)
-        pid
-    end
-    
+
+    rollup_pid =
+      case state.network_type do
+        "optimistic_rollup" ->
+          {:ok, pid} = OptimisticRollup.start_link(rollup_name, state.config)
+          pid
+
+        "zk_rollup" ->
+          {:ok, pid} = ZKRollup.start_link(rollup_name, state.config)
+          pid
+      end
+
     {:ok, %{state | rollup_pid: rollup_pid}}
   end
 
   defp start_bridge_handler(state) do
     bridge_name = :"#{state.network_name}_bridge"
     {:ok, bridge_pid} = CrossLayerBridge.start_link(bridge_name, state.config)
-    
+
     {:ok, %{state | bridge_pid: bridge_pid}}
   end
 
@@ -328,34 +331,31 @@ defmodule ExWire.Layer2.NetworkInterface do
     if state.rollup_pid do
       GenServer.stop(state.rollup_pid, :normal)
     end
-    
+
     # Cleanup bridge handler
     if state.bridge_pid do
       GenServer.stop(state.bridge_pid, :normal)
     end
 
-    %{state |
-      l1_connection: nil,
-      l2_connection: nil,
-      rollup_pid: nil,
-      bridge_pid: nil
-    }
+    %{state | l1_connection: nil, l2_connection: nil, rollup_pid: nil, bridge_pid: nil}
   end
 
   defp submit_to_l2(state, transaction) do
     # Simulate transaction submission
-    tx_hash = :crypto.hash(:sha256, :erlang.term_to_binary(transaction))
-    |> Base.encode16(case: :lower)
-    
+    tx_hash =
+      :crypto.hash(:sha256, :erlang.term_to_binary(transaction))
+      |> Base.encode16(case: :lower)
+
     Logger.info("Submitted transaction to #{state.network_name}: 0x#{tx_hash}")
     {:ok, "0x#{tx_hash}"}
   end
 
   defp query_l2_state(state, address, slot) do
     # Simulate state query
-    state_value = :crypto.hash(:sha256, "#{address}#{slot}")
-    |> Base.encode16(case: :lower)
-    
+    state_value =
+      :crypto.hash(:sha256, "#{address}#{slot}")
+      |> Base.encode16(case: :lower)
+
     Logger.debug("Queried state on #{state.network_name}: #{address}")
     {:ok, "0x#{state_value}"}
   end
@@ -363,7 +363,7 @@ defmodule ExWire.Layer2.NetworkInterface do
   defp initiate_l2_withdrawal(state, params) do
     # Simulate withdrawal initiation
     withdrawal_id = :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
-    
+
     Logger.info("Initiated withdrawal on #{state.network_name}: 0x#{withdrawal_id}")
     {:ok, "0x#{withdrawal_id}"}
   end
@@ -381,10 +381,11 @@ defmodule ExWire.Layer2.NetworkInterface do
   end
 
   defp update_metrics(state, metric_type) do
-    updated_metrics = state.metrics
-    |> Map.update(metric_type, 1, &(&1 + 1))
-    |> Map.put(:last_activity, DateTime.utc_now())
-    
+    updated_metrics =
+      state.metrics
+      |> Map.update(metric_type, 1, &(&1 + 1))
+      |> Map.put(:last_activity, DateTime.utc_now())
+
     %{state | metrics: updated_metrics}
   end
 

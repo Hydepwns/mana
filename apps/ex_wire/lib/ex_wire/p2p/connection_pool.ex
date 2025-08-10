@@ -13,59 +13,59 @@ defmodule ExWire.P2P.ConnectionPool do
 
   @typedoc "Connection pool state"
   @type t :: %__MODULE__{
-    active_connections: %{pid() => connection_info()},
-    pending_connections: %{Peer.t() => pending_info()},
-    connection_history: %{Peer.t() => connection_history()},
-    pool_config: pool_config(),
-    metrics: metrics()
-  }
+          active_connections: %{pid() => connection_info()},
+          pending_connections: %{Peer.t() => pending_info()},
+          connection_history: %{Peer.t() => connection_history()},
+          pool_config: pool_config(),
+          metrics: metrics()
+        }
 
   @typedoc "Information about an active connection"
   @type connection_info :: %{
-    peer: Peer.t(),
-    connected_at: DateTime.t(),
-    last_activity: DateTime.t(),
-    message_count: non_neg_integer(),
-    status: :handshaking | :active | :disconnecting,
-    protocol_version: integer() | nil
-  }
+          peer: Peer.t(),
+          connected_at: DateTime.t(),
+          last_activity: DateTime.t(),
+          message_count: non_neg_integer(),
+          status: :handshaking | :active | :disconnecting,
+          protocol_version: integer() | nil
+        }
 
   @typedoc "Information about a pending connection attempt"
   @type pending_info :: %{
-    attempts: non_neg_integer(),
-    last_attempt: DateTime.t(),
-    backoff_until: DateTime.t()
-  }
+          attempts: non_neg_integer(),
+          last_attempt: DateTime.t(),
+          backoff_until: DateTime.t()
+        }
 
   @typedoc "Historical information about a peer"
   @type connection_history :: %{
-    successful_connections: non_neg_integer(),
-    failed_connections: non_neg_integer(),
-    total_uptime: non_neg_integer(),
-    last_seen: DateTime.t() | nil,
-    reputation_score: float()
-  }
+          successful_connections: non_neg_integer(),
+          failed_connections: non_neg_integer(),
+          total_uptime: non_neg_integer(),
+          last_seen: DateTime.t() | nil,
+          reputation_score: float()
+        }
 
   @typedoc "Pool configuration"
   @type pool_config :: %{
-    max_connections: non_neg_integer(),
-    target_connections: non_neg_integer(),
-    max_pending: non_neg_integer(),
-    connection_timeout: non_neg_integer(),
-    retry_backoff_base: non_neg_integer(),
-    max_retry_attempts: non_neg_integer(),
-    health_check_interval: non_neg_integer()
-  }
+          max_connections: non_neg_integer(),
+          target_connections: non_neg_integer(),
+          max_pending: non_neg_integer(),
+          connection_timeout: non_neg_integer(),
+          retry_backoff_base: non_neg_integer(),
+          max_retry_attempts: non_neg_integer(),
+          health_check_interval: non_neg_integer()
+        }
 
   @typedoc "Pool metrics"
   @type metrics :: %{
-    total_connections_attempted: non_neg_integer(),
-    total_connections_successful: non_neg_integer(),
-    total_connections_failed: non_neg_integer(),
-    total_bytes_sent: non_neg_integer(),
-    total_bytes_received: non_neg_integer(),
-    avg_connection_duration: float()
-  }
+          total_connections_attempted: non_neg_integer(),
+          total_connections_successful: non_neg_integer(),
+          total_connections_failed: non_neg_integer(),
+          total_bytes_sent: non_neg_integer(),
+          total_bytes_received: non_neg_integer(),
+          avg_connection_duration: float()
+        }
 
   defstruct [
     :active_connections,
@@ -111,12 +111,12 @@ defmodule ExWire.P2P.ConnectionPool do
   end
 
   @spec get_pool_stats() :: %{
-    active: non_neg_integer(),
-    pending: non_neg_integer(),
-    target: non_neg_integer(),
-    max: non_neg_integer(),
-    metrics: metrics()
-  }
+          active: non_neg_integer(),
+          pending: non_neg_integer(),
+          target: non_neg_integer(),
+          max: non_neg_integer(),
+          metrics: metrics()
+        }
   def get_pool_stats() do
     GenServer.call(@name, :get_pool_stats)
   end
@@ -131,7 +131,7 @@ defmodule ExWire.P2P.ConnectionPool do
   @impl true
   def init(opts) do
     config = Map.merge(@default_config, Map.new(opts))
-    
+
     state = %__MODULE__{
       active_connections: %{},
       pending_connections: %{},
@@ -151,7 +151,9 @@ defmodule ExWire.P2P.ConnectionPool do
     schedule_health_check(config.health_check_interval)
     schedule_peer_discovery()
 
-    Logger.info("[ConnectionPool] Started with max_connections=#{config.max_connections}, target=#{config.target_connections}")
+    Logger.info(
+      "[ConnectionPool] Started with max_connections=#{config.max_connections}, target=#{config.target_connections}"
+    )
 
     {:ok, state}
   end
@@ -180,9 +182,10 @@ defmodule ExWire.P2P.ConnectionPool do
   end
 
   def handle_call(:get_connected_peers, _from, state) do
-    peers = state.active_connections
-            |> Map.values()
-            |> Enum.map(& &1.peer)
+    peers =
+      state.active_connections
+      |> Map.values()
+      |> Enum.map(& &1.peer)
 
     {:reply, peers, state}
   end
@@ -200,10 +203,12 @@ defmodule ExWire.P2P.ConnectionPool do
   end
 
   def handle_call({:get_peer_reputation, peer}, _from, state) do
-    reputation = case Map.get(state.connection_history, peer) do
-      nil -> 0.5  # Neutral for unknown peers
-      history -> history.reputation_score
-    end
+    reputation =
+      case Map.get(state.connection_history, peer) do
+        # Neutral for unknown peers
+        nil -> 0.5
+        history -> history.reputation_score
+      end
 
     {:reply, reputation, state}
   end
@@ -224,9 +229,10 @@ defmodule ExWire.P2P.ConnectionPool do
       protocol_version: nil
     }
 
-    new_state = %{state | 
-      active_connections: Map.put(state.active_connections, pid, connection_info),
-      pending_connections: Map.delete(state.pending_connections, peer)
+    new_state = %{
+      state
+      | active_connections: Map.put(state.active_connections, pid, connection_info),
+        pending_connections: Map.delete(state.pending_connections, peer)
     }
 
     # Update metrics
@@ -253,13 +259,15 @@ defmodule ExWire.P2P.ConnectionPool do
         {:noreply, state}
 
       connection_info ->
-        updated_info = %{connection_info | 
-          last_activity: DateTime.utc_now(),
-          message_count: connection_info.message_count + 1
+        updated_info = %{
+          connection_info
+          | last_activity: DateTime.utc_now(),
+            message_count: connection_info.message_count + 1
         }
 
-        new_state = %{state | 
-          active_connections: Map.put(state.active_connections, pid, updated_info)
+        new_state = %{
+          state
+          | active_connections: Map.put(state.active_connections, pid, updated_info)
         }
 
         {:noreply, new_state}
@@ -285,7 +293,10 @@ defmodule ExWire.P2P.ConnectionPool do
         {:noreply, state}
 
       connection_info ->
-        Logger.debug("[ConnectionPool] Connection process #{inspect(pid)} died: #{inspect(reason)}")
+        Logger.debug(
+          "[ConnectionPool] Connection process #{inspect(pid)} died: #{inspect(reason)}"
+        )
+
         new_state = handle_peer_disconnection(pid, connection_info, state)
         {:noreply, new_state}
     end
@@ -325,7 +336,8 @@ defmodule ExWire.P2P.ConnectionPool do
 
   defp get_peer_reputation_score(peer, state) do
     case Map.get(state.connection_history, peer) do
-      nil -> 0.5  # Neutral for new peers
+      # Neutral for new peers
+      nil -> 0.5
       history -> history.reputation_score
     end
   end
@@ -335,12 +347,14 @@ defmodule ExWire.P2P.ConnectionPool do
     pending_info = %{
       attempts: 1,
       last_attempt: DateTime.utc_now(),
-      backoff_until: DateTime.add(DateTime.utc_now(), state.pool_config.retry_backoff_base, :millisecond)
+      backoff_until:
+        DateTime.add(DateTime.utc_now(), state.pool_config.retry_backoff_base, :millisecond)
     }
 
-    updated_state = %{state | 
-      pending_connections: Map.put(state.pending_connections, peer, pending_info),
-      metrics: update_connection_attempt_metrics(state.metrics)
+    updated_state = %{
+      state
+      | pending_connections: Map.put(state.pending_connections, peer, pending_info),
+        metrics: update_connection_attempt_metrics(state.metrics)
     }
 
     # Attempt to start connection process
@@ -352,17 +366,19 @@ defmodule ExWire.P2P.ConnectionPool do
 
       {:error, reason} ->
         # Remove from pending and update failure metrics
-        final_state = %{updated_state | 
-          pending_connections: Map.delete(updated_state.pending_connections, peer),
-          metrics: update_connection_failure_metrics(updated_state.metrics)
+        final_state = %{
+          updated_state
+          | pending_connections: Map.delete(updated_state.pending_connections, peer),
+            metrics: update_connection_failure_metrics(updated_state.metrics)
         }
+
         {:error, reason, final_state}
     end
   end
 
   defp start_connection_process(peer) do
     spec = {Server, {:outbound, peer, [], __MODULE__}}
-    
+
     case DynamicSupervisor.start_child(ExWire.PeerSupervisor, spec) do
       {:ok, pid} -> {:ok, pid}
       {:error, reason} -> {:error, reason}
@@ -378,7 +394,7 @@ defmodule ExWire.P2P.ConnectionPool do
       {pid, _connection_info} ->
         # Terminate the connection process
         GenServer.cast(pid, :disconnect)
-        
+
         # Remove from active connections
         %{state | active_connections: Map.delete(state.active_connections, pid)}
     end
@@ -390,27 +406,30 @@ defmodule ExWire.P2P.ConnectionPool do
     uptime = DateTime.diff(now, connection_info.connected_at, :second)
 
     # Update connection history
-    history = case Map.get(state.connection_history, peer) do
-      nil ->
-        %{
-          successful_connections: 1,
-          failed_connections: 0,
-          total_uptime: uptime,
-          last_seen: now,
-          reputation_score: calculate_initial_reputation_score(uptime)
-        }
+    history =
+      case Map.get(state.connection_history, peer) do
+        nil ->
+          %{
+            successful_connections: 1,
+            failed_connections: 0,
+            total_uptime: uptime,
+            last_seen: now,
+            reputation_score: calculate_initial_reputation_score(uptime)
+          }
 
-      existing_history ->
-        %{existing_history | 
-          total_uptime: existing_history.total_uptime + uptime,
-          last_seen: now,
-          reputation_score: update_reputation_score(existing_history, uptime)
-        }
-    end
+        existing_history ->
+          %{
+            existing_history
+            | total_uptime: existing_history.total_uptime + uptime,
+              last_seen: now,
+              reputation_score: update_reputation_score(existing_history, uptime)
+          }
+      end
 
-    new_state = %{state | 
-      active_connections: Map.delete(state.active_connections, pid),
-      connection_history: Map.put(state.connection_history, peer, history)
+    new_state = %{
+      state
+      | active_connections: Map.delete(state.active_connections, pid),
+        connection_history: Map.put(state.connection_history, peer, history)
     }
 
     Logger.debug("[ConnectionPool] Peer disconnected: #{inspect(peer)}, uptime: #{uptime}s")
@@ -421,7 +440,8 @@ defmodule ExWire.P2P.ConnectionPool do
   defp calculate_initial_reputation_score(uptime) do
     # Base score of 0.5, bonus for longer connections
     base_score = 0.5
-    uptime_bonus = min(uptime / 3600, 0.3)  # Max 0.3 bonus for 1+ hour connections
+    # Max 0.3 bonus for 1+ hour connections
+    uptime_bonus = min(uptime / 3600, 0.3)
     base_score + uptime_bonus
   end
 
@@ -433,18 +453,20 @@ defmodule ExWire.P2P.ConnectionPool do
     # Exponential moving average with recent uptime
     alpha = 0.1
     uptime_factor = min(recent_uptime / avg_uptime, 2.0)
-    
-    new_score = current_score * (1 - alpha) + (current_score * uptime_factor * alpha)
-    
+
+    new_score = current_score * (1 - alpha) + current_score * uptime_factor * alpha
+
     # Keep score between 0.0 and 1.0
     max(0.0, min(1.0, new_score))
   end
 
   defp update_metrics(state, :connection_successful) do
-    %{state | 
-      metrics: %{state.metrics | 
-        total_connections_successful: state.metrics.total_connections_successful + 1
-      }
+    %{
+      state
+      | metrics: %{
+          state.metrics
+          | total_connections_successful: state.metrics.total_connections_successful + 1
+        }
     }
   end
 
@@ -457,7 +479,9 @@ defmodule ExWire.P2P.ConnectionPool do
   end
 
   defp perform_health_check(state) do
-    Logger.debug("[ConnectionPool] Performing health check - active: #{map_size(state.active_connections)}, target: #{state.pool_config.target_connections}")
+    Logger.debug(
+      "[ConnectionPool] Performing health check - active: #{map_size(state.active_connections)}, target: #{state.pool_config.target_connections}"
+    )
 
     # Check if we need more connections
     active_count = map_size(state.active_connections)
@@ -466,18 +490,20 @@ defmodule ExWire.P2P.ConnectionPool do
     if active_count < target_count do
       deficit = target_count - active_count
       Logger.debug("[ConnectionPool] Need #{deficit} more connections")
-      
+
       # Request new peer candidates from Kademlia
       request_new_peer_candidates(deficit)
     end
 
     # Remove stale pending connections
     now = DateTime.utc_now()
-    active_pending = state.pending_connections
-                    |> Enum.filter(fn {_peer, info} -> 
-                        DateTime.compare(now, info.backoff_until) == :gt
-                       end)
-                    |> Map.new()
+
+    active_pending =
+      state.pending_connections
+      |> Enum.filter(fn {_peer, info} ->
+        DateTime.compare(now, info.backoff_until) == :gt
+      end)
+      |> Map.new()
 
     %{state | pending_connections: active_pending}
   end
@@ -485,15 +511,15 @@ defmodule ExWire.P2P.ConnectionPool do
   defp request_new_peer_candidates(count) do
     try do
       peers = GenServer.call(KademliaServer, :get_peers)
-      
+
       # Take the best candidates based on reputation
       candidates = Enum.take(peers, count)
-      
+
       for peer <- candidates do
         connect_to_peer(peer)
       end
     rescue
-      _ -> 
+      _ ->
         Logger.debug("[ConnectionPool] Could not get peer candidates from Kademlia")
     end
   end
@@ -502,13 +528,16 @@ defmodule ExWire.P2P.ConnectionPool do
     # Trigger Kademlia discovery round if needed
     try do
       current_peers = GenServer.call(KademliaServer, :get_peers)
-      
+
       if length(current_peers) < 10 do
-        Logger.debug("[ConnectionPool] Triggering peer discovery - only #{length(current_peers)} known peers")
+        Logger.debug(
+          "[ConnectionPool] Triggering peer discovery - only #{length(current_peers)} known peers"
+        )
+
         # Trigger discovery through Kademlia
       end
     rescue
-      _ -> 
+      _ ->
         Logger.debug("[ConnectionPool] Could not trigger peer discovery")
     end
   end

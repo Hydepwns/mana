@@ -1,11 +1,11 @@
 defmodule Blockchain.Compliance.Reporting do
   @moduledoc """
   Automated compliance reporting system for regulatory frameworks.
-  
+
   This module generates comprehensive compliance reports in formats required by
   various regulatory bodies and auditing firms. It provides automated report
   generation, scheduling, and distribution capabilities.
-  
+
   Supported Report Types:
   - SOX Section 302/404 Internal Controls Reports
   - PCI-DSS Compliance Assessment Reports
@@ -15,14 +15,14 @@ defmodule Blockchain.Compliance.Reporting do
   - MiFID II Transaction Reporting
   - Basel III Capital Adequacy Reports
   - CFTC Position and Risk Reports
-  
+
   Report Formats:
   - PDF (executive summaries, official reports)
   - CSV (data exports for analysis)
   - JSON (programmatic integration)
   - XML (regulatory submissions)
   - HTML (dashboard displays)
-  
+
   Features:
   - Automated report scheduling (daily, weekly, monthly, quarterly, annually)
   - Template-based report generation with customizable branding
@@ -37,52 +37,60 @@ defmodule Blockchain.Compliance.Reporting do
 
   alias Blockchain.Compliance.{Framework, AuditEngine, DataRetention}
 
-  @type report_type :: :sox_302 | :sox_404 | :pci_dss_aoc | :fips_140_2_validation |
-                     :soc_2_type_ii | :gdpr_dpa | :mifid_ii_transaction | :basel_iii_capital |
-                     :cftc_position | :custom
-  
+  @type report_type ::
+          :sox_302
+          | :sox_404
+          | :pci_dss_aoc
+          | :fips_140_2_validation
+          | :soc_2_type_ii
+          | :gdpr_dpa
+          | :mifid_ii_transaction
+          | :basel_iii_capital
+          | :cftc_position
+          | :custom
+
   @type report_format :: :pdf | :csv | :json | :xml | :html
-  
+
   @type report_frequency :: :on_demand | :daily | :weekly | :monthly | :quarterly | :annually
-  
+
   @type report_config :: %{
-    type: report_type(),
-    format: report_format(),
-    frequency: report_frequency(),
-    enabled: boolean(),
-    recipients: [String.t()],
-    template: String.t(),
-    filters: map(),
-    retention_period: non_neg_integer(),
-    encryption_required: boolean(),
-    digital_signature: boolean(),
-    approval_required: boolean(),
-    metadata: map()
-  }
+          type: report_type(),
+          format: report_format(),
+          frequency: report_frequency(),
+          enabled: boolean(),
+          recipients: [String.t()],
+          template: String.t(),
+          filters: map(),
+          retention_period: non_neg_integer(),
+          encryption_required: boolean(),
+          digital_signature: boolean(),
+          approval_required: boolean(),
+          metadata: map()
+        }
 
   @type report_instance :: %{
-    id: String.t(),
-    type: report_type(),
-    format: report_format(),
-    generated_at: DateTime.t(),
-    period_start: DateTime.t(),
-    period_end: DateTime.t(),
-    content: map(),
-    metadata: map(),
-    status: :generating | :completed | :failed | :approved | :distributed,
-    approval_status: map(),
-    distribution_log: [map()],
-    file_path: String.t() | nil,
-    checksum: String.t() | nil
-  }
+          id: String.t(),
+          type: report_type(),
+          format: report_format(),
+          generated_at: DateTime.t(),
+          period_start: DateTime.t(),
+          period_end: DateTime.t(),
+          content: map(),
+          metadata: map(),
+          status: :generating | :completed | :failed | :approved | :distributed,
+          approval_status: map(),
+          distribution_log: [map()],
+          file_path: String.t() | nil,
+          checksum: String.t() | nil
+        }
 
   @type reporting_state :: %{
-    scheduled_reports: %{String.t() => report_config()},
-    generated_reports: %{String.t() => report_instance()},
-    templates: %{String.t() => map()},
-    global_settings: map(),
-    stats: map()
-  }
+          scheduled_reports: %{String.t() => report_config()},
+          generated_reports: %{String.t() => report_instance()},
+          templates: %{String.t() => map()},
+          global_settings: map(),
+          stats: map()
+        }
 
   # Report templates for different compliance frameworks
   @report_templates %{
@@ -104,7 +112,6 @@ defmodule Blockchain.Compliance.Reporting do
       approval_required: true,
       distribution_list: ["cfo", "ceo", "audit_committee", "external_auditor"]
     },
-    
     pci_dss_aoc: %{
       title: "PCI-DSS Attestation of Compliance (AOC)",
       sections: [
@@ -123,9 +130,8 @@ defmodule Blockchain.Compliance.Reporting do
       approval_required: true,
       distribution_list: ["qsa", "acquiring_bank", "card_brands"]
     },
-
     fips_140_2_validation: %{
-      title: "FIPS 140-2 Cryptographic Module Validation Report", 
+      title: "FIPS 140-2 Cryptographic Module Validation Report",
       sections: [
         %{name: "module_specification", required: true, order: 1},
         %{name: "security_policy", required: true, order: 2},
@@ -150,7 +156,8 @@ defmodule Blockchain.Compliance.Reporting do
     temp_directory: "/tmp/mana_compliance",
     encryption_enabled: true,
     digital_signatures_enabled: true,
-    retention_default_days: 2555,  # 7 years
+    # 7 years
+    retention_default_days: 2555,
     max_concurrent_generations: 3,
     notification_enabled: true,
     backup_enabled: true
@@ -164,7 +171,7 @@ defmodule Blockchain.Compliance.Reporting do
 
   def init(opts) do
     global_settings = Keyword.get(opts, :global_settings, @default_settings)
-    
+
     state = %{
       scheduled_reports: %{},
       generated_reports: %{},
@@ -177,42 +184,43 @@ defmodule Blockchain.Compliance.Reporting do
         average_generation_time: 0.0
       }
     }
-    
+
     # Ensure output directories exist
     ensure_directories(global_settings)
-    
+
     # Schedule report generation checks
     schedule_report_check()
-    
+
     Logger.info("Compliance Reporting system initialized")
     {:ok, state}
   end
 
   def handle_call({:generate_report, report_type, options}, _from, state) do
     start_time = :os.system_time(:millisecond)
-    
+
     case generate_compliance_report(report_type, options, state) do
       {:ok, report_instance} ->
         # Store the generated report
-        new_generated_reports = Map.put(state.generated_reports, report_instance.id, report_instance)
-        
+        new_generated_reports =
+          Map.put(state.generated_reports, report_instance.id, report_instance)
+
         # Update statistics
         generation_time = :os.system_time(:millisecond) - start_time
         updated_stats = update_generation_stats(state.stats, generation_time)
-        
+
         new_state = %{
-          state |
-          generated_reports: new_generated_reports,
-          stats: updated_stats
+          state
+          | generated_reports: new_generated_reports,
+            stats: updated_stats
         }
-        
+
         Logger.info("Generated compliance report: #{report_instance.id} (#{report_type})")
         {:reply, {:ok, report_instance}, new_state}
-      
+
       {:error, reason} ->
         updated_stats = Map.update(state.stats, :generation_errors, 1, &(&1 + 1))
         new_state = %{state | stats: updated_stats}
-        
+
         Logger.error("Failed to generate compliance report (#{report_type}): #{reason}")
         {:reply, {:error, reason}, new_state}
     end
@@ -220,15 +228,18 @@ defmodule Blockchain.Compliance.Reporting do
 
   def handle_call({:schedule_report, config}, _from, state) do
     report_id = generate_report_id(config.type)
-    
+
     case validate_report_config(config) do
       :ok ->
         new_scheduled_reports = Map.put(state.scheduled_reports, report_id, config)
         new_state = %{state | scheduled_reports: new_scheduled_reports}
-        
-        Logger.info("Scheduled compliance report: #{report_id} (#{config.type}, #{config.frequency})")
+
+        Logger.info(
+          "Scheduled compliance report: #{report_id} (#{config.type}, #{config.frequency})"
+        )
+
         {:reply, {:ok, report_id}, new_state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -250,63 +261,68 @@ defmodule Blockchain.Compliance.Reporting do
     case Map.get(state.generated_reports, report_id) do
       nil ->
         {:reply, {:error, "Report not found: #{report_id}"}, state}
-      
+
       report ->
-        updated_approval_status = Map.merge(report.approval_status, %{
-          approved: true,
-          approver: approver_info,
-          approved_at: DateTime.utc_now()
-        })
-        
+        updated_approval_status =
+          Map.merge(report.approval_status, %{
+            approved: true,
+            approver: approver_info,
+            approved_at: DateTime.utc_now()
+          })
+
         updated_report = %{
-          report |
-          status: :approved,
-          approval_status: updated_approval_status
+          report
+          | status: :approved,
+            approval_status: updated_approval_status
         }
-        
+
         new_generated_reports = Map.put(state.generated_reports, report_id, updated_report)
         new_state = %{state | generated_reports: new_generated_reports}
-        
+
         Logger.info("Compliance report approved: #{report_id} by #{approver_info.user_id}")
         {:reply, {:ok, updated_report}, new_state}
     end
   end
 
   def handle_call(:get_statistics, _from, state) do
-    enhanced_stats = Map.merge(state.stats, %{
-      scheduled_reports: map_size(state.scheduled_reports),
-      total_generated_reports: map_size(state.generated_reports),
-      pending_approvals: count_pending_approvals(state.generated_reports)
-    })
-    
+    enhanced_stats =
+      Map.merge(state.stats, %{
+        scheduled_reports: map_size(state.scheduled_reports),
+        total_generated_reports: map_size(state.generated_reports),
+        pending_approvals: count_pending_approvals(state.generated_reports)
+      })
+
     {:reply, {:ok, enhanced_stats}, state}
   end
 
   def handle_info(:check_scheduled_reports, state) do
     Logger.debug("Checking for scheduled compliance reports")
-    
+
     # Check each scheduled report to see if it's due for generation
-    new_state = Enum.reduce(state.scheduled_reports, state, fn {report_id, config}, acc_state ->
-      if report_due_for_generation?(config) do
-        Logger.info("Generating scheduled report: #{report_id}")
-        
-        case generate_compliance_report(config.type, %{scheduled: true}, acc_state) do
-          {:ok, report_instance} ->
-            new_generated_reports = Map.put(acc_state.generated_reports, report_instance.id, report_instance)
-            %{acc_state | generated_reports: new_generated_reports}
-          
-          {:error, reason} ->
-            Logger.error("Failed to generate scheduled report #{report_id}: #{reason}")
-            acc_state
+    new_state =
+      Enum.reduce(state.scheduled_reports, state, fn {report_id, config}, acc_state ->
+        if report_due_for_generation?(config) do
+          Logger.info("Generating scheduled report: #{report_id}")
+
+          case generate_compliance_report(config.type, %{scheduled: true}, acc_state) do
+            {:ok, report_instance} ->
+              new_generated_reports =
+                Map.put(acc_state.generated_reports, report_instance.id, report_instance)
+
+              %{acc_state | generated_reports: new_generated_reports}
+
+            {:error, reason} ->
+              Logger.error("Failed to generate scheduled report #{report_id}: #{reason}")
+              acc_state
+          end
+        else
+          acc_state
         end
-      else
-        acc_state
-      end
-    end)
-    
+      end)
+
     # Schedule next check
     schedule_report_check()
-    
+
     {:noreply, new_state}
   end
 
@@ -367,11 +383,14 @@ defmodule Blockchain.Compliance.Reporting do
   """
   @spec generate_sox_404_report(map()) :: {:ok, report_instance()} | {:error, String.t()}
   def generate_sox_404_report(options \\ %{}) do
-    generate_report(:sox_404, Map.merge(options, %{
-      period_type: :quarterly,
-      include_management_assertion: true,
-      include_control_deficiencies: true
-    }))
+    generate_report(
+      :sox_404,
+      Map.merge(options, %{
+        period_type: :quarterly,
+        include_management_assertion: true,
+        include_control_deficiencies: true
+      })
+    )
   end
 
   @doc """
@@ -379,11 +398,14 @@ defmodule Blockchain.Compliance.Reporting do
   """
   @spec generate_pci_aoc(map()) :: {:ok, report_instance()} | {:error, String.t()}
   def generate_pci_aoc(options \\ %{}) do
-    generate_report(:pci_dss_aoc, Map.merge(options, %{
-      assessment_type: :self_assessment,
-      include_vulnerability_scans: true,
-      include_penetration_tests: true
-    }))
+    generate_report(
+      :pci_dss_aoc,
+      Map.merge(options, %{
+        assessment_type: :self_assessment,
+        include_vulnerability_scans: true,
+        include_penetration_tests: true
+      })
+    )
   end
 
   @doc """
@@ -391,35 +413,38 @@ defmodule Blockchain.Compliance.Reporting do
   """
   @spec generate_gdpr_dpa_report(map()) :: {:ok, report_instance()} | {:error, String.t()}
   def generate_gdpr_dpa_report(options \\ %{}) do
-    generate_report(:gdpr_dpa, Map.merge(options, %{
-      include_data_subject_requests: true,
-      include_breach_notifications: true,
-      include_privacy_impact_assessments: true
-    }))
+    generate_report(
+      :gdpr_dpa,
+      Map.merge(options, %{
+        include_data_subject_requests: true,
+        include_breach_notifications: true,
+        include_privacy_impact_assessments: true
+      })
+    )
   end
 
   ## Private Implementation
 
   defp generate_compliance_report(report_type, options, state) do
     Logger.info("Generating compliance report: #{report_type}")
-    
+
     try do
       # Get template for report type
       template = Map.get(state.templates, report_type)
-      
+
       if template do
         # Generate unique report ID
         report_id = generate_unique_report_id(report_type)
-        
+
         # Determine reporting period
         {period_start, period_end} = determine_reporting_period(options)
-        
+
         # Collect compliance data
         case collect_compliance_data(report_type, period_start, period_end, options) do
           {:ok, compliance_data} ->
             # Generate report content
             content = generate_report_content(template, compliance_data, options)
-            
+
             # Create report instance
             report_instance = %{
               id: report_id,
@@ -443,16 +468,17 @@ defmodule Blockchain.Compliance.Reporting do
               file_path: nil,
               checksum: nil
             }
-            
+
             # Optionally write to file
-            final_report = if Map.get(options, :write_to_file, true) do
-              write_report_to_file(report_instance, state.global_settings)
-            else
-              report_instance
-            end
-            
+            final_report =
+              if Map.get(options, :write_to_file, true) do
+                write_report_to_file(report_instance, state.global_settings)
+              else
+                report_instance
+              end
+
             {:ok, final_report}
-          
+
           {:error, reason} ->
             {:error, "Failed to collect compliance data: #{reason}"}
         end
@@ -466,21 +492,23 @@ defmodule Blockchain.Compliance.Reporting do
   end
 
   defp collect_compliance_data(report_type, period_start, period_end, options) do
-    Logger.debug("Collecting compliance data for #{report_type} (#{period_start} to #{period_end})")
-    
+    Logger.debug(
+      "Collecting compliance data for #{report_type} (#{period_start} to #{period_end})"
+    )
+
     case report_type do
       :sox_404 ->
         collect_sox_404_data(period_start, period_end, options)
-      
+
       :pci_dss_aoc ->
         collect_pci_dss_data(period_start, period_end, options)
-      
+
       :fips_140_2_validation ->
         collect_fips_140_2_data(period_start, period_end, options)
-      
+
       :gdpr_dpa ->
         collect_gdpr_data(period_start, period_end, options)
-      
+
       _ ->
         {:error, "Data collection not implemented for #{report_type}"}
     end
@@ -490,7 +518,7 @@ defmodule Blockchain.Compliance.Reporting do
     # Collect SOX 404 compliance data
     {:ok, compliance_status} = Framework.get_compliance_status()
     {:ok, violations} = Framework.get_violations(%{standard: :sox})
-    
+
     sox_data = %{
       assessment_period: %{start: period_start, end: period_end},
       internal_controls: %{
@@ -519,7 +547,7 @@ defmodule Blockchain.Compliance.Reporting do
         "management_representations.pdf"
       ]
     }
-    
+
     {:ok, sox_data}
   end
 
@@ -533,14 +561,15 @@ defmodule Blockchain.Compliance.Reporting do
         merchant_level: 4,
         card_data_environment: "Yes"
       },
-      requirements_assessment: Enum.map(1..12, fn req ->
-        %{
-          requirement: "PCI-DSS #{req}",
-          status: (if req <= 11, do: :compliant, else: :in_place),
-          testing_method: :examination,
-          evidence: "Requirement #{req} evidence package"
-        }
-      end),
+      requirements_assessment:
+        Enum.map(1..12, fn req ->
+          %{
+            requirement: "PCI-DSS #{req}",
+            status: if(req <= 11, do: :compliant, else: :in_place),
+            testing_method: :examination,
+            evidence: "Requirement #{req} evidence package"
+          }
+        end),
       vulnerability_scanning: %{
         last_scan_date: DateTime.utc_now() |> DateTime.add(-7, :day),
         scan_result: :pass,
@@ -554,7 +583,7 @@ defmodule Blockchain.Compliance.Reporting do
         assessment_date: DateTime.utc_now()
       }
     }
-    
+
     {:ok, pci_data}
   end
 
@@ -587,7 +616,7 @@ defmodule Blockchain.Compliance.Reporting do
         approved_date: DateTime.utc_now() |> DateTime.add(-30, :day)
       }
     }
-    
+
     {:ok, fips_data}
   end
 
@@ -629,39 +658,41 @@ defmodule Blockchain.Compliance.Reporting do
         binding_corporate_rules: false
       }
     }
-    
+
     {:ok, gdpr_data}
   end
 
   defp generate_report_content(template, compliance_data, options) do
     # Generate structured report content based on template
-    sections = Enum.map(template.sections, fn section ->
-      section_content = case section.name do
-        "executive_summary" ->
-          generate_executive_summary(compliance_data, options)
-        
-        "control_assessment" ->
-          generate_control_assessment(compliance_data, options)
-        
-        "requirement_assessment" ->
-          generate_requirement_assessment(compliance_data, options)
-        
-        "company_information" ->
-          generate_company_information(compliance_data, options)
-        
-        _ ->
-          generate_generic_section(section.name, compliance_data, options)
-      end
-      
-      %{
-        name: section.name,
-        title: humanize_section_name(section.name),
-        content: section_content,
-        order: section.order,
-        required: section.required
-      }
-    end)
-    
+    sections =
+      Enum.map(template.sections, fn section ->
+        section_content =
+          case section.name do
+            "executive_summary" ->
+              generate_executive_summary(compliance_data, options)
+
+            "control_assessment" ->
+              generate_control_assessment(compliance_data, options)
+
+            "requirement_assessment" ->
+              generate_requirement_assessment(compliance_data, options)
+
+            "company_information" ->
+              generate_company_information(compliance_data, options)
+
+            _ ->
+              generate_generic_section(section.name, compliance_data, options)
+          end
+
+        %{
+          name: section.name,
+          title: humanize_section_name(section.name),
+          content: section_content,
+          order: section.order,
+          required: section.required
+        }
+      end)
+
     %{
       title: template.title,
       sections: Enum.sort_by(sections, & &1.order),
@@ -676,13 +707,15 @@ defmodule Blockchain.Compliance.Reporting do
 
   defp generate_executive_summary(compliance_data, _options) do
     %{
-      overview: "This report provides a comprehensive assessment of compliance controls and their effectiveness during the reporting period.",
+      overview:
+        "This report provides a comprehensive assessment of compliance controls and their effectiveness during the reporting period.",
       key_findings: [
         "All critical compliance controls are operating effectively",
         "No material weaknesses identified",
         "Minor improvements recommended in access controls"
       ],
-      management_conclusion: "Management concludes that internal controls are effective and operating as designed.",
+      management_conclusion:
+        "Management concludes that internal controls are effective and operating as designed.",
       recommendations: [
         "Continue quarterly control testing",
         "Enhance monitoring of privileged access",
@@ -693,9 +726,12 @@ defmodule Blockchain.Compliance.Reporting do
 
   defp generate_control_assessment(compliance_data, _options) do
     %{
-      total_controls_tested: Map.get(compliance_data, :control_testing, %{}) |> Map.get(:tests_performed, 0),
-      controls_effective: Map.get(compliance_data, :control_testing, %{}) |> Map.get(:tests_passed, 0),
-      control_deficiencies: Map.get(compliance_data, :internal_controls, %{}) |> Map.get(:deficient_controls, 0),
+      total_controls_tested:
+        Map.get(compliance_data, :control_testing, %{}) |> Map.get(:tests_performed, 0),
+      controls_effective:
+        Map.get(compliance_data, :control_testing, %{}) |> Map.get(:tests_passed, 0),
+      control_deficiencies:
+        Map.get(compliance_data, :internal_controls, %{}) |> Map.get(:deficient_controls, 0),
       testing_methodology: "Risk-based testing approach with quarterly assessments",
       evidence_reviewed: Map.get(compliance_data, :supporting_evidence, [])
     }
@@ -740,40 +776,41 @@ defmodule Blockchain.Compliance.Reporting do
     output_dir = global_settings.output_directory
     filename = generate_report_filename(report_instance)
     file_path = Path.join(output_dir, filename)
-    
+
     try do
       # Ensure directory exists
       File.mkdir_p!(output_dir)
-      
+
       # Write report content based on format
-      content = case report_instance.format do
-        :json ->
-          Jason.encode!(report_instance.content, pretty: true)
-        
-        :pdf ->
-          generate_pdf_content(report_instance)
-        
-        :csv ->
-          generate_csv_content(report_instance)
-        
-        :html ->
-          generate_html_content(report_instance)
-        
-        _ ->
-          Jason.encode!(report_instance.content, pretty: true)
-      end
-      
+      content =
+        case report_instance.format do
+          :json ->
+            Jason.encode!(report_instance.content, pretty: true)
+
+          :pdf ->
+            generate_pdf_content(report_instance)
+
+          :csv ->
+            generate_csv_content(report_instance)
+
+          :html ->
+            generate_html_content(report_instance)
+
+          _ ->
+            Jason.encode!(report_instance.content, pretty: true)
+        end
+
       # Write to file
       File.write!(file_path, content)
-      
+
       # Calculate checksum
       checksum = :crypto.hash(:sha256, content) |> Base.encode16(case: :lower)
-      
+
       # Update report instance with file information
       %{
-        report_instance |
-        file_path: file_path,
-        checksum: checksum
+        report_instance
+        | file_path: file_path,
+          checksum: checksum
       }
     rescue
       error ->
@@ -783,14 +820,15 @@ defmodule Blockchain.Compliance.Reporting do
   end
 
   # Helper functions
-  
+
   defp validate_report_config(config) do
     required_fields = [:type, :format, :frequency]
-    
-    missing_fields = Enum.filter(required_fields, fn field ->
-      not Map.has_key?(config, field)
-    end)
-    
+
+    missing_fields =
+      Enum.filter(required_fields, fn field ->
+        not Map.has_key?(config, field)
+      end)
+
     if Enum.empty?(missing_fields) do
       :ok
     else
@@ -804,22 +842,22 @@ defmodule Blockchain.Compliance.Reporting do
         end_date = DateTime.utc_now() |> DateTime.to_date()
         start_date = Date.add(end_date, -1)
         {DateTime.new!(start_date, ~T[00:00:00]), DateTime.new!(end_date, ~T[23:59:59])}
-      
+
       :weekly ->
         end_date = DateTime.utc_now() |> DateTime.to_date()
         start_date = Date.add(end_date, -7)
         {DateTime.new!(start_date, ~T[00:00:00]), DateTime.new!(end_date, ~T[23:59:59])}
-      
+
       :monthly ->
         end_date = DateTime.utc_now() |> DateTime.to_date()
         start_date = Date.add(end_date, -30)
         {DateTime.new!(start_date, ~T[00:00:00]), DateTime.new!(end_date, ~T[23:59:59])}
-      
+
       :quarterly ->
         end_date = DateTime.utc_now() |> DateTime.to_date()
         start_date = Date.add(end_date, -90)
         {DateTime.new!(start_date, ~T[00:00:00]), DateTime.new!(end_date, ~T[23:59:59])}
-      
+
       :annually ->
         end_date = DateTime.utc_now() |> DateTime.to_date()
         start_date = Date.add(end_date, -365)
@@ -841,14 +879,16 @@ defmodule Blockchain.Compliance.Reporting do
 
   defp generate_report_filename(report_instance) do
     timestamp = report_instance.generated_at |> DateTime.to_date() |> Date.to_string()
-    extension = case report_instance.format do
-      :pdf -> "pdf"
-      :csv -> "csv"
-      :json -> "json"
-      :xml -> "xml"
-      :html -> "html"
-    end
-    
+
+    extension =
+      case report_instance.format do
+        :pdf -> "pdf"
+        :csv -> "csv"
+        :json -> "json"
+        :xml -> "xml"
+        :html -> "html"
+      end
+
     "#{report_instance.type}_#{timestamp}_#{report_instance.id}.#{extension}"
   end
 
@@ -899,7 +939,7 @@ defmodule Blockchain.Compliance.Reporting do
   end
 
   defp filter_reports(reports, filters) when map_size(filters) == 0, do: reports
-  
+
   defp filter_reports(reports, filters) do
     Enum.filter(reports, fn report ->
       Enum.all?(filters, fn {key, value} ->
@@ -924,17 +964,18 @@ defmodule Blockchain.Compliance.Reporting do
   defp update_generation_stats(stats, generation_time_ms) do
     current_count = Map.get(stats, :reports_generated, 0)
     current_avg = Map.get(stats, :average_generation_time, 0.0)
-    
-    new_avg = if current_count == 0 do
-      generation_time_ms
-    else
-      (current_avg * current_count + generation_time_ms) / (current_count + 1)
-    end
-    
+
+    new_avg =
+      if current_count == 0 do
+        generation_time_ms
+      else
+        (current_avg * current_count + generation_time_ms) / (current_count + 1)
+      end
+
     %{
-      stats |
-      reports_generated: current_count + 1,
-      average_generation_time: new_avg
+      stats
+      | reports_generated: current_count + 1,
+        average_generation_time: new_avg
     }
   end
 
@@ -943,10 +984,11 @@ defmodule Blockchain.Compliance.Reporting do
       global_settings.output_directory,
       global_settings.temp_directory
     ]
-    
+
     Enum.each(directories, fn dir ->
       File.mkdir_p!(dir)
-      File.chmod!(dir, 0o750)  # Secure permissions
+      # Secure permissions
+      File.chmod!(dir, 0o750)
     end)
   end
 

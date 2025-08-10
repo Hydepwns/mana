@@ -109,19 +109,19 @@ defmodule ExWire.Handshake.EIP8 do
           {:ok, ExRLP.t(), binary(), binary()} | {:error, String.t()}
   def unwrap_eip_8(encoded_packet, my_static_private_key) do
     Logger.debug("[EIP-8] Attempting to unwrap packet (#{byte_size(encoded_packet)} bytes)")
-    
+
     if byte_size(encoded_packet) < 2 do
       Logger.error("[EIP-8] Packet too small: #{byte_size(encoded_packet)} bytes")
       {:error, "Packet too small"}
     else
       <<auth_size_int::size(16), _::binary>> = encoded_packet
       Logger.debug("[EIP-8] Auth size: #{auth_size_int} bytes")
-      
+
       case encoded_packet do
         <<auth_size::binary-size(2), ecies_encoded_message::binary-size(auth_size_int),
           frame_rest::binary>> ->
           Logger.debug("[EIP-8] Attempting ECIES decryption")
-          
+
           with {:ok, rlp_bin} <-
                  ExthCrypto.ECIES.decrypt(
                    my_static_private_key,
@@ -141,7 +141,10 @@ defmodule ExWire.Handshake.EIP8 do
           end
 
         _ ->
-          Logger.error("[EIP-8] Invalid packet structure, expected #{auth_size_int + 2} bytes, got #{byte_size(encoded_packet)}")
+          Logger.error(
+            "[EIP-8] Invalid packet structure, expected #{auth_size_int + 2} bytes, got #{byte_size(encoded_packet)}"
+          )
+
           {:error, "Invalid encoded packet"}
       end
     end

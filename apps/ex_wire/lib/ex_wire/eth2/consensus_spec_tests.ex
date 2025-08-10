@@ -1,7 +1,7 @@
 defmodule ExWire.Eth2.ConsensusSpecTests do
   @moduledoc """
   Implementation of specific Ethereum Consensus Spec test cases.
-  
+
   This module contains the actual test logic for different test types:
   - Finality tests: checkpoint finalization behavior
   - Fork choice tests: LMD-GHOST fork selection
@@ -13,9 +13,9 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
   require Logger
 
   alias ExWire.Eth2.{
-    BeaconState, 
-    BeaconBlock, 
-    Attestation, 
+    BeaconState,
+    BeaconBlock,
+    Attestation,
     AttestationData,
     ForkChoiceOptimized,
     StateStore,
@@ -32,14 +32,14 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
     try do
       # Parse initial state
       initial_state = parse_beacon_state(pre_state)
-      
+
       # Initialize fork choice store
       genesis_root = compute_state_root(initial_state)
       genesis_time = initial_state.genesis_time || System.system_time(:second)
       store = ForkChoiceOptimized.init(initial_state, genesis_root, genesis_time)
-      
+
       # Process each block
-      final_store = 
+      final_store =
         blocks
         |> Enum.with_index()
         |> Enum.reduce_while(store, fn {block_data, index}, acc_store ->
@@ -48,17 +48,17 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
             {:error, reason} -> {:halt, {:error, "Block #{index}: #{reason}"}}
           end
         end)
-      
+
       case final_store do
-        {:error, reason} -> 
+        {:error, reason} ->
           {:error, reason}
+
         store ->
           # Verify expected finality outcomes
           verify_finality_expectations(store, test_data)
       end
-      
     rescue
-      error -> 
+      error ->
         {:error, "Finality test exception: #{Exception.message(error)}"}
     end
   end
@@ -73,29 +73,30 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
       initial_state = parse_beacon_state(anchor_state)
       anchor_root = compute_state_root(initial_state)
       anchor_time = initial_state.genesis_time || System.system_time(:second)
-      
+
       store = ForkChoiceOptimized.init(initial_state, anchor_root, anchor_time)
-      
+
       # Process each fork choice step
-      final_result = 
+      final_result =
         steps
         |> Enum.with_index()
         |> Enum.reduce_while({:ok, store, []}, fn {step, index}, {_status, acc_store, results} ->
           case process_fork_choice_step(acc_store, step, index) do
-            {:ok, new_store, step_result} -> 
+            {:ok, new_store, step_result} ->
               {:cont, {:ok, new_store, [step_result | results]}}
-            {:error, reason} -> 
+
+            {:error, reason} ->
               {:halt, {:error, "Step #{index}: #{reason}"}}
           end
         end)
-      
+
       case final_result do
         {:ok, _final_store, step_results} ->
           {:ok, %{steps: Enum.reverse(step_results)}}
+
         {:error, reason} ->
           {:error, reason}
       end
-      
     rescue
       error ->
         {:error, "Fork choice test exception: #{Exception.message(error)}"}
@@ -110,18 +111,18 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
     try do
       initial_state = parse_beacon_state(pre_state)
       block = parse_beacon_block(block_data)
-      
+
       # Validate and process the block
       case validate_and_process_block(initial_state, block) do
         {:ok, post_state} ->
           expected_post = Map.get(test_data, "post")
-          
+
           if expected_post do
             verify_state_matches(post_state, expected_post)
           else
             {:ok, %{post_state: serialize_beacon_state(post_state)}}
           end
-          
+
         {:error, reason} ->
           # Check if this was expected to fail
           if Map.has_key?(test_data, "post") do
@@ -130,7 +131,6 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
             {:ok, %{expected_failure: reason}}
           end
       end
-      
     rescue
       error ->
         {:error, "Block processing test exception: #{Exception.message(error)}"}
@@ -145,18 +145,18 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
     try do
       initial_state = parse_beacon_state(pre_state)
       attestation = parse_attestation(att_data)
-      
+
       # Process the attestation
       case process_attestation(initial_state, attestation) do
         {:ok, post_state} ->
           expected_post = Map.get(test_data, "post")
-          
+
           if expected_post do
             verify_state_matches(post_state, expected_post)
           else
             {:ok, %{post_state: serialize_beacon_state(post_state)}}
           end
-          
+
         {:error, reason} ->
           if Map.has_key?(test_data, "post") do
             {:error, "Attestation processing failed unexpectedly: #{reason}"}
@@ -164,7 +164,6 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
             {:ok, %{expected_failure: reason}}
           end
       end
-      
     rescue
       error ->
         {:error, "Attestation test exception: #{Exception.message(error)}"}
@@ -179,17 +178,17 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
     try do
       initial_state = parse_beacon_state(pre_state)
       voluntary_exit = parse_voluntary_exit(exit_data)
-      
+
       case process_voluntary_exit(initial_state, voluntary_exit) do
         {:ok, post_state} ->
           expected_post = Map.get(test_data, "post")
-          
+
           if expected_post do
             verify_state_matches(post_state, expected_post)
           else
             {:ok, %{post_state: serialize_beacon_state(post_state)}}
           end
-          
+
         {:error, reason} ->
           if Map.has_key?(test_data, "post") do
             {:error, "Voluntary exit failed unexpectedly: #{reason}"}
@@ -197,7 +196,6 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
             {:ok, %{expected_failure: reason}}
           end
       end
-      
     rescue
       error ->
         {:error, "Voluntary exit test exception: #{Exception.message(error)}"}
@@ -212,17 +210,17 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
     try do
       initial_state = parse_beacon_state(pre_state)
       deposit = parse_deposit(deposit_data)
-      
+
       case process_deposit(initial_state, deposit) do
         {:ok, post_state} ->
           expected_post = Map.get(test_data, "post")
-          
+
           if expected_post do
             verify_state_matches(post_state, expected_post)
           else
             {:ok, %{post_state: serialize_beacon_state(post_state)}}
           end
-          
+
         {:error, reason} ->
           if Map.has_key?(test_data, "post") do
             {:error, "Deposit processing failed unexpectedly: #{reason}"}
@@ -230,7 +228,6 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
             {:ok, %{expected_failure: reason}}
           end
       end
-      
     rescue
       error ->
         {:error, "Deposit test exception: #{Exception.message(error)}"}
@@ -243,10 +240,10 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
     try do
       block = parse_beacon_block(block_data)
       block_root = compute_block_root(block)
-      
+
       # Create state for this block (simplified)
       state = create_block_state(block, index)
-      
+
       ForkChoiceOptimized.on_block(store, block, block_root, state)
     rescue
       error ->
@@ -256,35 +253,36 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
 
   defp process_fork_choice_step(store, step, index) do
     step_type = Map.get(step, "type", "unknown")
-    
+
     case step_type do
       "on_block" ->
         block_data = Map.fetch!(step, "block")
+
         process_finality_block(store, block_data, index)
         |> case do
           {:ok, new_store} -> {:ok, new_store, %{type: "on_block", success: true}}
           {:error, reason} -> {:error, reason}
         end
-      
+
       "on_attestation" ->
         att_data = Map.fetch!(step, "attestation")
         attestation = parse_attestation(att_data)
         new_store = ForkChoiceOptimized.on_attestation(store, attestation)
         {:ok, new_store, %{type: "on_attestation", success: true}}
-      
+
       "get_head" ->
         expected_head = Map.get(step, "expected_head")
         actual_head = ForkChoiceOptimized.get_head(store)
-        
+
         result = %{
-          type: "get_head", 
+          type: "get_head",
           expected_head: expected_head,
           actual_head: actual_head,
           success: is_nil(expected_head) or actual_head == expected_head
         }
-        
+
         {:ok, store, result}
-      
+
       _ ->
         {:error, "Unknown step type: #{step_type}"}
     end
@@ -293,7 +291,7 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
   defp validate_and_process_block(state, block) do
     # Simplified block processing - in reality this would be much more complex
     # involving signature verification, state transitions, etc.
-    
+
     # Basic validation
     with :ok <- validate_block_basic(block),
          :ok <- validate_block_against_state(state, block),
@@ -335,7 +333,7 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
       genesis_time: Map.get(state_data, "genesis_time", System.system_time(:second)),
       # Add other required fields with defaults or from state_data
       validators: Map.get(state_data, "validators", []),
-      balances: Map.get(state_data, "balances", []),
+      balances: Map.get(state_data, "balances", [])
       # ... more fields
     }
   end
@@ -345,7 +343,7 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
       slot: slot,
       proposer_index: Map.get(block_data, "proposer_index", 0),
       parent_root: Map.get(block_data, "parent_root", <<0::256>>),
-      state_root: Map.get(block_data, "state_root", <<0::256>>),
+      state_root: Map.get(block_data, "state_root", <<0::256>>)
       # ... more fields
     }
   end
@@ -363,7 +361,7 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
     %AttestationData{
       slot: Map.get(data, "slot", 0),
       index: Map.get(data, "index", 0),
-      beacon_block_root: Map.get(data, "beacon_block_root", <<0::256>>),
+      beacon_block_root: Map.get(data, "beacon_block_root", <<0::256>>)
       # ... more fields
     }
   end
@@ -444,14 +442,15 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
 
   defp verify_finality_expectations(store, test_data) do
     expected_finalized = Map.get(test_data, "finalized_checkpoint")
-    
+
     if expected_finalized do
       actual_finalized = store.finalized_checkpoint
-      
+
       if matches_checkpoint?(actual_finalized, expected_finalized) do
         {:ok, %{finalized_checkpoint: actual_finalized}}
       else
-        {:error, "Finalized checkpoint mismatch. Expected: #{inspect(expected_finalized)}, Got: #{inspect(actual_finalized)}"}
+        {:error,
+         "Finalized checkpoint mismatch. Expected: #{inspect(expected_finalized)}, Got: #{inspect(actual_finalized)}"}
       end
     else
       {:ok, %{finalized_checkpoint: store.finalized_checkpoint}}
@@ -480,6 +479,6 @@ defmodule ExWire.Eth2.ConsensusSpecTests do
 
   defp matches_checkpoint?(actual, expected) do
     actual.epoch == Map.get(expected, "epoch", actual.epoch) and
-    actual.root == Map.get(expected, "root", actual.root)
+      actual.root == Map.get(expected, "root", actual.root)
   end
 end

@@ -10,49 +10,49 @@ defmodule ExWire.Eth2.BeaconState do
     :genesis_validators_root,
     :slot,
     :fork,
-    
+
     # History
     :latest_block_header,
     :block_roots,
     :state_roots,
     :historical_roots,
-    
+
     # Eth1
     :eth1_data,
     :eth1_data_votes,
     :eth1_deposit_index,
-    
+
     # Registry
     :validators,
     :balances,
-    
+
     # Randomness
     :randao_mixes,
-    
+
     # Slashings
     :slashings,
-    
+
     # Participation
     :previous_epoch_participation,
     :current_epoch_participation,
-    
+
     # Finality
     :justification_bits,
     :previous_justified_checkpoint,
     :current_justified_checkpoint,
     :finalized_checkpoint,
-    
+
     # Sync
     :current_sync_committee,
     :next_sync_committee,
-    
+
     # Execution
     :latest_execution_payload_header,
-    
+
     # Withdrawals
     :next_withdrawal_index,
     :next_withdrawal_validator_index,
-    
+
     # Deep history (Capella)
     :historical_summaries
   ]

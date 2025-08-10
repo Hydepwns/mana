@@ -1,14 +1,14 @@
 defmodule EVM.Configuration.Shanghai do
   @moduledoc """
   Shanghai hardfork configuration.
-  
+
   Includes support for:
   - EIP-1153: Transient storage opcodes (TSTORE/TLOAD)
   - EIP-4895: Beacon chain withdrawal operations
   - EIP-6780: SELFDESTRUCT changes
   - EIP-4844: Blob transactions (proto-danksharding)
   """
-  
+
   alias EVM.Configuration.Constantinople
 
   use EVM.Configuration,
@@ -22,9 +22,12 @@ defmodule EVM.Configuration.Shanghai do
       transient_storage_load_cost: 100,
       transient_storage_store_cost: 100,
       # Blob transaction constants
-      blob_gas_per_blob: 131_072,  # 2^17
-      target_blob_gas_per_block: 393_216,  # 3 * 2^17
-      max_blob_gas_per_block: 786_432,  # 6 * 2^17
+      # 2^17
+      blob_gas_per_blob: 131_072,
+      # 3 * 2^17
+      target_blob_gas_per_block: 393_216,
+      # 6 * 2^17
+      max_blob_gas_per_block: 786_432,
       min_base_fee_per_blob_gas: 1,
       blob_base_fee_update_fraction: 3_338_477,
       # Version hash for KZG commitments
@@ -48,24 +51,25 @@ defmodule EVM.Configuration.Shanghai do
   """
   def calculate_blob_base_fee(parent_excess_blob_gas, parent_blob_gas_used) do
     excess_blob_gas = calculate_excess_blob_gas(parent_excess_blob_gas, parent_blob_gas_used)
+
     fake_exponential(
       config(:min_base_fee_per_blob_gas),
       excess_blob_gas,
       config(:blob_base_fee_update_fraction)
     )
   end
-  
+
   defp calculate_excess_blob_gas(parent_excess_blob_gas, parent_blob_gas_used) do
     target = config(:target_blob_gas_per_block)
     excess = parent_excess_blob_gas + parent_blob_gas_used
-    
+
     if excess > target do
       excess - target
     else
       0
     end
   end
-  
+
   defp fake_exponential(factor, numerator, denominator) do
     # Returns factor * e^(numerator/denominator) as per EIP-4844
     if numerator == 0 do
@@ -74,20 +78,20 @@ defmodule EVM.Configuration.Shanghai do
       fake_exponential_loop(factor, numerator, denominator, factor * denominator)
     end
   end
-  
+
   defp fake_exponential_loop(output, 0, _denominator, _numerator_accumulator), do: output
-  
+
   defp fake_exponential_loop(output, i, denominator, numerator_accumulator) do
     output = output + div(numerator_accumulator, denominator)
     numerator_accumulator = div(numerator_accumulator * (i - 1), i)
-    
+
     if numerator_accumulator == 0 do
       output
     else
       fake_exponential_loop(output, i - 1, denominator, numerator_accumulator)
     end
   end
-  
+
   defp config(key) do
     Map.get(__MODULE__.new(), key)
   end

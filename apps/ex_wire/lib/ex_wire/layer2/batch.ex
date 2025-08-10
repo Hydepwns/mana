@@ -41,15 +41,16 @@ defmodule ExWire.Layer2.Batch do
   Computes the hash of a batch.
   """
   def hash(batch) do
-    data = :erlang.term_to_binary(%{
-      number: batch.number,
-      transactions: batch.transactions,
-      state_root: batch.state_root,
-      previous_root: batch.previous_root,
-      timestamp: batch.timestamp,
-      sequencer: batch.sequencer
-    })
-    
+    data =
+      :erlang.term_to_binary(%{
+        number: batch.number,
+        transactions: batch.transactions,
+        state_root: batch.state_root,
+        previous_root: batch.previous_root,
+        timestamp: batch.timestamp,
+        sequencer: batch.sequencer
+      })
+
     :crypto.hash(:sha256, data)
   end
 

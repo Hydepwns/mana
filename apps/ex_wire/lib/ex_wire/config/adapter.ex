@@ -3,23 +3,23 @@ defmodule ExWire.Config.Adapter do
   Adapter module that bridges the new ConfigManager with the existing
   ExWire.Config module for backward compatibility.
   """
-  
+
   alias ExWire.ConfigManager
-  
+
   @doc """
   Initializes the configuration system with legacy support.
   """
   def init do
     # Convert existing Application env to ConfigManager format
     migrate_application_config()
-    
+
     # Start the ConfigManager if not already started
     case Process.whereis(ConfigManager) do
       nil -> ConfigManager.start_link()
       _ -> :ok
     end
   end
-  
+
   @doc """
   Gets a configuration value using the legacy key format.
   """
@@ -27,7 +27,7 @@ defmodule ExWire.Config.Adapter do
     path = legacy_key_to_path(key)
     ConfigManager.get(path, default)
   end
-  
+
   @doc """
   Sets a configuration value using the legacy key format.
   """
@@ -35,13 +35,13 @@ defmodule ExWire.Config.Adapter do
     path = legacy_key_to_path(key)
     ConfigManager.set(path, value)
   end
-  
+
   @doc """
   Migrates Application environment configuration to ConfigManager.
   """
   def migrate_application_config do
     config = build_config_from_env()
-    
+
     # Write to temporary config for ConfigManager to load
     temp_config = %{
       blockchain: %{
@@ -87,13 +87,13 @@ defmodule ExWire.Config.Adapter do
         environment: Mix.env()
       }
     }
-    
+
     # Store for ConfigManager initialization
     Application.put_env(:ex_wire, :__migrated_config__, temp_config)
-    
+
     config
   end
-  
+
   defp build_config_from_env do
     # Build comprehensive config from Application environment
     %{
@@ -107,20 +107,20 @@ defmodule ExWire.Config.Adapter do
       runtime: build_runtime_config()
     }
   end
-  
+
   defp build_blockchain_config do
     chain = Application.get_env(:ex_wire, :chain)
-    
+
     %{
       network: if(chain, do: to_string(chain), else: "mainnet"),
       chain_id: get_chain_id(),
       eip1559: true
     }
   end
-  
+
   defp build_p2p_config do
     node_discovery = Application.get_env(:ex_wire, :node_discovery, [])
-    
+
     %{
       port: Keyword.get(node_discovery, :port, 30303),
       discovery: Application.get_env(:ex_wire, :discovery, true),
@@ -132,7 +132,7 @@ defmodule ExWire.Config.Adapter do
       public_ip: Application.get_env(:ex_wire, :public_ip, [127, 0, 0, 1])
     }
   end
-  
+
   defp build_sync_config do
     %{
       enabled: Application.get_env(:ex_wire, :sync, true),
@@ -142,7 +142,7 @@ defmodule ExWire.Config.Adapter do
       parallel_downloads: 10
     }
   end
-  
+
   defp build_storage_config do
     %{
       db_root: Application.get_env(:ex_wire, :db_root, "./db"),
@@ -151,7 +151,7 @@ defmodule ExWire.Config.Adapter do
       cache_size: Application.get_env(:ex_wire, :cache_size, 1024)
     }
   end
-  
+
   defp build_consensus_config do
     %{
       commitment_count: Application.get_env(:ex_wire, :commitment_count, 1),
@@ -160,7 +160,7 @@ defmodule ExWire.Config.Adapter do
       max_parallel_attestations: 100
     }
   end
-  
+
   defp build_monitoring_config do
     %{
       metrics_enabled: Application.get_env(:ex_wire, :metrics_enabled, true),
@@ -169,7 +169,7 @@ defmodule ExWire.Config.Adapter do
       prometheus_enabled: true
     }
   end
-  
+
   defp build_security_config do
     %{
       private_key: Application.get_env(:ex_wire, :private_key, :random),
@@ -178,7 +178,7 @@ defmodule ExWire.Config.Adapter do
       rate_limiting: true
     }
   end
-  
+
   defp build_runtime_config do
     %{
       mana_version: Application.get_env(:ex_wire, :mana_version, "unknown"),
@@ -186,15 +186,16 @@ defmodule ExWire.Config.Adapter do
       node_name: node()
     }
   end
-  
+
   defp get_capabilities do
     caps = Application.get_env(:ex_wire, :caps, [])
+
     Enum.map(caps, fn
       {name, version} -> "#{name}/#{version}"
       cap -> to_string(cap)
     end)
   end
-  
+
   defp get_chain_network do
     case Application.get_env(:ex_wire, :chain) do
       :mainnet -> "mainnet"
@@ -203,16 +204,16 @@ defmodule ExWire.Config.Adapter do
       _ -> "mainnet"
     end
   end
-  
+
   defp get_chain_id do
     case Application.get_env(:ex_wire, :chain) do
       :mainnet -> 1
       :goerli -> 5
-      :sepolia -> 11155111
+      :sepolia -> 11_155_111
       _ -> 1
     end
   end
-  
+
   defp get_sync_mode do
     cond do
       Application.get_env(:ex_wire, :warp, false) -> "warp"
@@ -220,7 +221,7 @@ defmodule ExWire.Config.Adapter do
       true -> "full"
     end
   end
-  
+
   defp legacy_key_to_path(key) when is_atom(key) do
     case key do
       :chain -> [:blockchain, :network]
@@ -245,14 +246,14 @@ defmodule ExWire.Config.Adapter do
       _ -> [key]
     end
   end
-  
+
   @doc """
   Provides backward compatibility shim for ExWire.Config functions.
   """
   defmacro __using__(_opts) do
     quote do
       import ExWire.Config.Adapter
-      
+
       # Override the original get_env functions
       def get_env(given_params, key, default \\ nil) do
         if config_manager_available?() do
@@ -266,27 +267,27 @@ defmodule ExWire.Config.Adapter do
           end
         end
       end
-      
+
       def get_env!(given_params, key) do
         result = get_env(given_params, key)
-        
+
         if is_nil(result) do
           raise ArgumentError, message: "Please set config variable: config :ex_wire, #{key}, ..."
         else
           result
         end
       end
-      
+
       def set_env!(value, key) do
         if config_manager_available?() do
           ExWire.Config.Adapter.set_legacy(key, value)
         else
           Application.put_env(:ex_wire, key, value)
         end
-        
+
         value
       end
-      
+
       defp config_manager_available? do
         Process.whereis(ExWire.ConfigManager) != nil
       end

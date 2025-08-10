@@ -1,7 +1,7 @@
 defmodule Blockchain.Compliance.Framework do
   @moduledoc """
   Enterprise compliance framework supporting major regulatory standards.
-  
+
   This module provides a comprehensive compliance framework supporting:
   - SOX (Sarbanes-Oxley Act) - Financial disclosure and internal controls
   - PCI-DSS (Payment Card Industry Data Security Standard) - Card data protection
@@ -13,7 +13,7 @@ defmodule Blockchain.Compliance.Framework do
   - Basel III - Banking supervision framework
   - CFTC - Commodity trading regulations
   - SEC - Securities regulations
-  
+
   The framework provides:
   - Compliance requirement definitions
   - Control mapping and validation
@@ -28,40 +28,57 @@ defmodule Blockchain.Compliance.Framework do
 
   alias Blockchain.Compliance.{AuditEngine, Reporting, DataRetention, Alerting}
 
-  @type compliance_standard :: :sox | :pci_dss | :fips_140_2 | :soc_2 | :iso_27001 | 
-                              :gdpr | :mifid_ii | :basel_iii | :cftc | :sec
-  
-  @type control_category :: :access_control | :data_protection | :cryptographic_control |
-                           :audit_logging | :incident_management | :data_retention |
-                           :change_management | :risk_management | :business_continuity
-  
+  @type compliance_standard ::
+          :sox
+          | :pci_dss
+          | :fips_140_2
+          | :soc_2
+          | :iso_27001
+          | :gdpr
+          | :mifid_ii
+          | :basel_iii
+          | :cftc
+          | :sec
+
+  @type control_category ::
+          :access_control
+          | :data_protection
+          | :cryptographic_control
+          | :audit_logging
+          | :incident_management
+          | :data_retention
+          | :change_management
+          | :risk_management
+          | :business_continuity
+
   @type compliance_status :: :compliant | :non_compliant | :not_applicable | :under_review
-  
+
   @type control_requirement :: %{
-    id: String.t(),
-    standard: compliance_standard(),
-    category: control_category(),
-    title: String.t(),
-    description: String.t(),
-    implementation_guidance: String.t(),
-    evidence_requirements: [String.t()],
-    automated_validation: boolean(),
-    validation_frequency: :continuous | :daily | :weekly | :monthly | :quarterly | :annually,
-    severity: :low | :medium | :high | :critical,
-    status: compliance_status(),
-    last_validated: DateTime.t() | nil,
-    next_validation: DateTime.t() | nil,
-    violations: [map()],
-    metadata: map()
-  }
+          id: String.t(),
+          standard: compliance_standard(),
+          category: control_category(),
+          title: String.t(),
+          description: String.t(),
+          implementation_guidance: String.t(),
+          evidence_requirements: [String.t()],
+          automated_validation: boolean(),
+          validation_frequency:
+            :continuous | :daily | :weekly | :monthly | :quarterly | :annually,
+          severity: :low | :medium | :high | :critical,
+          status: compliance_status(),
+          last_validated: DateTime.t() | nil,
+          next_validation: DateTime.t() | nil,
+          violations: [map()],
+          metadata: map()
+        }
 
   @type compliance_state :: %{
-    enabled_standards: [compliance_standard()],
-    controls: %{String.t() => control_requirement()},
-    global_settings: map(),
-    last_assessment: DateTime.t() | nil,
-    stats: map()
-  }
+          enabled_standards: [compliance_standard()],
+          controls: %{String.t() => control_requirement()},
+          global_settings: map(),
+          last_assessment: DateTime.t() | nil,
+          stats: map()
+        }
 
   # Compliance control definitions for major standards
   @compliance_controls %{
@@ -95,7 +112,7 @@ defmodule Blockchain.Compliance.Framework do
         severity: :high
       }
     },
-    
+
     # PCI-DSS - Payment Card Industry Data Security
     pci_dss: %{
       "PCI.3.4" => %{
@@ -126,7 +143,7 @@ defmodule Blockchain.Compliance.Framework do
         severity: :high
       }
     },
-    
+
     # FIPS 140-2 - Cryptographic Module Security
     fips_140_2: %{
       "FIPS.L2.Auth" => %{
@@ -148,7 +165,7 @@ defmodule Blockchain.Compliance.Framework do
         severity: :critical
       }
     },
-    
+
     # SOC 2 Type II - Trust Services Criteria
     soc_2: %{
       "CC6.1" => %{
@@ -164,20 +181,28 @@ defmodule Blockchain.Compliance.Framework do
         title: "System Data Transmission",
         description: "Protect data in transmission using encryption",
         category: :cryptographic_control,
-        evidence_requirements: ["encryption_configuration", "tls_certificates", "network_monitoring"],
+        evidence_requirements: [
+          "encryption_configuration",
+          "tls_certificates",
+          "network_monitoring"
+        ],
         automated_validation: true,
         validation_frequency: :continuous,
         severity: :high
       }
     },
-    
+
     # GDPR - General Data Protection Regulation
     gdpr: %{
       "GDPR.25" => %{
         title: "Data Protection by Design",
         description: "Implement privacy protection from system design",
         category: :data_protection,
-        evidence_requirements: ["privacy_impact_assessment", "data_minimization", "purpose_limitation"],
+        evidence_requirements: [
+          "privacy_impact_assessment",
+          "data_minimization",
+          "purpose_limitation"
+        ],
         automated_validation: false,
         validation_frequency: :quarterly,
         severity: :high
@@ -212,21 +237,25 @@ defmodule Blockchain.Compliance.Framework do
       %{
         check: :hsm_key_storage,
         description: "All cryptographic keys stored in HSM",
-        query: :check_hsm_key_storage      },
+        query: :check_hsm_key_storage
+      },
       %{
         check: :key_rotation_schedule,
         description: "Key rotation performed according to schedule",
-        query: :check_key_rotation_schedule      }
+        query: :check_key_rotation_schedule
+      }
     ],
     "PCI.10.1" => [
       %{
         check: :comprehensive_logging,
         description: "All required events are logged",
-        query: :check_comprehensive_logging      },
+        query: :check_comprehensive_logging
+      },
       %{
         check: :log_completeness,
         description: "No gaps in audit logs",
-        query: :check_log_completeness      }
+        query: :check_log_completeness
+      }
     ]
   }
 
@@ -239,7 +268,7 @@ defmodule Blockchain.Compliance.Framework do
   def init(opts) do
     config = Keyword.get(opts, :config, %{})
     enabled_standards = Keyword.get(opts, :enabled_standards, [:sox, :pci_dss, :fips_140_2])
-    
+
     state = %{
       enabled_standards: enabled_standards,
       controls: build_controls(enabled_standards),
@@ -252,13 +281,13 @@ defmodule Blockchain.Compliance.Framework do
         violations: 0
       }
     }
-    
+
     # Schedule initial compliance assessment
     Process.send_after(self(), :initial_assessment, 1000)
-    
+
     # Schedule periodic assessments
     schedule_periodic_assessment()
-    
+
     Logger.info("Compliance Framework initialized with standards: #{inspect(enabled_standards)}")
     {:ok, state}
   end
@@ -284,7 +313,7 @@ defmodule Blockchain.Compliance.Framework do
       last_assessment: state.last_assessment,
       stats: state.stats
     }
-    
+
     {:reply, {:ok, status}, state}
   end
 
@@ -292,12 +321,12 @@ defmodule Blockchain.Compliance.Framework do
     case Map.get(state.controls, control_id) do
       nil ->
         {:reply, {:error, "Control not found: #{control_id}"}, state}
-      
+
       control ->
         {result, updated_control} = validate_single_control(control)
         new_controls = Map.put(state.controls, control_id, updated_control)
         new_state = %{state | controls: new_controls}
-        
+
         {:reply, {:ok, result}, new_state}
     end
   end
@@ -371,7 +400,9 @@ defmodule Blockchain.Compliance.Framework do
     enabled_standards
     |> Enum.flat_map(fn standard ->
       case Map.get(@compliance_controls, standard) do
-        nil -> []
+        nil ->
+          []
+
         controls ->
           Enum.map(controls, fn {control_id, control_def} ->
             {control_id, build_control_requirement(control_id, standard, control_def)}
@@ -403,7 +434,7 @@ defmodule Blockchain.Compliance.Framework do
 
   defp calculate_next_validation(frequency) do
     now = DateTime.utc_now()
-    
+
     case frequency do
       :continuous -> now
       :daily -> DateTime.add(now, 1, :day)
@@ -416,25 +447,26 @@ defmodule Blockchain.Compliance.Framework do
 
   defp perform_compliance_assessment(state) do
     Logger.info("Starting compliance assessment for #{map_size(state.controls)} controls")
-    
+
     # Validate controls that are due for validation
-    updated_controls = Enum.reduce(state.controls, %{}, fn {control_id, control}, acc ->
-      if due_for_validation?(control) do
-        {_result, updated_control} = validate_single_control(control)
-        Map.put(acc, control_id, updated_control)
-      else
-        Map.put(acc, control_id, control)
-      end
-    end)
-    
+    updated_controls =
+      Enum.reduce(state.controls, %{}, fn {control_id, control}, acc ->
+        if due_for_validation?(control) do
+          {_result, updated_control} = validate_single_control(control)
+          Map.put(acc, control_id, updated_control)
+        else
+          Map.put(acc, control_id, control)
+        end
+      end)
+
     # Update statistics
     stats = calculate_compliance_stats(updated_controls)
-    
+
     %{
-      state |
-      controls: updated_controls,
-      last_assessment: DateTime.utc_now(),
-      stats: stats
+      state
+      | controls: updated_controls,
+        last_assessment: DateTime.utc_now(),
+        stats: stats
     }
   end
 
@@ -447,29 +479,31 @@ defmodule Blockchain.Compliance.Framework do
 
   defp validate_single_control(control) do
     Logger.debug("Validating control: #{control.id}")
-    
-    validation_result = if control.automated_validation do
-      perform_automated_validation(control)
-    else
-      %{status: :under_review, violations: []}
-    end
-    
+
+    validation_result =
+      if control.automated_validation do
+        perform_automated_validation(control)
+      else
+        %{status: :under_review, violations: []}
+      end
+
     updated_control = %{
-      control |
-      status: validation_result.status,
-      violations: validation_result.violations,
-      last_validated: DateTime.utc_now(),
-      next_validation: calculate_next_validation(control.validation_frequency)
+      control
+      | status: validation_result.status,
+        violations: validation_result.violations,
+        last_validated: DateTime.utc_now(),
+        next_validation: calculate_next_validation(control.validation_frequency)
     }
-    
+
     # Log validation result
     if validation_result.status == :non_compliant do
       Logger.warn("Compliance violation detected: #{control.id} - #{control.title}")
+
       Enum.each(validation_result.violations, fn violation ->
         Logger.warn("  Violation: #{violation.description}")
       end)
     end
-    
+
     {validation_result, updated_control}
   end
 
@@ -477,26 +511,36 @@ defmodule Blockchain.Compliance.Framework do
     case Map.get(@validation_rules, control.id, []) do
       [] ->
         %{status: :not_applicable, violations: []}
-      
+
       rules ->
-        violations = Enum.flat_map(rules, fn rule ->
-          case execute_validation_rule(rule) do
-            {:ok, _} -> []
-            {:violation, details} -> [%{
-              rule: rule.check,
-              description: rule.description,
-              details: details,
-              detected_at: DateTime.utc_now()
-            }]
-            {:error, reason} -> [%{
-              rule: rule.check,
-              description: "Validation failed: #{reason}",
-              details: %{error: reason},
-              detected_at: DateTime.utc_now()
-            }]
-          end
-        end)
-        
+        violations =
+          Enum.flat_map(rules, fn rule ->
+            case execute_validation_rule(rule) do
+              {:ok, _} ->
+                []
+
+              {:violation, details} ->
+                [
+                  %{
+                    rule: rule.check,
+                    description: rule.description,
+                    details: details,
+                    detected_at: DateTime.utc_now()
+                  }
+                ]
+
+              {:error, reason} ->
+                [
+                  %{
+                    rule: rule.check,
+                    description: "Validation failed: #{reason}",
+                    details: %{error: reason},
+                    detected_at: DateTime.utc_now()
+                  }
+                ]
+            end
+          end)
+
         status = if Enum.empty?(violations), do: :compliant, else: :non_compliant
         %{status: status, violations: violations}
     end
@@ -507,8 +551,10 @@ defmodule Blockchain.Compliance.Framework do
       case rule.query do
         atom when is_atom(atom) ->
           apply(__MODULE__, atom, [])
+
         func when is_function(func) ->
           func.()
+
         _ ->
           {:error, "Invalid query type"}
       end
@@ -562,16 +608,17 @@ defmodule Blockchain.Compliance.Framework do
 
   defp calculate_overall_compliance(controls) do
     total_controls = map_size(controls)
-    
+
     if total_controls == 0 do
       :not_applicable
     else
-      compliant_count = controls
-                       |> Map.values()
-                       |> Enum.count(fn control -> control.status == :compliant end)
-      
+      compliant_count =
+        controls
+        |> Map.values()
+        |> Enum.count(fn control -> control.status == :compliant end)
+
       compliance_rate = compliant_count / total_controls
-      
+
       cond do
         compliance_rate >= 0.95 -> :fully_compliant
         compliance_rate >= 0.80 -> :mostly_compliant
@@ -586,23 +633,25 @@ defmodule Blockchain.Compliance.Framework do
     |> Map.values()
     |> Enum.group_by(& &1.standard)
     |> Enum.map(fn {standard, standard_controls} ->
-      status_summary = standard_controls
-                      |> Enum.group_by(& &1.status)
-                      |> Enum.map(fn {status, controls} -> {status, length(controls)} end)
-                      |> Enum.into(%{})
-      
-      {standard, %{
-        total_controls: length(standard_controls),
-        status_summary: status_summary,
-        violations: standard_controls |> Enum.flat_map(& &1.violations) |> length()
-      }}
+      status_summary =
+        standard_controls
+        |> Enum.group_by(& &1.status)
+        |> Enum.map(fn {status, controls} -> {status, length(controls)} end)
+        |> Enum.into(%{})
+
+      {standard,
+       %{
+         total_controls: length(standard_controls),
+         status_summary: status_summary,
+         violations: standard_controls |> Enum.flat_map(& &1.violations) |> length()
+       }}
     end)
     |> Enum.into(%{})
   end
 
   defp calculate_compliance_stats(controls) do
     control_values = Map.values(controls)
-    
+
     %{
       total_controls: length(control_values),
       compliant_controls: Enum.count(control_values, fn c -> c.status == :compliant end),
@@ -628,7 +677,7 @@ defmodule Blockchain.Compliance.Framework do
   end
 
   defp filter_violations(violations, filters) when map_size(filters) == 0, do: violations
-  
+
   defp filter_violations(violations, filters) do
     Enum.filter(violations, fn violation ->
       Enum.all?(filters, fn {key, value} ->
@@ -638,10 +687,11 @@ defmodule Blockchain.Compliance.Framework do
   end
 
   defp generate_compliance_report(state, standard, options) do
-    standard_controls = state.controls
-                       |> Map.values()
-                       |> Enum.filter(fn control -> control.standard == standard end)
-    
+    standard_controls =
+      state.controls
+      |> Map.values()
+      |> Enum.filter(fn control -> control.standard == standard end)
+
     %{
       standard: standard,
       generated_at: DateTime.utc_now(),
@@ -652,15 +702,16 @@ defmodule Blockchain.Compliance.Framework do
         non_compliant: Enum.count(standard_controls, fn c -> c.status == :non_compliant end),
         under_review: Enum.count(standard_controls, fn c -> c.status == :under_review end)
       },
-      control_details: Enum.map(standard_controls, fn control ->
-        %{
-          id: control.id,
-          title: control.title,
-          status: control.status,
-          last_validated: control.last_validated,
-          violations: control.violations
-        }
-      end),
+      control_details:
+        Enum.map(standard_controls, fn control ->
+          %{
+            id: control.id,
+            title: control.title,
+            status: control.status,
+            last_validated: control.last_validated,
+            violations: control.violations
+          }
+        end),
       violations: extract_violations(%{standard => standard_controls}, %{standard: standard}),
       recommendations: generate_recommendations(standard_controls)
     }
@@ -668,7 +719,7 @@ defmodule Blockchain.Compliance.Framework do
 
   defp generate_recommendations(controls) do
     non_compliant_controls = Enum.filter(controls, fn c -> c.status == :non_compliant end)
-    
+
     Enum.map(non_compliant_controls, fn control ->
       %{
         control_id: control.id,
@@ -682,7 +733,7 @@ defmodule Blockchain.Compliance.Framework do
   defp estimate_remediation_effort(control) do
     case control.severity do
       :critical -> "High (1-2 weeks)"
-      :high -> "Medium (3-5 days)" 
+      :high -> "Medium (3-5 days)"
       :medium -> "Low (1-2 days)"
       :low -> "Minimal (<1 day)"
     end

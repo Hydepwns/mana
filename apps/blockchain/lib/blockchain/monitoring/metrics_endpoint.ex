@@ -1,7 +1,7 @@
 defmodule Blockchain.Monitoring.MetricsEndpoint do
   @moduledoc """
   HTTP endpoint for exposing Prometheus metrics.
-  
+
   Serves metrics at /metrics endpoint in Prometheus format.
   Also provides health check endpoints at /health and /ready.
   """
@@ -18,10 +18,10 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
   ]
 
   @type t :: %__MODULE__{
-    port: pos_integer(),
-    server_ref: pid() | nil,
-    enabled: boolean()
-  }
+          port: pos_integer(),
+          server_ref: pid() | nil,
+          enabled: boolean()
+        }
 
   @default_port 9090
   @name __MODULE__
@@ -50,14 +50,18 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
         {:ok, server_ref} ->
           Logger.info("[MetricsEndpoint] Started HTTP server on port #{port}")
           Logger.info("[MetricsEndpoint] Metrics available at http://localhost:#{port}/metrics")
-          Logger.info("[MetricsEndpoint] Health check available at http://localhost:#{port}/health")
-          
-          {:ok, %__MODULE__{
-            port: port,
-            server_ref: server_ref,
-            enabled: true
-          }}
-        
+
+          Logger.info(
+            "[MetricsEndpoint] Health check available at http://localhost:#{port}/health"
+          )
+
+          {:ok,
+           %__MODULE__{
+             port: port,
+             server_ref: server_ref,
+             enabled: true
+           }}
+
         {:error, reason} ->
           Logger.error("[MetricsEndpoint] Failed to start HTTP server: #{inspect(reason)}")
           {:ok, %__MODULE__{enabled: false}}
@@ -93,21 +97,23 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
 
   defp start_http_server(port) do
     # Define routes
-    dispatch = :cowboy_router.compile([
-      {:_, [
-        {"/metrics", __MODULE__.MetricsHandler, []},
-        {"/health", __MODULE__.HealthHandler, []},
-        {"/ready", __MODULE__.ReadinessHandler, []},
-        {"/", __MODULE__.RootHandler, []}
-      ]}
-    ])
+    dispatch =
+      :cowboy_router.compile([
+        {:_,
+         [
+           {"/metrics", __MODULE__.MetricsHandler, []},
+           {"/health", __MODULE__.HealthHandler, []},
+           {"/ready", __MODULE__.ReadinessHandler, []},
+           {"/", __MODULE__.RootHandler, []}
+         ]}
+      ])
 
     # Start cowboy HTTP server
     case :cowboy.start_clear(
-      :metrics_http_listener,
-      [{:port, port}],
-      %{env: %{dispatch: dispatch}}
-    ) do
+           :metrics_http_listener,
+           [{:port, port}],
+           %{env: %{dispatch: dispatch}}
+         ) do
       {:ok, pid} -> {:ok, pid}
       {:error, {:already_started, pid}} -> {:ok, pid}
       error -> error
@@ -123,24 +129,36 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
       try do
         # Update system metrics before serving
         Blockchain.Monitoring.PrometheusMetrics.update_system_metrics()
-        
+
         # Get metrics in Prometheus format
         metrics = Blockchain.Monitoring.PrometheusMetrics.get_prometheus_metrics()
-        
-        req = :cowboy_req.reply(200, %{
-          "content-type" => "text/plain; version=0.0.4; charset=utf-8",
-          "cache-control" => "no-cache"
-        }, metrics, req)
-        
+
+        req =
+          :cowboy_req.reply(
+            200,
+            %{
+              "content-type" => "text/plain; version=0.0.4; charset=utf-8",
+              "cache-control" => "no-cache"
+            },
+            metrics,
+            req
+          )
+
         {:ok, req, state}
       rescue
         error ->
           Logger.error("[MetricsHandler] Error serving metrics: #{inspect(error)}")
-          
-          req = :cowboy_req.reply(500, %{
-            "content-type" => "text/plain"
-          }, "Internal Server Error", req)
-          
+
+          req =
+            :cowboy_req.reply(
+              500,
+              %{
+                "content-type" => "text/plain"
+              },
+              "Internal Server Error",
+              req
+            )
+
           {:ok, req, state}
       end
     end
@@ -151,28 +169,37 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
 
     def init(req, state) do
       health_status = get_health_status()
-      
-      {status_code, response_body} = case health_status.status do
-        :healthy ->
-          {200, Jason.encode!(%{
-            status: "healthy",
-            timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
-            checks: health_status.checks
-          })}
-        
-        :unhealthy ->
-          {503, Jason.encode!(%{
-            status: "unhealthy", 
-            timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
-            checks: health_status.checks,
-            errors: health_status.errors
-          })}
-      end
-      
-      req = :cowboy_req.reply(status_code, %{
-        "content-type" => "application/json"
-      }, response_body, req)
-      
+
+      {status_code, response_body} =
+        case health_status.status do
+          :healthy ->
+            {200,
+             Jason.encode!(%{
+               status: "healthy",
+               timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+               checks: health_status.checks
+             })}
+
+          :unhealthy ->
+            {503,
+             Jason.encode!(%{
+               status: "unhealthy",
+               timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+               checks: health_status.checks,
+               errors: health_status.errors
+             })}
+        end
+
+      req =
+        :cowboy_req.reply(
+          status_code,
+          %{
+            "content-type" => "application/json"
+          },
+          response_body,
+          req
+        )
+
       {:ok, req, state}
     end
 
@@ -184,9 +211,10 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
         erlang_vm: check_erlang_vm()
       }
 
-      errors = checks
-               |> Enum.filter(fn {_name, status} -> status != :ok end)
-               |> Enum.map(fn {name, status} -> "#{name}: #{status}" end)
+      errors =
+        checks
+        |> Enum.filter(fn {_name, status} -> status != :ok end)
+        |> Enum.map(fn {name, status} -> "#{name}: #{status}" end)
 
       overall_status = if Enum.empty?(errors), do: :healthy, else: :unhealthy
 
@@ -212,10 +240,11 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
       try do
         memory_info = :erlang.memory()
         total = Keyword.get(memory_info, :total, 0)
-        
+
         # Consider unhealthy if using more than 1GB
-        threshold = 1024 * 1024 * 1024  # 1GB
-        
+        # 1GB
+        threshold = 1024 * 1024 * 1024
+
         if total > threshold do
           :high_memory_usage
         else
@@ -232,9 +261,11 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
           {output, 0} ->
             # Parse df output to check if disk usage is below 90%
             lines = String.split(output, "\n", trim: true)
+
             if length(lines) >= 2 do
               [_header, data_line | _] = lines
               parts = String.split(data_line, ~r/\s+/)
+
               if length(parts) >= 5 do
                 usage_percent = Enum.at(parts, 4)
                 # Extract percentage number
@@ -242,7 +273,9 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
                   [_, percent_str] ->
                     percent = String.to_integer(percent_str)
                     if percent > 90, do: :disk_space_low, else: :ok
-                  _ -> :ok
+
+                  _ ->
+                    :ok
                 end
               else
                 :ok
@@ -250,8 +283,10 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
             else
               :ok
             end
-          
-          _ -> :ok  # Assume OK if df command fails
+
+          # Assume OK if df command fails
+          _ ->
+            :ok
         end
       rescue
         _ -> :ok
@@ -262,9 +297,9 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
       try do
         process_count = :erlang.system_info(:process_count)
         process_limit = :erlang.system_info(:process_limit)
-        
+
         usage_ratio = process_count / process_limit
-        
+
         cond do
           usage_ratio > 0.9 -> :high_process_usage
           usage_ratio > 0.8 -> :moderate_process_usage
@@ -281,28 +316,37 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
 
     def init(req, state) do
       readiness_status = get_readiness_status()
-      
-      {status_code, response_body} = case readiness_status.ready do
-        true ->
-          {200, Jason.encode!(%{
-            ready: true,
-            timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
-            services: readiness_status.services
-          })}
-        
-        false ->
-          {503, Jason.encode!(%{
-            ready: false,
-            timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
-            services: readiness_status.services,
-            not_ready: readiness_status.not_ready
-          })}
-      end
-      
-      req = :cowboy_req.reply(status_code, %{
-        "content-type" => "application/json"
-      }, response_body, req)
-      
+
+      {status_code, response_body} =
+        case readiness_status.ready do
+          true ->
+            {200,
+             Jason.encode!(%{
+               ready: true,
+               timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+               services: readiness_status.services
+             })}
+
+          false ->
+            {503,
+             Jason.encode!(%{
+               ready: false,
+               timestamp: DateTime.utc_now() |> DateTime.to_iso8601(),
+               services: readiness_status.services,
+               not_ready: readiness_status.not_ready
+             })}
+        end
+
+      req =
+        :cowboy_req.reply(
+          status_code,
+          %{
+            "content-type" => "application/json"
+          },
+          response_body,
+          req
+        )
+
       {:ok, req, state}
     end
 
@@ -314,9 +358,10 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
         storage: check_storage_ready()
       }
 
-      not_ready = services
-                  |> Enum.filter(fn {_name, status} -> status != :ready end)
-                  |> Enum.map(fn {name, status} -> "#{name}: #{status}" end)
+      not_ready =
+        services
+        |> Enum.filter(fn {_name, status} -> status != :ready end)
+        |> Enum.map(fn {name, status} -> "#{name}: #{status}" end)
 
       overall_ready = Enum.empty?(not_ready)
 
@@ -330,13 +375,16 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
     defp check_blockchain_ready() do
       # Check if blockchain application is started and running
       case Application.get_application(__MODULE__) do
-        {:ok, app} -> 
-          if Application.started_applications() |> Enum.any?(fn {name, _, _} -> name == app end) do
+        {:ok, app} ->
+          if Application.started_applications()
+             |> Enum.any?(fn {name, _, _} -> name == app end) do
             :ready
           else
             :not_started
           end
-        nil -> :not_found
+
+        nil ->
+          :not_found
       end
     end
 
@@ -370,14 +418,20 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
       - GET /metrics  - Prometheus metrics
       - GET /health   - Health status check
       - GET /ready    - Readiness check
-      
+
       For more information, see: https://github.com/mana-ethereum/mana
       """
-      
-      req = :cowboy_req.reply(200, %{
-        "content-type" => "text/plain"
-      }, response_body, req)
-      
+
+      req =
+        :cowboy_req.reply(
+          200,
+          %{
+            "content-type" => "text/plain"
+          },
+          response_body,
+          req
+        )
+
       {:ok, req, state}
     end
   end

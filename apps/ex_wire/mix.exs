@@ -51,13 +51,13 @@ defmodule ExWire.Mixfile do
       {:exth, in_umbrella: true},
       {:exth_crypto, in_umbrella: true},
       {:merkle_patricia_tree, in_umbrella: true},
-      
+
       # Parallel processing
       {:flow, "~> 1.2"},
-      
+
       # BLS signature NIF
       {:rustler, "~> 0.29.1"},
-      
+
       # YAML parsing for consensus spec tests
       {:yaml_elixir, "~> 2.9"}
     ]

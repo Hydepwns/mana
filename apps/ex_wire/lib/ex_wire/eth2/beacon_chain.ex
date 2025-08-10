@@ -21,13 +21,14 @@ defmodule ExWire.Eth2.BeaconChain do
     BlobSidecar,
     BlobStorage
   }
-  
+
   alias ExWire.Crypto.BLS
 
   # Consensus constants
   @slots_per_epoch 32
   @seconds_per_slot 12
-  @genesis_delay 604800  # 7 days
+  # 7 days
+  @genesis_delay 604_800
   @min_genesis_active_validator_count 16384
   @eth1_follow_distance 2048
   @target_committee_size 128
@@ -150,20 +151,22 @@ defmodule ExWire.Eth2.BeaconChain do
   @impl true
   def init(opts) do
     Logger.info("Starting Beacon Chain with optimized blob storage")
-    
+
     config = build_config(opts)
-    
+
     # Start optimized blob storage with unique name per beacon chain instance
-    blob_storage_name = Keyword.get(opts, :blob_storage_name, :"blob_storage_#{System.unique_integer([:positive])}")
+    blob_storage_name =
+      Keyword.get(opts, :blob_storage_name, :"blob_storage_#{System.unique_integer([:positive])}")
+
     blob_storage_opts = [
       cache_size: Keyword.get(opts, :blob_cache_size, 1000),
       enable_compression: Keyword.get(opts, :blob_compression, true),
       storage_backend: Keyword.get(opts, :blob_backend, :memory),
       name: blob_storage_name
     ]
-    
+
     {:ok, blob_storage} = BlobStorage.start_link(blob_storage_opts)
-    
+
     state = %__MODULE__{
       beacon_state: nil,
       fork_choice_store: ForkChoice.init(),
@@ -176,34 +179,35 @@ defmodule ExWire.Eth2.BeaconChain do
       config: config,
       metrics: initialize_metrics()
     }
-    
+
     # Schedule slot ticker
     schedule_slot_tick()
-    
+
     {:ok, state}
   end
 
   @impl true
   def handle_call({:initialize, genesis_state_root, genesis_block}, _from, state) do
     Logger.info("Initializing beacon chain from genesis")
-    
+
     # Initialize beacon state
     beacon_state = create_genesis_state(genesis_state_root, genesis_block, state.config)
-    
+
     # Initialize fork choice
     fork_choice_store = ForkChoice.on_genesis(beacon_state, genesis_block)
-    
+
     # Store genesis block
     block_root = hash_tree_root(genesis_block)
     block_store = Map.put(%{}, block_root, genesis_block)
-    
-    state = %{state |
-      beacon_state: beacon_state,
-      fork_choice_store: fork_choice_store,
-      block_store: block_store,
-      sync_status: :synced
+
+    state = %{
+      state
+      | beacon_state: beacon_state,
+        fork_choice_store: fork_choice_store,
+        block_store: block_store,
+        sync_status: :synced
     }
-    
+
     {:reply, :ok, state}
   end
 
@@ -216,7 +220,7 @@ defmodule ExWire.Eth2.BeaconChain do
   @impl true
   def handle_call({:process_block_with_blobs, signed_block, blob_sidecars}, _from, state) do
     block = signed_block.message
-    
+
     # Verify block slot
     if block.slot <= state.beacon_state.slot do
       {:reply, {:error, :invalid_slot}, state}
@@ -224,15 +228,16 @@ defmodule ExWire.Eth2.BeaconChain do
       # First verify blob sidecars if present
       with :ok <- verify_blob_sidecars_for_block(block, blob_sidecars),
            {:ok, new_state} <- process_beacon_block_with_blobs(state, signed_block, blob_sidecars) do
-        
         # Update fork choice
         new_state = update_fork_choice(new_state, block)
-        
+
         # Update metrics
         new_state = update_in(new_state.metrics.blocks_processed, &(&1 + 1))
-        
-        Logger.info("Processed block at slot #{block.slot} with #{length(blob_sidecars)} blob sidecars")
-        
+
+        Logger.info(
+          "Processed block at slot #{block.slot} with #{length(blob_sidecars)} blob sidecars"
+        )
+
         {:reply, :ok, new_state}
       else
         {:error, reason} ->
@@ -242,7 +247,7 @@ defmodule ExWire.Eth2.BeaconChain do
     end
   end
 
-  @impl true  
+  @impl true
   def handle_call({:process_blob_sidecar, blob_sidecar}, _from, state) do
     case BlobVerification.validate_blob_sidecar_for_gossip(blob_sidecar) do
       {:ok, :valid} ->
@@ -250,14 +255,18 @@ defmodule ExWire.Eth2.BeaconChain do
         case BlobStorage.store_blob(blob_sidecar, server: state.blob_storage) do
           :ok ->
             block_root = blob_sidecar.signed_block_header.block_root || <<0::32*8>>
-            Logger.debug("Stored blob sidecar #{blob_sidecar.index} for block #{Base.encode16(block_root, case: :lower)}")
+
+            Logger.debug(
+              "Stored blob sidecar #{blob_sidecar.index} for block #{Base.encode16(block_root, case: :lower)}"
+            )
+
             {:reply, :ok, state}
-            
+
           {:error, reason} ->
             Logger.error("Failed to store blob sidecar: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
         end
-        
+
       {:error, reason} ->
         Logger.warning("Invalid blob sidecar for gossip: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -271,17 +280,17 @@ defmodule ExWire.Eth2.BeaconChain do
         # Add to attestation pool
         slot = attestation.data.slot
         new_pool = Map.update(state.attestation_pool, slot, [attestation], &[attestation | &1])
-        
+
         state = %{state | attestation_pool: new_pool}
-        
+
         # Update fork choice with attestation
         state = process_attestation_for_fork_choice(state, attestation)
-        
+
         # Update metrics
         state = update_in(state.metrics.attestations_processed, &(&1 + 1))
-        
+
         {:reply, :ok, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -316,7 +325,7 @@ defmodule ExWire.Eth2.BeaconChain do
     case build_beacon_block(state, slot, randao_reveal, graffiti) do
       {:ok, block} ->
         {:reply, {:ok, block}, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -327,7 +336,7 @@ defmodule ExWire.Eth2.BeaconChain do
     case BlobStorage.get_blob(block_root, index, state.blob_storage) do
       {:ok, blob_sidecar} ->
         {:reply, {:ok, blob_sidecar}, state}
-      
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -338,7 +347,7 @@ defmodule ExWire.Eth2.BeaconChain do
     case BlobStorage.get_blobs_batch(blob_keys, state.blob_storage) do
       {:ok, results} ->
         {:reply, {:ok, results}, state}
-        
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -353,24 +362,26 @@ defmodule ExWire.Eth2.BeaconChain do
   @impl true
   def handle_info(:slot_tick, state) do
     current_slot = compute_current_slot(state.config.genesis_time)
-    
+
     # Process slot if needed
-    state = if current_slot > state.beacon_state.slot do
-      process_slots(state, current_slot)
-    else
-      state
-    end
-    
+    state =
+      if current_slot > state.beacon_state.slot do
+        process_slots(state, current_slot)
+      else
+        state
+      end
+
     # Check for epoch transition
-    state = if is_epoch_transition?(current_slot) do
-      process_epoch_transition(state)
-    else
-      state
-    end
-    
+    state =
+      if is_epoch_transition?(current_slot) do
+        process_epoch_transition(state)
+      else
+        state
+      end
+
     # Schedule next tick
     schedule_slot_tick()
-    
+
     {:noreply, state}
   end
 
@@ -383,10 +394,10 @@ defmodule ExWire.Eth2.BeaconChain do
 
   defp process_beacon_block_with_blobs(state, signed_block, blob_sidecars) do
     block = signed_block.message
-    
+
     # Process slots up to block slot
     state = process_slots(state, block.slot)
-    
+
     # Verify block signature
     if not verify_block_signature(state.beacon_state, signed_block) do
       {:error, :invalid_signature}
@@ -397,16 +408,19 @@ defmodule ExWire.Eth2.BeaconChain do
           # Store block and blob sidecars
           block_root = hash_tree_root(block)
           new_block_store = Map.put(state.block_store, block_root, signed_block)
-          
+
           # Store blob sidecars
-          new_blob_store = store_blob_sidecars(state.blob_sidecar_store, block_root, blob_sidecars)
-          
-          {:ok, %{state |
-            beacon_state: new_beacon_state,
-            block_store: new_block_store,
-            blob_sidecar_store: new_blob_store
-          }}
-        
+          new_blob_store =
+            store_blob_sidecars(state.blob_sidecar_store, block_root, blob_sidecars)
+
+          {:ok,
+           %{
+             state
+             | beacon_state: new_beacon_state,
+               block_store: new_block_store,
+               blob_sidecar_store: new_blob_store
+           }}
+
         error ->
           error
       end
@@ -424,13 +438,13 @@ defmodule ExWire.Eth2.BeaconChain do
     # If block has blob commitments, verify them against execution payload
     if length(block.body.blob_kzg_commitments) > 0 do
       case BlobVerification.verify_execution_payload_blobs(
-        block.body.execution_payload, 
-        block.body.blob_kzg_commitments
-      ) do
+             block.body.execution_payload,
+             block.body.blob_kzg_commitments
+           ) do
         {:ok, :valid} ->
           # Proceed with normal block processing
           StateTransition.process_block(beacon_state, block)
-          
+
         {:error, reason} ->
           {:error, {:blob_verification_failed, reason}}
       end
@@ -449,14 +463,14 @@ defmodule ExWire.Eth2.BeaconChain do
         {:error, reason} -> Logger.error("Failed to store blob sidecar: #{inspect(reason)}")
       end
     end)
-    
+
     # Return empty map since we're using optimized storage
     %{}
   end
 
   defp process_slots(state, target_slot) do
     current_slot = state.beacon_state.slot
-    
+
     if target_slot > current_slot do
       Enum.reduce((current_slot + 1)..target_slot, state, fn slot, acc_state ->
         process_slot(acc_state, slot)
@@ -469,44 +483,48 @@ defmodule ExWire.Eth2.BeaconChain do
   defp process_slot(state, slot) do
     # Cache state root
     previous_state_root = hash_tree_root(state.beacon_state)
-    
+
     # Update state slot
     beacon_state = %{state.beacon_state | slot: slot}
-    
+
     # Cache block root
-    beacon_state = if rem(slot, @slots_per_epoch) == 0 do
-      # Epoch boundary - rotate block roots
-      rotate_block_roots(beacon_state)
-    else
-      beacon_state
-    end
-    
+    beacon_state =
+      if rem(slot, @slots_per_epoch) == 0 do
+        # Epoch boundary - rotate block roots
+        rotate_block_roots(beacon_state)
+      else
+        beacon_state
+      end
+
     # Store state root
     state_roots_index = rem(slot, @slots_per_epoch)
-    new_state_roots = List.replace_at(beacon_state.state_roots, state_roots_index, previous_state_root)
+
+    new_state_roots =
+      List.replace_at(beacon_state.state_roots, state_roots_index, previous_state_root)
+
     beacon_state = %{beacon_state | state_roots: new_state_roots}
-    
+
     %{state | beacon_state: beacon_state}
   end
 
   defp process_epoch_transition(state) do
     beacon_state = state.beacon_state
-    
+
     # Process justification and finalization
     beacon_state = process_justification_and_finalization(beacon_state)
-    
+
     # Process rewards and penalties
     beacon_state = process_rewards_and_penalties(beacon_state)
-    
+
     # Process registry updates
     beacon_state = process_registry_updates(beacon_state)
-    
+
     # Process slashings
     beacon_state = process_slashings(beacon_state)
-    
+
     # Process final updates
     beacon_state = process_final_updates(beacon_state)
-    
+
     %{state | beacon_state: beacon_state}
   end
 
@@ -514,24 +532,26 @@ defmodule ExWire.Eth2.BeaconChain do
 
   defp update_fork_choice(state, block) do
     block_root = hash_tree_root(block)
-    
+
     # Update fork choice store
-    fork_choice_store = ForkChoice.on_block(
-      state.fork_choice_store,
-      block,
-      block_root,
-      state.beacon_state
-    )
-    
+    fork_choice_store =
+      ForkChoice.on_block(
+        state.fork_choice_store,
+        block,
+        block_root,
+        state.beacon_state
+      )
+
     %{state | fork_choice_store: fork_choice_store}
   end
 
   defp process_attestation_for_fork_choice(state, attestation) do
-    fork_choice_store = ForkChoice.on_attestation(
-      state.fork_choice_store,
-      attestation
-    )
-    
+    fork_choice_store =
+      ForkChoice.on_attestation(
+        state.fork_choice_store,
+        attestation
+      )
+
     %{state | fork_choice_store: fork_choice_store}
   end
 
@@ -540,20 +560,20 @@ defmodule ExWire.Eth2.BeaconChain do
   defp validate_attestation(state, attestation) do
     data = attestation.data
     current_slot = state.beacon_state.slot
-    
+
     cond do
       # Check slot
       data.slot > current_slot ->
         {:error, :future_slot}
-      
+
       # Check target epoch
       compute_epoch_at_slot(data.slot) != data.target.epoch ->
         {:error, :invalid_target_epoch}
-      
+
       # Verify signature
       not verify_attestation_signature(state.beacon_state, attestation) ->
         {:error, :invalid_signature}
-      
+
       true ->
         :ok
     end
@@ -562,49 +582,52 @@ defmodule ExWire.Eth2.BeaconChain do
   defp verify_block_signature(beacon_state, signed_block) do
     block = signed_block.message
     proposer_index = block.proposer_index
-    
+
     # Get proposer public key
     proposer = Enum.at(beacon_state.validators, proposer_index)
-    
+
     # For testing, skip signature verification if no validators present
     if proposer == nil do
-      true  # Skip signature verification for test genesis blocks
+      # Skip signature verification for test genesis blocks
+      true
     else
       # Verify BLS signature
       domain = get_domain(beacon_state, :beacon_proposer, compute_epoch_at_slot(block.slot))
       signing_root = compute_signing_root(block, domain)
-      
+
       BLS.verify(proposer.pubkey, signing_root, signed_block.signature)
     end
   end
 
   defp verify_attestation_signature(beacon_state, attestation) do
     # Get committee
-    committee = get_beacon_committee(
-      beacon_state,
-      attestation.data.slot,
-      attestation.data.index
-    )
-    
+    committee =
+      get_beacon_committee(
+        beacon_state,
+        attestation.data.slot,
+        attestation.data.index
+      )
+
     # Verify aggregation bits
     if bit_count(attestation.aggregation_bits) == 0 do
       false
     else
       # Get participant pubkeys
-      participant_pubkeys = Enum.filter_indexed(committee, fn i, _validator_index ->
-        bit_set?(attestation.aggregation_bits, i)
-      end)
-      |> Enum.map(fn validator_index ->
-        Enum.at(beacon_state.validators, validator_index).pubkey
-      end)
-      
+      participant_pubkeys =
+        Enum.filter_indexed(committee, fn i, _validator_index ->
+          bit_set?(attestation.aggregation_bits, i)
+        end)
+        |> Enum.map(fn validator_index ->
+          Enum.at(beacon_state.validators, validator_index).pubkey
+        end)
+
       # Aggregate pubkeys
       aggregate_pubkey = BLS.aggregate_pubkeys(participant_pubkeys)
-      
+
       # Verify signature
       domain = get_domain(beacon_state, :beacon_attester, attestation.data.target.epoch)
       signing_root = compute_signing_root(attestation.data, domain)
-      
+
       BLS.verify(aggregate_pubkey, signing_root, attestation.signature)
     end
   end
@@ -617,13 +640,13 @@ defmodule ExWire.Eth2.BeaconChain do
     else
       # Get proposer index
       proposer_index = get_beacon_proposer_index(state.beacon_state, slot)
-      
+
       # Build execution payload
       execution_payload = build_execution_payload(state, slot)
-      
+
       # Collect attestations
       attestations = get_attestations_for_block(state.attestation_pool, slot)
-      
+
       # Build block body
       body = %BeaconBlock.Body{
         randao_reveal: randao_reveal,
@@ -639,19 +662,20 @@ defmodule ExWire.Eth2.BeaconChain do
         bls_to_execution_changes: [],
         blob_kzg_commitments: []
       }
-      
+
       # Get parent root
       parent_root = hash_tree_root(state.beacon_state.latest_block_header)
-      
+
       # Build block
       block = %BeaconBlock{
         slot: slot,
         proposer_index: proposer_index,
         parent_root: parent_root,
-        state_root: <<0::256>>,  # Will be filled after state transition
+        # Will be filled after state transition
+        state_root: <<0::256>>,
         body: body
       }
-      
+
       {:ok, block}
     end
   end
@@ -682,10 +706,11 @@ defmodule ExWire.Eth2.BeaconChain do
   defp get_attestations_for_block(attestation_pool, slot) do
     # Get attestations from recent slots
     min_slot = max(0, slot - @slots_per_epoch)
-    
+
     min_slot..slot
     |> Enum.flat_map(fn s -> Map.get(attestation_pool, s, []) end)
-    |> Enum.take(128)  # MAX_ATTESTATIONS
+    # MAX_ATTESTATIONS
+    |> Enum.take(128)
   end
 
   defp build_sync_aggregate(state) do
@@ -702,21 +727,23 @@ defmodule ExWire.Eth2.BeaconChain do
     Enum.map(validator_indices, fn validator_index ->
       # Get proposer slots
       proposer_slots = get_proposer_slots(beacon_state, epoch, validator_index)
-      
+
       # Get attester slot and committee
-      {attester_slot, committee_index} = get_attester_duty(
-        beacon_state,
-        epoch,
-        validator_index
-      )
-      
+      {attester_slot, committee_index} =
+        get_attester_duty(
+          beacon_state,
+          epoch,
+          validator_index
+        )
+
       # Check if in sync committee
-      in_sync_committee = is_in_sync_committee?(
-        beacon_state,
-        epoch,
-        validator_index
-      )
-      
+      in_sync_committee =
+        is_in_sync_committee?(
+          beacon_state,
+          epoch,
+          validator_index
+        )
+
       %{
         validator_index: validator_index,
         proposer_slots: proposer_slots,
@@ -730,7 +757,7 @@ defmodule ExWire.Eth2.BeaconChain do
   defp get_proposer_slots(beacon_state, epoch, validator_index) do
     start_slot = epoch * @slots_per_epoch
     end_slot = start_slot + @slots_per_epoch - 1
-    
+
     start_slot..end_slot
     |> Enum.filter(fn slot ->
       get_beacon_proposer_index(beacon_state, slot) == validator_index
@@ -739,14 +766,14 @@ defmodule ExWire.Eth2.BeaconChain do
 
   defp get_attester_duty(beacon_state, epoch, validator_index) do
     start_slot = epoch * @slots_per_epoch
-    
+
     # Find committee assignment
     Enum.find_value(start_slot..(start_slot + @slots_per_epoch - 1), fn slot ->
       committees_per_slot = get_committee_count_per_slot(beacon_state, epoch)
-      
+
       Enum.find_value(0..(committees_per_slot - 1), fn index ->
         committee = get_beacon_committee(beacon_state, slot, index)
-        
+
         if validator_index in committee do
           {slot, index}
         else
@@ -824,10 +851,10 @@ defmodule ExWire.Eth2.BeaconChain do
     # Simplified proposer selection
     epoch = compute_epoch_at_slot(slot)
     seed = get_seed(beacon_state, epoch, :beacon_proposer)
-    
+
     # Get active validator indices
     active_indices = get_active_validator_indices(beacon_state, epoch)
-    
+
     # Compute proposer index
     compute_proposer_index(beacon_state, active_indices, seed)
   end
@@ -836,13 +863,13 @@ defmodule ExWire.Eth2.BeaconChain do
     # Get committee for slot and index
     epoch = compute_epoch_at_slot(slot)
     committees_per_slot = get_committee_count_per_slot(beacon_state, epoch)
-    
+
     if index >= committees_per_slot do
       []
     else
       seed = get_seed(beacon_state, epoch, :beacon_attester)
       committee_index = rem(slot, @slots_per_epoch) * committees_per_slot + index
-      
+
       compute_committee(
         get_active_validator_indices(beacon_state, epoch),
         seed,
@@ -854,7 +881,7 @@ defmodule ExWire.Eth2.BeaconChain do
 
   defp get_committee_count_per_slot(beacon_state, epoch) do
     active_validator_count = length(get_active_validator_indices(beacon_state, epoch))
-    
+
     committees = div(active_validator_count, @slots_per_epoch * @target_committee_size)
     max(1, min(@max_committees_per_slot, committees))
   end
@@ -873,22 +900,24 @@ defmodule ExWire.Eth2.BeaconChain do
   end
 
   defp is_in_sync_committee?(beacon_state, epoch, validator_index) do
-    sync_committee = if epoch == compute_epoch_at_slot(beacon_state.slot) do
-      beacon_state.current_sync_committee
-    else
-      beacon_state.next_sync_committee
-    end
-    
+    sync_committee =
+      if epoch == compute_epoch_at_slot(beacon_state.slot) do
+        beacon_state.current_sync_committee
+      else
+        beacon_state.next_sync_committee
+      end
+
     sync_committee && validator_index in sync_committee.pubkeys
   end
 
   defp get_seed(beacon_state, epoch, domain_type) do
     # Simplified seed generation
-    mix = Enum.at(
-      beacon_state.randao_mixes,
-      rem(epoch + @slots_per_epoch - 1, @slots_per_epoch * 2)
-    )
-    
+    mix =
+      Enum.at(
+        beacon_state.randao_mixes,
+        rem(epoch + @slots_per_epoch - 1, @slots_per_epoch * 2)
+      )
+
     :crypto.hash(:sha256, mix <> <<epoch::64>> <> Atom.to_string(domain_type))
   end
 
@@ -906,41 +935,44 @@ defmodule ExWire.Eth2.BeaconChain do
     # Simplified committee computation
     start = div(length(indices) * index, count)
     finish = div(length(indices) * (index + 1), count)
-    
+
     Enum.slice(indices, start..(finish - 1))
   end
 
   defp get_domain(beacon_state, domain_type, epoch) do
     # Compute domain for signature verification
-    fork_version = if epoch < beacon_state.fork.epoch do
-      beacon_state.fork.previous_version
-    else
-      beacon_state.fork.current_version
-    end
-    
+    fork_version =
+      if epoch < beacon_state.fork.epoch do
+        beacon_state.fork.previous_version
+      else
+        beacon_state.fork.current_version
+      end
+
     compute_domain(domain_type, fork_version, beacon_state.genesis_validators_root)
   end
 
   defp compute_domain(domain_type, fork_version, genesis_validators_root) do
     # Domain computation
-    domain_type_bytes = case domain_type do
-      :beacon_proposer -> <<0, 0, 0, 0>>
-      :beacon_attester -> <<1, 0, 0, 0>>
-      :randao -> <<2, 0, 0, 0>>
-      :deposit -> <<3, 0, 0, 0>>
-      :voluntary_exit -> <<4, 0, 0, 0>>
-      :selection_proof -> <<5, 0, 0, 0>>
-      :aggregate_and_proof -> <<6, 0, 0, 0>>
-      :sync_committee -> <<7, 0, 0, 0>>
-      :sync_committee_selection_proof -> <<8, 0, 0, 0>>
-      :contribution_and_proof -> <<9, 0, 0, 0>>
-    end
-    
-    fork_data_root = hash_tree_root(%{
-      current_version: fork_version,
-      genesis_validators_root: genesis_validators_root
-    })
-    
+    domain_type_bytes =
+      case domain_type do
+        :beacon_proposer -> <<0, 0, 0, 0>>
+        :beacon_attester -> <<1, 0, 0, 0>>
+        :randao -> <<2, 0, 0, 0>>
+        :deposit -> <<3, 0, 0, 0>>
+        :voluntary_exit -> <<4, 0, 0, 0>>
+        :selection_proof -> <<5, 0, 0, 0>>
+        :aggregate_and_proof -> <<6, 0, 0, 0>>
+        :sync_committee -> <<7, 0, 0, 0>>
+        :sync_committee_selection_proof -> <<8, 0, 0, 0>>
+        :contribution_and_proof -> <<9, 0, 0, 0>>
+      end
+
+    fork_data_root =
+      hash_tree_root(%{
+        current_version: fork_version,
+        genesis_validators_root: genesis_validators_root
+      })
+
     domain_type_bytes <> :binary.part(fork_data_root, 0, 28)
   end
 
@@ -956,11 +988,12 @@ defmodule ExWire.Eth2.BeaconChain do
 
   defp get_eth1_data_for_block(eth1_data_cache) do
     # Get most recent eth1 data
-    List.first(eth1_data_cache) || %{
-      deposit_root: <<0::256>>,
-      deposit_count: 0,
-      block_hash: <<0::256>>
-    }
+    List.first(eth1_data_cache) ||
+      %{
+        deposit_root: <<0::256>>,
+        deposit_count: 0,
+        block_hash: <<0::256>>
+      }
   end
 
   defp process_justification_and_finalization(beacon_state) do
@@ -1004,10 +1037,10 @@ defmodule ExWire.Eth2.BeaconChain do
   defp bit_set?(bits, index) do
     byte_index = div(index, 8)
     bit_index = rem(index, 8)
-    
+
     case :binary.at(bits, byte_index) do
       nil -> false
-      byte -> (byte &&& (1 <<< bit_index)) != 0
+      byte -> (byte &&& 1 <<< bit_index) != 0
     end
   end
 
@@ -1017,8 +1050,9 @@ defmodule ExWire.Eth2.BeaconChain do
   end
 
   defp count_bits_helper(0, count), do: count
+
   defp count_bits_helper(n, count) do
-    count_bits_helper(n &&& (n - 1), count + 1)
+    count_bits_helper(n &&& n - 1, count + 1)
   end
 
   defp initialize_metrics do

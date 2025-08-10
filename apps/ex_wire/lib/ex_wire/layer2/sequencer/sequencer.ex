@@ -1,7 +1,7 @@
 defmodule ExWire.Layer2.Sequencer.Sequencer do
   @moduledoc """
   Transaction sequencer for Layer 2 rollups.
-  
+
   Handles:
   - Transaction ordering with priority fees
   - Batch creation and submission
@@ -18,19 +18,19 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
 
   @type ordering_mode :: :fifo | :priority_fee | :fair | :mev_auction
   @type tx_status :: :pending | :included | :rejected | :expired
-  
+
   @type sequencer_tx :: %{
-    hash: binary(),
-    from: binary(),
-    to: binary(),
-    data: binary(),
-    gas_limit: non_neg_integer(),
-    priority_fee: non_neg_integer(),
-    max_fee: non_neg_integer(),
-    nonce: non_neg_integer(),
-    received_at: DateTime.t(),
-    status: tx_status()
-  }
+          hash: binary(),
+          from: binary(),
+          to: binary(),
+          data: binary(),
+          gas_limit: non_neg_integer(),
+          priority_fee: non_neg_integer(),
+          max_fee: non_neg_integer(),
+          nonce: non_neg_integer(),
+          received_at: DateTime.t(),
+          status: tx_status()
+        }
 
   @type t :: %__MODULE__{
           sequencer_id: String.t(),
@@ -94,8 +94,8 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
   @doc """
   Gets transaction status by hash.
   """
-  @spec get_transaction_status(String.t(), binary()) :: 
-    {:ok, tx_status()} | {:error, :not_found}
+  @spec get_transaction_status(String.t(), binary()) ::
+          {:ok, tx_status()} | {:error, :not_found}
   def get_transaction_status(sequencer_id, tx_hash) do
     GenServer.call(via_tuple(sequencer_id), {:get_transaction_status, tx_hash})
   end
@@ -111,8 +111,8 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
   @doc """
   Handles chain reorganization.
   """
-  @spec handle_reorg(String.t(), non_neg_integer(), non_neg_integer()) :: 
-    :ok | {:error, term()}
+  @spec handle_reorg(String.t(), non_neg_integer(), non_neg_integer()) ::
+          :ok | {:error, term()}
   def handle_reorg(sequencer_id, old_block, new_block) do
     GenServer.call(via_tuple(sequencer_id), {:handle_reorg, old_block, new_block})
   end
@@ -122,30 +122,32 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
   @impl true
   def init(opts) do
     Logger.info("Starting Sequencer: #{opts[:sequencer_id]} for rollup #{opts[:rollup_id]}")
-    
+
     state = %__MODULE__{
       sequencer_id: opts[:sequencer_id],
       rollup_id: opts[:rollup_id],
       ordering_mode: opts[:ordering_mode] || :priority_fee,
       batch_size_limit: opts[:batch_size_limit] || 1000,
-      batch_time_limit: opts[:batch_time_limit] || 2000,  # 2 seconds
+      # 2 seconds
+      batch_time_limit: opts[:batch_time_limit] || 2000,
       last_batch_time: DateTime.utc_now(),
       mev_protection: opts[:mev_protection] != false
     }
-    
+
     # Schedule periodic batch creation
     Process.send_after(self(), :check_batch_creation, state.batch_time_limit)
-    
+
     # Schedule mempool cleanup
-    Process.send_after(self(), :cleanup_mempool, 60_000)  # Every minute
-    
+    # Every minute
+    Process.send_after(self(), :cleanup_mempool, 60_000)
+
     {:ok, state}
   end
 
   @impl true
   def handle_call({:submit_transaction, tx_params}, _from, state) do
     tx_hash = compute_tx_hash(tx_params)
-    
+
     transaction = %{
       hash: tx_hash,
       from: tx_params[:from],
@@ -158,21 +160,22 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
       received_at: DateTime.utc_now(),
       status: :pending
     }
-    
+
     # Validate transaction
     case validate_transaction(transaction, state) do
       :ok ->
         # Add to mempool with MEV protection if enabled
-        new_mempool = if state.mev_protection do
-          add_with_mev_protection(transaction, state.mempool)
-        else
-          add_to_mempool(transaction, state.mempool, state.ordering_mode)
-        end
-        
+        new_mempool =
+          if state.mev_protection do
+            add_with_mev_protection(transaction, state.mempool)
+          else
+            add_to_mempool(transaction, state.mempool, state.ordering_mode)
+          end
+
         Logger.debug("Transaction added to mempool: #{Base.encode16(tx_hash)}")
-        
+
         {:reply, {:ok, tx_hash}, %{state | mempool: new_mempool}}
-      
+
       {:error, reason} = error ->
         Logger.warn("Transaction rejected: #{inspect(reason)}")
         {:reply, error, state}
@@ -184,7 +187,7 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
     case create_and_submit_batch(state) do
       {:ok, batch_id, new_state} ->
         {:reply, {:ok, batch_id}, new_state}
-      
+
       {:error, reason} = error ->
         {:reply, error, state}
     end
@@ -200,7 +203,7 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
       ordering_mode: state.ordering_mode,
       mev_protection: state.mev_protection
     }
-    
+
     {:reply, {:ok, status}, state}
   end
 
@@ -213,11 +216,11 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
         case find_transaction(tx_hash, state.current_batch) do
           nil ->
             {:reply, {:error, :not_found}, state}
-          
+
           tx ->
             {:reply, {:ok, tx.status}, state}
         end
-      
+
       tx ->
         {:reply, {:ok, tx.status}, state}
     end
@@ -225,56 +228,55 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
 
   @impl true
   def handle_call({:update_config, config}, _from, state) do
-    new_state = %{state |
-      ordering_mode: config[:ordering_mode] || state.ordering_mode,
-      batch_size_limit: config[:batch_size_limit] || state.batch_size_limit,
-      batch_time_limit: config[:batch_time_limit] || state.batch_time_limit,
-      mev_protection: 
-        if Map.has_key?(config, :mev_protection) do
-          config[:mev_protection]
-        else
-          state.mev_protection
-        end
+    new_state = %{
+      state
+      | ordering_mode: config[:ordering_mode] || state.ordering_mode,
+        batch_size_limit: config[:batch_size_limit] || state.batch_size_limit,
+        batch_time_limit: config[:batch_time_limit] || state.batch_time_limit,
+        mev_protection:
+          if Map.has_key?(config, :mev_protection) do
+            config[:mev_protection]
+          else
+            state.mev_protection
+          end
     }
-    
+
     Logger.info("Sequencer config updated: #{inspect(config)}")
-    
+
     {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_call({:handle_reorg, old_block, new_block}, _from, state) do
     Logger.warn("Handling reorg from block #{old_block} to #{new_block}")
-    
+
     # Re-add transactions from invalidated batches to mempool
     # This would require tracking which transactions were in which blocks
-    
+
     # For now, just clear current batch and reset
-    new_state = %{state | 
-      current_batch: [],
-      sequence_number: calculate_new_sequence(new_block)
-    }
-    
+    new_state = %{state | current_batch: [], sequence_number: calculate_new_sequence(new_block)}
+
     {:reply, :ok, new_state}
   end
 
   @impl true
   def handle_info(:check_batch_creation, state) do
     time_since_last = DateTime.diff(DateTime.utc_now(), state.last_batch_time, :millisecond)
-    
-    new_state = if should_create_batch?(state, time_since_last) do
-      case create_and_submit_batch(state) do
-        {:ok, _batch_id, updated_state} ->
-          updated_state
-        
-        {:error, reason} ->
-          Logger.error("Failed to create batch: #{inspect(reason)}")
-          state
+
+    new_state =
+      if should_create_batch?(state, time_since_last) do
+        case create_and_submit_batch(state) do
+          {:ok, _batch_id, updated_state} ->
+            updated_state
+
+          {:error, reason} ->
+            Logger.error("Failed to create batch: #{inspect(reason)}")
+            state
+        end
+      else
+        state
       end
-    else
-      state
-    end
-    
+
     Process.send_after(self(), :check_batch_creation, state.batch_time_limit)
     {:noreply, new_state}
   end
@@ -283,19 +285,21 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
   def handle_info(:cleanup_mempool, state) do
     # Remove expired transactions
     now = DateTime.utc_now()
-    max_age = 600  # 10 minutes
-    
-    cleaned_mempool = Enum.filter(state.mempool, fn tx ->
-      age = DateTime.diff(now, tx.received_at, :second)
-      age < max_age
-    end)
-    
+    # 10 minutes
+    max_age = 600
+
+    cleaned_mempool =
+      Enum.filter(state.mempool, fn tx ->
+        age = DateTime.diff(now, tx.received_at, :second)
+        age < max_age
+      end)
+
     removed_count = length(state.mempool) - length(cleaned_mempool)
-    
+
     if removed_count > 0 do
       Logger.info("Removed #{removed_count} expired transactions from mempool")
     end
-    
+
     Process.send_after(self(), :cleanup_mempool, 60_000)
     {:noreply, %{state | mempool: cleaned_mempool}}
   end
@@ -316,16 +320,16 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
     cond do
       tx.gas_limit < 21_000 ->
         {:error, :gas_limit_too_low}
-      
+
       tx.max_fee < tx.priority_fee ->
         {:error, :invalid_fee_structure}
-      
+
       not valid_nonce?(tx, state) ->
         {:error, :invalid_nonce}
-      
+
       duplicate_transaction?(tx, state) ->
         {:error, :duplicate_transaction}
-      
+
       true ->
         :ok
     end
@@ -347,16 +351,16 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
       :fifo ->
         # First in, first out
         mempool ++ [tx]
-      
+
       :priority_fee ->
         # Sort by priority fee (highest first)
         [tx | mempool]
         |> Enum.sort_by(& &1.priority_fee, :desc)
-      
+
       :fair ->
         # Fair ordering (randomized within time windows)
         OrderingPolicy.fair_order([tx | mempool])
-      
+
       :mev_auction ->
         # MEV auction ordering
         OrderingPolicy.mev_auction_order([tx | mempool])
@@ -374,15 +378,15 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
       # Time limit reached
       time_since_last >= state.batch_time_limit and length(state.mempool) > 0 ->
         true
-      
+
       # Size limit reached
       length(state.mempool) >= state.batch_size_limit ->
         true
-      
+
       # Critical transactions pending (high priority fees)
       has_critical_transactions?(state.mempool) ->
         true
-      
+
       true ->
         false
     end
@@ -391,49 +395,56 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
   defp has_critical_transactions?(mempool) do
     # Check if there are high-priority transactions
     Enum.any?(mempool, fn tx ->
-      tx.priority_fee > 100_000_000_000  # 100 Gwei
+      # 100 Gwei
+      tx.priority_fee > 100_000_000_000
     end)
   end
 
   defp create_and_submit_batch(state) do
     # Select transactions for batch
-    {batch_txs, remaining} = select_batch_transactions(
-      state.mempool,
-      state.batch_size_limit,
-      state.ordering_mode
-    )
-    
+    {batch_txs, remaining} =
+      select_batch_transactions(
+        state.mempool,
+        state.batch_size_limit,
+        state.ordering_mode
+      )
+
     if length(batch_txs) == 0 do
       {:error, :no_transactions}
     else
       # Build batch
-      batch = BatchBuilder.build(
-        batch_txs,
-        state.sequence_number + 1,
-        state.rollup_id
-      )
-      
+      batch =
+        BatchBuilder.build(
+          batch_txs,
+          state.sequence_number + 1,
+          state.rollup_id
+        )
+
       # Submit to rollup
       case Rollup.submit_batch(state.rollup_id, batch) do
         {:ok, batch_number} ->
           # Update transaction statuses
-          updated_batch_txs = Enum.map(batch_txs, fn tx ->
-            %{tx | status: :included}
-          end)
-          
-          new_state = %{state | 
-            mempool: remaining,
-            current_batch: updated_batch_txs,
-            sequence_number: state.sequence_number + 1,
-            last_batch_time: DateTime.utc_now()
+          updated_batch_txs =
+            Enum.map(batch_txs, fn tx ->
+              %{tx | status: :included}
+            end)
+
+          new_state = %{
+            state
+            | mempool: remaining,
+              current_batch: updated_batch_txs,
+              sequence_number: state.sequence_number + 1,
+              last_batch_time: DateTime.utc_now()
           }
-          
+
           batch_id = "batch_#{batch_number}"
-          
-          Logger.info("Batch created and submitted: #{batch_id} with #{length(batch_txs)} transactions")
-          
+
+          Logger.info(
+            "Batch created and submitted: #{batch_id} with #{length(batch_txs)} transactions"
+          )
+
           {:ok, batch_id, new_state}
-        
+
         {:error, reason} = error ->
           Logger.error("Failed to submit batch: #{inspect(reason)}")
           error
@@ -445,16 +456,16 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
     case ordering_mode do
       :fifo ->
         Enum.split(mempool, limit)
-      
+
       :priority_fee ->
         # Take highest fee transactions
         sorted = Enum.sort_by(mempool, & &1.priority_fee, :desc)
         Enum.split(sorted, limit)
-      
+
       :fair ->
         # Fair selection with some randomization
         OrderingPolicy.fair_select(mempool, limit)
-      
+
       :mev_auction ->
         # MEV auction based selection
         OrderingPolicy.mev_select(mempool, limit)
@@ -468,6 +479,7 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
   end
 
   defp get_oldest_tx([]), do: nil
+
   defp get_oldest_tx(mempool) do
     Enum.min_by(mempool, & &1.received_at, DateTime)
   end

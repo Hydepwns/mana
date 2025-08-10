@@ -1,7 +1,7 @@
 defmodule ExWire.Layer2.Rollup do
   @moduledoc """
   Base module for Layer 2 rollup support in Mana-Ethereum.
-  
+
   This module provides the common abstraction layer for both optimistic
   and zero-knowledge rollups, handling:
   - State commitments and roots
@@ -92,7 +92,7 @@ defmodule ExWire.Layer2.Rollup do
   @impl true
   def init(opts) do
     Logger.info("Starting Layer 2 Rollup: #{opts[:id]}")
-    
+
     state = %__MODULE__{
       id: opts[:id],
       type: opts[:type] || :optimistic,
@@ -100,10 +100,11 @@ defmodule ExWire.Layer2.Rollup do
       state_root: opts[:genesis_root] || <<0::256>>,
       config: opts[:config] || default_config(opts[:type])
     }
-    
+
     # Schedule periodic L1 synchronization
-    Process.send_after(self(), :sync_l1, 12_000)  # Every 12 seconds (L1 block time)
-    
+    # Every 12 seconds (L1 block time)
+    Process.send_after(self(), :sync_l1, 12_000)
+
     {:ok, state}
   end
 
@@ -112,7 +113,7 @@ defmodule ExWire.Layer2.Rollup do
     case process_batch(batch, state) do
       {:ok, new_state, batch_number} ->
         {:reply, {:ok, batch_number}, new_state}
-      
+
       {:error, reason} = error ->
         {:reply, error, state}
     end
@@ -123,17 +124,17 @@ defmodule ExWire.Layer2.Rollup do
     case Map.get(state.batches, batch_number) do
       nil ->
         {:reply, {:error, :batch_not_found}, state}
-      
+
       batch ->
         case verify_batch_proof(batch, proof, state.type) do
           {:ok, true} ->
             updated_batch = %{batch | verified: true}
             new_batches = Map.put(state.batches, batch_number, updated_batch)
             {:reply, {:ok, true}, %{state | batches: new_batches}}
-          
+
           {:ok, false} ->
             {:reply, {:ok, false}, state}
-          
+
           {:error, reason} = error ->
             {:reply, error, state}
         end
@@ -158,7 +159,7 @@ defmodule ExWire.Layer2.Rollup do
     case perform_l1_sync(state, l1_block_number) do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
-      
+
       {:error, reason} = error ->
         {:reply, error, state}
     end
@@ -172,7 +173,7 @@ defmodule ExWire.Layer2.Rollup do
         {:ok, new_state} = perform_l1_sync(state, block_number)
         Process.send_after(self(), :sync_l1, 12_000)
         {:noreply, new_state}
-      
+
       {:error, reason} ->
         Logger.error("L1 sync failed: #{inspect(reason)}")
         Process.send_after(self(), :sync_l1, 12_000)
@@ -188,8 +189,10 @@ defmodule ExWire.Layer2.Rollup do
 
   defp default_config(:optimistic) do
     %{
-      challenge_period: 7 * 24 * 60 * 60,  # 7 days in seconds
-      fraud_proof_window: 24 * 60 * 60,    # 24 hours
+      # 7 days in seconds
+      challenge_period: 7 * 24 * 60 * 60,
+      # 24 hours
+      fraud_proof_window: 24 * 60 * 60,
       max_batch_size: 1000,
       confirmation_depth: 12
     }
@@ -208,7 +211,7 @@ defmodule ExWire.Layer2.Rollup do
 
   defp process_batch(batch, state) do
     batch_number = state.current_batch + 1
-    
+
     # Validate batch
     with :ok <- validate_batch(batch, state),
          # Compute new state root
@@ -222,17 +225,17 @@ defmodule ExWire.Layer2.Rollup do
            timestamp: DateTime.utc_now(),
            verified: false
          } do
-      
       new_batches = Map.put(state.batches, batch_number, batch_data)
-      
-      new_state = %{state | 
-        current_batch: batch_number,
-        state_root: new_state_root,
-        batches: new_batches
+
+      new_state = %{
+        state
+        | current_batch: batch_number,
+          state_root: new_state_root,
+          batches: new_batches
       }
-      
+
       Logger.info("Processed batch ##{batch_number} for rollup #{state.id}")
-      
+
       {:ok, new_state, batch_number}
     else
       {:error, reason} = error -> error
@@ -243,10 +246,10 @@ defmodule ExWire.Layer2.Rollup do
     cond do
       length(batch.transactions) > state.config[:max_batch_size] ->
         {:error, :batch_too_large}
-      
+
       not valid_transactions?(batch.transactions) ->
         {:error, :invalid_transactions}
-      
+
       true ->
         :ok
     end
@@ -273,12 +276,12 @@ defmodule ExWire.Layer2.Rollup do
     # Sync rollup state with L1
     # This would fetch L1 events and update rollup state accordingly
     Logger.debug("Syncing rollup #{state.id} with L1 block #{l1_block_number}")
-    
+
     # TODO: Implement actual L1 synchronization
     # - Fetch rollup contract events
     # - Update state roots
     # - Process deposits/withdrawals
-    
+
     {:ok, state}
   end
 

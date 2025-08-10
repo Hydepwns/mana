@@ -21,23 +21,23 @@ defmodule ExWire.Eth2.MEVBoost do
   ]
 
   @type relay_info :: %{
-    url: String.t(),
-    public_key: binary(),
-    network: atom(),
-    priority: non_neg_integer()
-  }
+          url: String.t(),
+          public_key: binary(),
+          network: atom(),
+          priority: non_neg_integer()
+        }
 
   @type builder_bid :: %{
-    header: ExecutionPayload.Header.t(),
-    value: non_neg_integer(),
-    pubkey: binary(),
-    signature: binary()
-  }
+          header: ExecutionPayload.Header.t(),
+          value: non_neg_integer(),
+          pubkey: binary(),
+          signature: binary()
+        }
 
   @type signed_builder_bid :: %{
-    message: builder_bid(),
-    signature: binary()
-  }
+          message: builder_bid(),
+          signature: binary()
+        }
 
   # Client API
 
@@ -85,7 +85,7 @@ defmodule ExWire.Eth2.MEVBoost do
   @impl true
   def init(opts) do
     Logger.info("Starting MEV-Boost client")
-    
+
     state = %__MODULE__{
       relay_urls: parse_relay_urls(opts[:relay_urls] || default_relays()),
       public_key: opts[:public_key],
@@ -96,18 +96,22 @@ defmodule ExWire.Eth2.MEVBoost do
       active_registrations: %{},
       config: build_config(opts)
     }
-    
+
     # Check relay health on startup
     state = check_relay_health(state)
-    
+
     # Schedule periodic health checks
     schedule_health_check()
-    
+
     {:ok, state}
   end
 
   @impl true
-  def handle_call({:register_validator, pubkey, fee_recipient, gas_limit, timestamp}, _from, state) do
+  def handle_call(
+        {:register_validator, pubkey, fee_recipient, gas_limit, timestamp},
+        _from,
+        state
+      ) do
     registration = %{
       message: %{
         fee_recipient: fee_recipient,
@@ -115,75 +119,81 @@ defmodule ExWire.Eth2.MEVBoost do
         timestamp: timestamp,
         pubkey: pubkey
       },
-      signature: <<0::768>>  # Would be signed by validator
+      # Would be signed by validator
+      signature: <<0::768>>
     }
-    
+
     # Register with all relays
-    results = Enum.map(state.relay_urls, fn relay ->
-      register_with_relay(relay, registration)
-    end)
-    
+    results =
+      Enum.map(state.relay_urls, fn relay ->
+        register_with_relay(relay, registration)
+      end)
+
     successful = Enum.count(results, fn {status, _} -> status == :ok end)
-    
+
     # Update active registrations
-    state = put_in(state.active_registrations[pubkey], %{
-      fee_recipient: fee_recipient,
-      gas_limit: gas_limit,
-      timestamp: timestamp,
-      relay_count: successful
-    })
-    
+    state =
+      put_in(state.active_registrations[pubkey], %{
+        fee_recipient: fee_recipient,
+        gas_limit: gas_limit,
+        timestamp: timestamp,
+        relay_count: successful
+      })
+
     # Update metrics
     state = update_in(state.metrics.registrations, &(&1 + 1))
-    
+
     Logger.info("Registered validator with #{successful}/#{length(state.relay_urls)} relays")
-    
+
     {:reply, {:ok, successful}, state}
   end
 
   @impl true
   def handle_call({:get_header, slot, parent_hash, pubkey}, _from, state) do
     Logger.debug("Requesting header for slot #{slot}")
-    
+
     # Request headers from all relays in parallel
-    tasks = Enum.map(state.relay_urls, fn relay ->
-      Task.async(fn ->
-        {relay, request_header(relay, slot, parent_hash, pubkey)}
+    tasks =
+      Enum.map(state.relay_urls, fn relay ->
+        Task.async(fn ->
+          {relay, request_header(relay, slot, parent_hash, pubkey)}
+        end)
       end)
-    end)
-    
+
     # Collect responses with timeout
-    responses = Enum.map(tasks, fn task ->
-      case Task.yield(task, 3000) || Task.shutdown(task, :brutal_kill) do
-        {:ok, result} -> result
-        _ -> {nil, {:error, :timeout}}
-      end
-    end)
-    
+    responses =
+      Enum.map(tasks, fn task ->
+        case Task.yield(task, 3000) || Task.shutdown(task, :brutal_kill) do
+          {:ok, result} -> result
+          _ -> {nil, {:error, :timeout}}
+        end
+      end)
+
     # Filter successful responses
-    valid_bids = responses
+    valid_bids =
+      responses
       |> Enum.filter(fn {_relay, result} ->
         match?({:ok, _}, result)
       end)
       |> Enum.map(fn {relay, {:ok, bid}} ->
         {relay, bid}
       end)
-    
+
     if length(valid_bids) > 0 do
       # Select best bid
       {best_relay, best_bid} = select_best_bid(valid_bids, state)
-      
+
       # Update metrics
       state = update_in(state.metrics.headers_received, &(&1 + 1))
       state = update_in(state.metrics.total_value, &(&1 + best_bid.value))
-      
+
       Logger.info("Selected bid from #{best_relay.url} with value #{best_bid.value}")
-      
+
       {:reply, {:ok, best_bid}, state}
     else
       Logger.warn("No valid bids received for slot #{slot}")
       state = update_in(state.metrics.missed_slots, &(&1 + 1))
-      
+
       if state.fallback_enabled do
         {:reply, {:fallback, build_local_header(slot, parent_hash)}, state}
       else
@@ -196,10 +206,10 @@ defmodule ExWire.Eth2.MEVBoost do
   def handle_call({:get_payload, signed_blinded_beacon_block}, _from, state) do
     # Extract header from blinded block
     header = signed_blinded_beacon_block.message.body.execution_payload_header
-    
+
     # Find which relay provided this header
     relay = find_relay_for_header(state, header)
-    
+
     if relay do
       case request_payload(relay, signed_blinded_beacon_block) do
         {:ok, payload} ->
@@ -212,7 +222,7 @@ defmodule ExWire.Eth2.MEVBoost do
             state = update_in(state.metrics.invalid_payloads, &(&1 + 1))
             {:reply, {:error, :invalid_payload}, state}
           end
-        
+
         {:error, reason} ->
           Logger.error("Failed to get payload: #{inspect(reason)}")
           state = update_in(state.metrics.payload_errors, &(&1 + 1))
@@ -231,7 +241,7 @@ defmodule ExWire.Eth2.MEVBoost do
       active_registrations: map_size(state.active_registrations),
       metrics: state.metrics
     }
-    
+
     {:reply, {:ok, status}, state}
   end
 
@@ -239,7 +249,7 @@ defmodule ExWire.Eth2.MEVBoost do
   def handle_call({:update_relays, relay_urls}, _from, state) do
     state = %{state | relay_urls: parse_relay_urls(relay_urls)}
     state = check_relay_health(state)
-    
+
     {:reply, :ok, state}
   end
 
@@ -256,14 +266,14 @@ defmodule ExWire.Eth2.MEVBoost do
     url = "#{relay.url}/eth/v1/builder/validators"
     headers = [{"Content-Type", "application/json"}]
     body = Jason.encode!([registration])
-    
+
     case HTTPoison.post(url, body, headers) do
       {:ok, %{status_code: 200}} ->
         {:ok, :registered}
-      
+
       {:ok, response} ->
         {:error, {:http_error, response.status_code}}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -272,22 +282,24 @@ defmodule ExWire.Eth2.MEVBoost do
   end
 
   defp request_header(relay, slot, parent_hash, pubkey) do
-    url = "#{relay.url}/eth/v1/builder/header/#{slot}/#{Base.encode16(parent_hash, case: :lower)}/#{Base.encode16(pubkey, case: :lower)}"
+    url =
+      "#{relay.url}/eth/v1/builder/header/#{slot}/#{Base.encode16(parent_hash, case: :lower)}/#{Base.encode16(pubkey, case: :lower)}"
+
     headers = []
-    
+
     case HTTPoison.get(url, headers) do
       {:ok, %{status_code: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, data} ->
             {:ok, parse_builder_bid(data)}
-          
+
           {:error, _} ->
             {:error, :invalid_response}
         end
-      
+
       {:ok, response} ->
         {:error, {:http_error, response.status_code}}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -299,20 +311,20 @@ defmodule ExWire.Eth2.MEVBoost do
     url = "#{relay.url}/eth/v1/builder/blinded_blocks"
     headers = [{"Content-Type", "application/json"}]
     body = Jason.encode!(signed_blinded_beacon_block)
-    
+
     case HTTPoison.post(url, body, headers) do
       {:ok, %{status_code: 200, body: body}} ->
         case Jason.decode(body) do
           {:ok, data} ->
             {:ok, parse_execution_payload(data)}
-          
+
           {:error, _} ->
             {:error, :invalid_response}
         end
-      
+
       {:ok, response} ->
         {:error, {:http_error, response.status_code}}
-      
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -324,26 +336,29 @@ defmodule ExWire.Eth2.MEVBoost do
 
   defp select_best_bid(bids, state) do
     # Filter by minimum bid
-    valid_bids = Enum.filter(bids, fn {_relay, bid} ->
-      bid.value >= state.min_bid
-    end)
-    
-    # Prefer relays if configured
-    preferred_bids = if length(state.preferred_relays) > 0 do
-      Enum.filter(valid_bids, fn {relay, _bid} ->
-        relay.url in state.preferred_relays
+    valid_bids =
+      Enum.filter(bids, fn {_relay, bid} ->
+        bid.value >= state.min_bid
       end)
-    else
-      valid_bids
-    end
-    
+
+    # Prefer relays if configured
+    preferred_bids =
+      if length(state.preferred_relays) > 0 do
+        Enum.filter(valid_bids, fn {relay, _bid} ->
+          relay.url in state.preferred_relays
+        end)
+      else
+        valid_bids
+      end
+
     # Use preferred if available, otherwise all valid
-    bids_to_consider = if length(preferred_bids) > 0 do
-      preferred_bids
-    else
-      valid_bids
-    end
-    
+    bids_to_consider =
+      if length(preferred_bids) > 0 do
+        preferred_bids
+      else
+        valid_bids
+      end
+
     # Select highest value
     Enum.max_by(bids_to_consider, fn {_relay, bid} -> bid.value end)
   end
@@ -379,13 +394,13 @@ defmodule ExWire.Eth2.MEVBoost do
   defp verify_payload_matches_header(payload, header) do
     # Verify key fields match
     payload.parent_hash == header.parent_hash &&
-    payload.fee_recipient == header.fee_recipient &&
-    payload.state_root == header.state_root &&
-    payload.receipts_root == header.receipts_root &&
-    payload.block_number == header.block_number &&
-    payload.gas_limit == header.gas_limit &&
-    payload.timestamp == header.timestamp &&
-    payload.base_fee_per_gas == header.base_fee_per_gas
+      payload.fee_recipient == header.fee_recipient &&
+      payload.state_root == header.state_root &&
+      payload.receipts_root == header.receipts_root &&
+      payload.block_number == header.block_number &&
+      payload.gas_limit == header.gas_limit &&
+      payload.timestamp == header.timestamp &&
+      payload.base_fee_per_gas == header.base_fee_per_gas
   end
 
   defp find_relay_for_header(_state, _header) do
@@ -402,18 +417,18 @@ defmodule ExWire.Eth2.MEVBoost do
         check_relay_status(relay)
       end)
     end)
-    
+
     state
   end
 
   defp check_relay_status(relay) do
     url = "#{relay.url}/eth/v1/builder/status"
-    
+
     case HTTPoison.get(url, [], timeout: 2000) do
       {:ok, %{status_code: 200}} ->
         Logger.debug("Relay #{relay.url} is healthy")
         :healthy
-      
+
       _ ->
         Logger.warn("Relay #{relay.url} is unhealthy")
         :unhealthy
@@ -439,7 +454,8 @@ defmodule ExWire.Eth2.MEVBoost do
   defp parse_relay_url(url) when is_binary(url) do
     %{
       url: url,
-      public_key: <<0::384>>,  # Would parse from URL or config
+      # Would parse from URL or config
+      public_key: <<0::384>>,
       network: :mainnet,
       priority: 1
     }
@@ -499,6 +515,7 @@ defmodule ExWire.Eth2.MEVBoost do
   end
 
   defp parse_withdrawals(nil), do: []
+
   defp parse_withdrawals(withdrawals) do
     Enum.map(withdrawals, fn w ->
       %{
@@ -516,7 +533,8 @@ defmodule ExWire.Eth2.MEVBoost do
   # Private Functions - Helpers
 
   defp compute_timestamp_at_slot(slot) do
-    genesis_time = 1606824023  # Mainnet genesis
+    # Mainnet genesis
+    genesis_time = 1_606_824_023
     genesis_time + slot * 12
   end
 
@@ -550,7 +568,8 @@ defmodule ExWire.Eth2.MEVBoost do
   end
 
   defp schedule_health_check do
-    Process.send_after(self(), :health_check, 60_000)  # Every minute
+    # Every minute
+    Process.send_after(self(), :health_check, 60_000)
   end
 end
 

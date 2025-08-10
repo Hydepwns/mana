@@ -1,21 +1,21 @@
 defmodule ExWire.Eth2.Checkpoint do
   @moduledoc """
   Checkpoint representing a finalized or justified state in Ethereum 2.0.
-  
+
   Checkpoints are used in the Casper FFG finality gadget to track
   justified and finalized epochs.
   """
-  
+
   defstruct [
     :epoch,
     :root
   ]
-  
+
   @type t :: %__MODULE__{
-    epoch: non_neg_integer(),
-    root: binary()
-  }
-  
+          epoch: non_neg_integer(),
+          root: binary()
+        }
+
   @doc """
   Create a new checkpoint.
   """
@@ -26,7 +26,7 @@ defmodule ExWire.Eth2.Checkpoint do
       root: root
     }
   end
-  
+
   @doc """
   Check if this checkpoint is newer than another.
   """
@@ -34,7 +34,7 @@ defmodule ExWire.Eth2.Checkpoint do
   def newer_than?(checkpoint1, checkpoint2) do
     checkpoint1.epoch > checkpoint2.epoch
   end
-  
+
   @doc """
   Get the genesis checkpoint.
   """

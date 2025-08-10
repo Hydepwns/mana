@@ -5,26 +5,30 @@ defmodule ExthCrypto.AES do
 
   @block_size 32
   @type block_size :: unquote(@block_size)
-  
+
   # Helper to determine AES algorithm based on key size
   defp aes_algorithm(mode, key) do
     key_bits = byte_size(key) * 8
-    
+
     case {mode, key_bits} do
       {:cbc, 128} -> :aes_128_cbc
       {:cbc, 192} -> :aes_192_cbc
       {:cbc, 256} -> :aes_256_cbc
-      {:cbc, _} -> :aes_256_cbc  # Default to 256
+      # Default to 256
+      {:cbc, _} -> :aes_256_cbc
       {:ctr, 128} -> :aes_128_ctr
       {:ctr, 192} -> :aes_192_ctr
       {:ctr, 256} -> :aes_256_ctr
-      {:ctr, _} -> :aes_256_ctr  # Default to 256
+      # Default to 256
+      {:ctr, _} -> :aes_256_ctr
       {:ecb, 128} -> :aes_128_ecb
       {:ecb, 192} -> :aes_192_ecb
       {:ecb, 256} -> :aes_256_ecb
-      {:ecb, _} -> :aes_256_ecb  # Default to 256
+      # Default to 256
+      {:ecb, _} -> :aes_256_ecb
     end
   end
+
   @doc """
   Returns the blocksize for AES encryption when used as block mode encryption.
 
@@ -116,7 +120,12 @@ defmodule ExthCrypto.AES do
     padding_bits = (16 - rem(byte_size(plaintext), 16)) * 8
     padded_plaintext = <<0::size(padding_bits)>> <> plaintext
 
-    :crypto.crypto_one_time(aes_algorithm(:ecb, symmetric_key), symmetric_key, padded_plaintext, true)
+    :crypto.crypto_one_time(
+      aes_algorithm(:ecb, symmetric_key),
+      symmetric_key,
+      padded_plaintext,
+      true
+    )
   end
 
   @doc """

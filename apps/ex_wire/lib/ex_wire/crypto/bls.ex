@@ -2,7 +2,7 @@ defmodule ExWire.Crypto.BLS do
   @moduledoc """
   BLS12-381 signature scheme implementation for Ethereum 2.0.
   Uses Rust NIF for performance-critical operations.
-  
+
   This module provides BLS signature functionality required for:
   - Validator signatures
   - Attestation aggregation
@@ -15,7 +15,7 @@ defmodule ExWire.Crypto.BLS do
     crate: "bls_nif"
 
   # Constants
-  @bls_modulus 52435875175126190479447740508185965837690552500527637822603658699938581184513
+  @bls_modulus 52_435_875_175_126_190_479_447_740_508_185_965_837_690_552_500_527_637_822_603_658_699_938_581_184_513
   @domain_size 32
   @pubkey_size 48
   @signature_size 96
@@ -138,7 +138,7 @@ defmodule ExWire.Crypto.BLS do
     # Implement HD key derivation for validators
     salt = "BLS-SIG-KEYGEN-SALT-"
     ikm = parent_privkey <> <<index::32>>
-    
+
     # Use HKDF to derive child key
     hkdf_expand(hkdf_extract(salt, ikm), "", 32)
   end
@@ -157,18 +157,21 @@ defmodule ExWire.Crypto.BLS do
   defp validate_privkey(privkey) when byte_size(privkey) == 32 do
     # Check if privkey is within valid range
     key_int = :binary.decode_unsigned(privkey, :big)
+
     if key_int > 0 and key_int < @bls_modulus do
       :ok
     else
       {:error, :invalid_privkey_range}
     end
   end
+
   defp validate_privkey(_), do: {:error, :invalid_privkey_size}
 
   defp validate_pubkey(pubkey) when byte_size(pubkey) == @pubkey_size do
     # Could add point validation here
     :ok
   end
+
   defp validate_pubkey(_), do: {:error, :invalid_pubkey_size}
 
   defp validate_pubkeys(pubkeys) do
@@ -182,11 +185,13 @@ defmodule ExWire.Crypto.BLS do
   defp validate_signature(signature) when byte_size(signature) == @signature_size do
     :ok
   end
+
   defp validate_signature(_), do: {:error, :invalid_signature_size}
 
   defp validate_domain(domain) when byte_size(domain) == @domain_size do
     :ok
   end
+
   defp validate_domain(_), do: {:error, :invalid_domain_size}
 
   # Helper functions
@@ -235,5 +240,4 @@ defmodule ExWire.Crypto.BLS do
     :crypto.mac(:hmac, :sha256, prk, <<info::binary, 1>>)
     |> :binary.part(0, length)
   end
-
 end

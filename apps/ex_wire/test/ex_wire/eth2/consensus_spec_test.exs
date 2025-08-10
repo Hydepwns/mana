@@ -1,45 +1,49 @@
 defmodule ExWire.Eth2.ConsensusSpecTest do
   use ExUnit.Case, async: false
-  
+
   require Logger
-  
+
   alias ExWire.Eth2.ConsensusSpecRunner
 
   @moduletag :consensus_spec
-  @moduletag timeout: 300_000  # 5 minutes for full test suite
+  # 5 minutes for full test suite
+  @moduletag timeout: 300_000
 
   describe "Ethereum Consensus Specification Tests" do
     @tag :integration
     test "consensus spec test suite integration" do
       # This test verifies that the consensus spec test infrastructure works
       # without running the full test suite (which would be very slow)
-      
+
       # Check if test runner can be initialized
       assert is_function(&ConsensusSpecRunner.setup_tests/0)
       assert is_function(&ConsensusSpecRunner.run_all_tests/1)
-      
+
       # Test basic functionality with minimal options
       case File.exists?("test/fixtures/consensus_spec_tests") do
         true ->
           # If consensus spec tests are available, run a minimal subset
           Logger.info("Found consensus spec tests, running minimal test...")
-          
+
           opts = [
             forks: [:phase0],
-            configs: [:minimal], 
+            configs: [:minimal],
             test_suites: [:finality]
           ]
-          
+
           case ConsensusSpecRunner.run_all_tests(opts) do
             {:ok, results} ->
               assert results.total_tests >= 0
-              Logger.info("Consensus spec test integration successful: #{results.total_tests} tests processed")
-              
+
+              Logger.info(
+                "Consensus spec test integration successful: #{results.total_tests} tests processed"
+              )
+
             {:error, reason} ->
               Logger.warning("Consensus spec tests not fully functional: #{reason}")
               # Don't fail the test - this is expected during development
           end
-          
+
         false ->
           Logger.info("Consensus spec tests not downloaded, testing setup only...")
           # Just verify the setup function exists and returns expected format
@@ -63,15 +67,15 @@ defmodule ExWire.Eth2.ConsensusSpecTest do
           "root" => "0x0000000000000000000000000000000000000000000000000000000000000000"
         }
       }
-      
+
       # This should not crash and should return a result
       result = ExWire.Eth2.ConsensusSpecTests.run_finality_test(test_data)
-      
+
       # We expect either success or a specific error - not a crash
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
 
-    @tag :fork_choice  
+    @tag :fork_choice
     test "fork choice test parsing and execution framework" do
       # Test the fork choice test framework with mock data
       test_data = %{
@@ -84,11 +88,12 @@ defmodule ExWire.Eth2.ConsensusSpecTest do
         "steps" => [
           %{
             "type" => "get_head",
-            "expected_head" => "0x0000000000000000000000000000000000000000000000000000000000000000"
+            "expected_head" =>
+              "0x0000000000000000000000000000000000000000000000000000000000000000"
           }
         ]
       }
-      
+
       result = ExWire.Eth2.ConsensusSpecTests.run_fork_choice_test(test_data)
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
@@ -110,7 +115,7 @@ defmodule ExWire.Eth2.ConsensusSpecTest do
           "state_root" => "0x0000000000000000000000000000000000000000000000000000000000000000"
         }
       }
-      
+
       result = ExWire.Eth2.ConsensusSpecTests.run_block_processing_test(test_data)
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
@@ -130,45 +135,52 @@ defmodule ExWire.Eth2.ConsensusSpecTest do
           "data" => %{
             "slot" => 0,
             "index" => 0,
-            "beacon_block_root" => "0x0000000000000000000000000000000000000000000000000000000000000000"
+            "beacon_block_root" =>
+              "0x0000000000000000000000000000000000000000000000000000000000000000"
           },
-          "signature" => "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+          "signature" =>
+            "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
         }
       }
-      
+
       result = ExWire.Eth2.ConsensusSpecTests.run_attestation_test(test_data)
       assert match?({:ok, _}, result) or match?({:error, _}, result)
     end
 
     @tag :slow
-    @tag timeout: 600_000  # 10 minutes
+    # 10 minutes
+    @tag timeout: 600_000
     test "run minimal consensus spec tests if available" do
       # Only run if consensus spec tests are actually downloaded
       if File.exists?("test/fixtures/consensus_spec_tests") do
         Logger.info("Running minimal consensus spec tests...")
-        
+
         # Run a very limited subset to verify integration
         opts = [
           forks: [:phase0],
           configs: [:minimal],
           test_suites: [:finality]
         ]
-        
+
         {:ok, results} = ConsensusSpecRunner.run_all_tests(opts)
-        
+
         # Basic assertions about test execution
         assert results.total_tests >= 0
-        assert results.passed_tests + results.failed_tests + results.skipped_tests == results.total_tests
+
+        assert results.passed_tests + results.failed_tests + results.skipped_tests ==
+                 results.total_tests
+
         assert is_list(results.results)
-        
+
         # Log results for visibility
-        Logger.info("Consensus spec test results: #{results.passed_tests}/#{results.total_tests} passed")
-        
+        Logger.info(
+          "Consensus spec test results: #{results.passed_tests}/#{results.total_tests} passed"
+        )
+
         if results.failed_tests > 0 do
           failed_tests = Enum.filter(results.results, &(&1.result == :fail))
           Logger.warning("Failed tests: #{inspect(failed_tests, limit: 3)}")
         end
-        
       else
         Logger.info("Skipping consensus spec tests - test data not found")
         Logger.info("To run consensus spec tests: mix consensus_spec --setup")
@@ -187,9 +199,9 @@ defmodule ExWire.Eth2.ConsensusSpecTest do
         slot: 1
         proposer_index: 0
       """
-      
+
       parsed = YamlElixir.read_from_string!(yaml_content)
-      
+
       assert parsed["pre"]["slot"] == 0
       assert parsed["block"]["slot"] == 1
       assert is_map(parsed)
@@ -199,10 +211,10 @@ defmodule ExWire.Eth2.ConsensusSpecTest do
       # Simulate test metadata structure
       metadata = %{
         "description" => "Test finality with basic chain",
-        "fork" => "phase0", 
+        "fork" => "phase0",
         "config" => "minimal"
       }
-      
+
       assert is_map(metadata)
       assert metadata["fork"] == "phase0"
     end
@@ -214,16 +226,18 @@ defmodule ExWire.Eth2.ConsensusSpecTest do
         %{result: :fail, duration: 20, test_case: "test2", error: "validation failed"},
         %{result: :skip, duration: 0, test_case: "test3", error: "not implemented"}
       ]
-      
+
       # Simulate aggregation
-      totals = Enum.reduce(sample_results, %{total: 0, passed: 0, failed: 0, skipped: 0}, fn result, acc ->
-        case result.result do
-          :pass -> %{acc | total: acc.total + 1, passed: acc.passed + 1}
-          :fail -> %{acc | total: acc.total + 1, failed: acc.failed + 1}
-          :skip -> %{acc | total: acc.total + 1, skipped: acc.skipped + 1}
-        end
-      end)
-      
+      totals =
+        Enum.reduce(sample_results, %{total: 0, passed: 0, failed: 0, skipped: 0}, fn result,
+                                                                                      acc ->
+          case result.result do
+            :pass -> %{acc | total: acc.total + 1, passed: acc.passed + 1}
+            :fail -> %{acc | total: acc.total + 1, failed: acc.failed + 1}
+            :skip -> %{acc | total: acc.total + 1, skipped: acc.skipped + 1}
+          end
+        end)
+
       assert totals.total == 3
       assert totals.passed == 1
       assert totals.failed == 1

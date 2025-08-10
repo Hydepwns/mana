@@ -1,12 +1,12 @@
 defmodule ExWire.Crypto.KZG do
   @moduledoc """
   KZG polynomial commitment scheme implementation for EIP-4844.
-  
+
   This module provides KZG cryptographic operations for blob transactions:
   - Computing KZG commitments from blob data
   - Generating KZG proofs for blob verification
   - Verifying KZG proofs individually and in batches
-  
+
   Uses Rust NIF with blst library for performance-critical operations.
   """
 
@@ -23,11 +23,16 @@ defmodule ExWire.Crypto.KZG do
   @versioned_hash_version_kzg 0x01
 
   # Type specifications
-  @type blob_data :: <<_::1048576>>  # 131,072 bytes = 1,048,576 bits
-  @type commitment :: <<_::384>>     # 48 bytes = 384 bits
-  @type proof :: <<_::384>>          # 48 bytes = 384 bits
-  @type field_element :: <<_::256>>  # 32 bytes = 256 bits
-  @type versioned_hash :: <<_::256>> # 32 bytes = 256 bits
+  # 131,072 bytes = 1,048,576 bits
+  @type blob_data :: <<_::1_048_576>>
+  # 48 bytes = 384 bits
+  @type commitment :: <<_::384>>
+  # 48 bytes = 384 bits
+  @type proof :: <<_::384>>
+  # 32 bytes = 256 bits
+  @type field_element :: <<_::256>>
+  # 32 bytes = 256 bits
+  @type versioned_hash :: <<_::256>>
 
   # Native functions (implemented in Rust)
 
@@ -66,7 +71,8 @@ defmodule ExWire.Crypto.KZG do
   Verify a KZG proof.
   """
   @spec verify_kzg_proof(commitment(), field_element(), field_element(), proof()) :: boolean()
-  def verify_kzg_proof(_commitment, _z_bytes, _y_bytes, _proof), do: :erlang.nif_error(:not_loaded)
+  def verify_kzg_proof(_commitment, _z_bytes, _y_bytes, _proof),
+    do: :erlang.nif_error(:not_loaded)
 
   @doc """
   Verify a blob KZG proof.
@@ -77,8 +83,10 @@ defmodule ExWire.Crypto.KZG do
   @doc """
   Verify multiple blob KZG proofs in batch.
   """
-  @spec verify_blob_kzg_proof_batch(list(blob_data()), list(commitment()), list(proof())) :: boolean()
-  def verify_blob_kzg_proof_batch(_blobs, _commitments, _proofs), do: :erlang.nif_error(:not_loaded)
+  @spec verify_blob_kzg_proof_batch(list(blob_data()), list(commitment()), list(proof())) ::
+          boolean()
+  def verify_blob_kzg_proof_batch(_blobs, _commitments, _proofs),
+    do: :erlang.nif_error(:not_loaded)
 
   # Elixir wrapper functions with validation
 
@@ -92,7 +100,7 @@ defmodule ExWire.Crypto.KZG do
     # For development/testing, we create minimal setup data
     g1_bytes = generate_minimal_g1_setup()
     g2_bytes = generate_minimal_g2_setup()
-    
+
     case load_trusted_setup_from_bytes(g1_bytes, g2_bytes) do
       :ok -> :ok
       error -> {:error, error}
@@ -116,10 +124,10 @@ defmodule ExWire.Crypto.KZG do
     cond do
       byte_size(blob) != @blob_size ->
         {:error, :invalid_blob_size}
-        
+
       not is_valid_blob_format?(blob) ->
         {:error, :invalid_blob_format}
-        
+
       true ->
         :ok
     end
@@ -152,8 +160,8 @@ defmodule ExWire.Crypto.KZG do
   @doc """
   High-level blob verification with full validation.
   """
-  @spec verify_blob_with_validation(blob_data(), commitment(), proof()) :: 
-    {:ok, boolean()} | {:error, term()}
+  @spec verify_blob_with_validation(blob_data(), commitment(), proof()) ::
+          {:ok, boolean()} | {:error, term()}
   def verify_blob_with_validation(blob, commitment, proof) do
     with :ok <- ensure_setup_loaded(),
          :ok <- validate_blob(blob),
@@ -168,7 +176,7 @@ defmodule ExWire.Crypto.KZG do
   High-level batch verification with full validation.
   """
   @spec verify_batch_with_validation(list(blob_data()), list(commitment()), list(proof())) ::
-    {:ok, boolean()} | {:error, term()}
+          {:ok, boolean()} | {:error, term()}
   def verify_batch_with_validation(blobs, commitments, proofs) do
     with :ok <- ensure_setup_loaded(),
          :ok <- validate_batch_inputs(blobs, commitments, proofs) do
@@ -180,8 +188,8 @@ defmodule ExWire.Crypto.KZG do
   @doc """
   Generate KZG commitment and proof for blob data.
   """
-  @spec generate_commitment_and_proof(blob_data()) :: 
-    {:ok, {commitment(), proof()}} | {:error, term()}
+  @spec generate_commitment_and_proof(blob_data()) ::
+          {:ok, {commitment(), proof()}} | {:error, term()}
   def generate_commitment_and_proof(blob) do
     with :ok <- ensure_setup_loaded(),
          :ok <- validate_blob(blob) do
@@ -205,13 +213,13 @@ defmodule ExWire.Crypto.KZG do
     cond do
       length(blobs) != length(commitments) ->
         {:error, :mismatched_batch_lengths}
-        
+
       length(commitments) != length(proofs) ->
         {:error, :mismatched_batch_lengths}
-        
+
       length(blobs) == 0 ->
         {:error, :empty_batch}
-        
+
       true ->
         # Validate each element
         with :ok <- validate_all_blobs(blobs),
@@ -257,10 +265,11 @@ defmodule ExWire.Crypto.KZG do
     # BLS12-381 field modulus (simplified check)
     bytes_binary = :binary.list_to_bin(bytes)
     <<first_byte, _rest::binary>> = bytes_binary
-    
+
     # Simple check: first byte shouldn't be too large (full check is more complex)
     first_byte < 0x74
   end
+
   defp is_valid_field_element_bytes?(_), do: false
 
   # Testing/development functions (would be removed in production)
@@ -268,28 +277,32 @@ defmodule ExWire.Crypto.KZG do
   defp generate_minimal_g1_setup() do
     # Generate minimal G1 setup for testing (not secure!)
     # Each point is 48 bytes compressed
-    setup_size = 4096  # Minimal setup for 4096 field elements
-    g1_setup = for i <- 0..(setup_size - 1) do
-      # Generate deterministic but fake G1 points
-      point_bytes = :crypto.hash(:sha256, <<i::32>>) 
-      padding = :crypto.hash(:sha256, <<i::32, 1>>)
-      <<point_bytes::binary, :binary.part(padding, 0, 16)::binary>>
-    end
-    
+    # Minimal setup for 4096 field elements
+    setup_size = 4096
+
+    g1_setup =
+      for i <- 0..(setup_size - 1) do
+        # Generate deterministic but fake G1 points
+        point_bytes = :crypto.hash(:sha256, <<i::32>>)
+        padding = :crypto.hash(:sha256, <<i::32, 1>>)
+        <<point_bytes::binary, :binary.part(padding, 0, 16)::binary>>
+      end
+
     :binary.list_to_bin(g1_setup)
   end
 
   defp generate_minimal_g2_setup() do
     # Generate minimal G2 setup for testing (not secure!)
     # Each G2 point is 96 bytes compressed, but we only need a few for verification
-    g2_setup = for i <- 0..1 do
-      # Generate deterministic but fake G2 points
-      point_bytes_1 = :crypto.hash(:sha256, <<i::32, "g2_1">>)
-      point_bytes_2 = :crypto.hash(:sha256, <<i::32, "g2_2">>)
-      padding = :crypto.hash(:sha256, <<i::32, "g2_pad">>)
-      <<point_bytes_1::binary, point_bytes_2::binary, :binary.part(padding, 0, 32)::binary>>
-    end
-    
+    g2_setup =
+      for i <- 0..1 do
+        # Generate deterministic but fake G2 points
+        point_bytes_1 = :crypto.hash(:sha256, <<i::32, "g2_1">>)
+        point_bytes_2 = :crypto.hash(:sha256, <<i::32, "g2_2">>)
+        padding = :crypto.hash(:sha256, <<i::32, "g2_pad">>)
+        <<point_bytes_1::binary, point_bytes_2::binary, :binary.part(padding, 0, 32)::binary>>
+      end
+
     :binary.list_to_bin(g2_setup)
   end
 
@@ -303,7 +316,7 @@ defmodule ExWire.Crypto.KZG do
 
   @doc """
   Get the commitment size in bytes.
-  """  
+  """
   @spec commitment_size() :: non_neg_integer()
   def commitment_size(), do: @commitment_size
 
@@ -318,5 +331,4 @@ defmodule ExWire.Crypto.KZG do
   """
   @spec field_elements_per_blob() :: non_neg_integer()
   def field_elements_per_blob(), do: @field_elements_per_blob
-
 end

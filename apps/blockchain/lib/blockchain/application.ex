@@ -27,28 +27,30 @@ defmodule Blockchain.Application do
 
     # Get monitoring configuration from application environment
     monitoring_config = Application.get_env(:blockchain, :monitoring, [])
-    
+
     # Get compliance configuration
     compliance_config = Application.get_env(:blockchain, :compliance, %{enabled: false})
-    
+
     # Define workers and child supervisors to be supervised
     children = [
       # Start the transaction pool
       {Blockchain.TransactionPool, []},
-      
+
       # Start monitoring and observability stack
       {Blockchain.Monitoring.MonitoringSupervisor, monitoring_config},
-      
+
       # Start compliance system (if enabled)
       {Blockchain.Compliance.Supervisor, []}
-      
+
       # Starts a worker by calling: Blockchain.Worker.start_link(arg1, arg2, arg3)
       # worker(Blockchain.Worker, [arg1, arg2, arg3]),
     ]
-    
+
     # Log compliance status
     if compliance_config.enabled do
-      Logger.info("Compliance system enabled with standards: #{inspect(compliance_config.enabled_standards || [:sox, :pci_dss, :fips_140_2])}")
+      Logger.info(
+        "Compliance system enabled with standards: #{inspect(compliance_config.enabled_standards || [:sox, :pci_dss, :fips_140_2])}"
+      )
     else
       Logger.info("Compliance system disabled")
     end

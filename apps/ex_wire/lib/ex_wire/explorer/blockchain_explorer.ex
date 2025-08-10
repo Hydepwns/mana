@@ -1,7 +1,7 @@
 defmodule ExWire.Explorer.BlockchainExplorer do
   @moduledoc """
   Built-in blockchain explorer for Mana-Ethereum with advanced features.
-  
+
   Provides a comprehensive web-based interface for exploring the blockchain with:
   - Real-time block and transaction monitoring
   - Multi-datacenter consensus visualization  
@@ -10,9 +10,9 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   - Performance metrics and analytics
   - Interactive transaction debugging
   - Smart contract interaction interface
-  
+
   ## Unique Features
-  
+
   Unlike traditional blockchain explorers, this explorer showcases Mana's
   revolutionary capabilities:
   - **Multi-datacenter view**: See the same blockchain from multiple regions
@@ -20,19 +20,19 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   - **Consensus-free consensus**: No traditional consensus algorithm overhead
   - **Partition tolerance**: Continue operating during network splits
   - **Geographic routing**: See which datacenter served each request
-  
+
   ## Usage
-  
+
       # Start built-in explorer
       {:ok, explorer} = BlockchainExplorer.start_link(port: 4000)
       
       # Open in browser
       # http://localhost:4000
   """
-  
+
   use GenServer
   require Logger
-  
+
   alias ExWire.Explorer.{
     WebInterface,
     APIServer,
@@ -40,19 +40,20 @@ defmodule ExWire.Explorer.BlockchainExplorer do
     CRDTVisualizer,
     PerformanceMonitor
   }
+
   alias ExWire.Consensus.CRDTConsensusManager
   alias Blockchain.{Block, Transaction}
-  
+
   @type explorer_config :: %{
-    port: non_neg_integer(),
-    interface: String.t(),
-    real_time_updates: boolean(),
-    crdt_visualization: boolean(),
-    performance_monitoring: boolean(),
-    multi_datacenter_view: boolean(),
-    authentication_enabled: boolean()
-  }
-  
+          port: non_neg_integer(),
+          interface: String.t(),
+          real_time_updates: boolean(),
+          crdt_visualization: boolean(),
+          performance_monitoring: boolean(),
+          multi_datacenter_view: boolean(),
+          authentication_enabled: boolean()
+        }
+
   defstruct [
     :config,
     :web_server,
@@ -63,7 +64,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
     :subscription_manager,
     :cache_manager
   ]
-  
+
   @default_config %{
     port: 4000,
     interface: "0.0.0.0",
@@ -73,16 +74,16 @@ defmodule ExWire.Explorer.BlockchainExplorer do
     multi_datacenter_view: true,
     authentication_enabled: false
   }
-  
+
   @name __MODULE__
-  
+
   # Public API
-  
+
   @spec start_link(Keyword.t()) :: GenServer.on_start()
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: @name)
   end
-  
+
   @doc """
   Get the current configuration of the explorer.
   """
@@ -90,7 +91,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   def get_config() do
     GenServer.call(@name, :get_config)
   end
-  
+
   @doc """
   Update explorer configuration.
   """
@@ -98,7 +99,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   def update_config(updates) do
     GenServer.cast(@name, {:update_config, updates})
   end
-  
+
   @doc """
   Get latest blocks with enhanced information.
   """
@@ -106,7 +107,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   def get_latest_blocks(count \\ 10) do
     GenServer.call(@name, {:get_latest_blocks, count})
   end
-  
+
   @doc """
   Get transaction details with CRDT operation history.
   """
@@ -114,7 +115,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   def get_transaction_details(tx_hash) do
     GenServer.call(@name, {:get_transaction_details, tx_hash})
   end
-  
+
   @doc """
   Get account information with multi-datacenter view.
   """
@@ -122,7 +123,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   def get_account_info(address) do
     GenServer.call(@name, {:get_account_info, address})
   end
-  
+
   @doc """
   Get CRDT consensus metrics and visualization data.
   """
@@ -130,7 +131,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   def get_consensus_visualization() do
     GenServer.call(@name, :get_consensus_visualization)
   end
-  
+
   @doc """
   Get performance metrics for dashboard.
   """
@@ -138,7 +139,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   def get_performance_metrics() do
     GenServer.call(@name, :get_performance_metrics)
   end
-  
+
   @doc """
   Search blockchain data with advanced filters.
   """
@@ -146,22 +147,28 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   def search(query, filters \\ []) do
     GenServer.call(@name, {:search, query, filters})
   end
-  
+
   # GenServer callbacks
-  
+
   @impl GenServer
   def init(opts) do
     config = Map.merge(@default_config, Map.new(opts))
-    
+
     Logger.info("[BlockchainExplorer] Starting on port #{config.port}")
-    
+
     # Start supporting services
     {:ok, web_server} = start_web_server(config)
     {:ok, api_server} = start_api_server(config)
-    {:ok, realtime_server} = if config.real_time_updates, do: start_realtime_server(config), else: {:ok, nil}
-    {:ok, crdt_visualizer} = if config.crdt_visualization, do: start_crdt_visualizer(config), else: {:ok, nil}
-    {:ok, performance_monitor} = if config.performance_monitoring, do: start_performance_monitor(config), else: {:ok, nil}
-    
+
+    {:ok, realtime_server} =
+      if config.real_time_updates, do: start_realtime_server(config), else: {:ok, nil}
+
+    {:ok, crdt_visualizer} =
+      if config.crdt_visualization, do: start_crdt_visualizer(config), else: {:ok, nil}
+
+    {:ok, performance_monitor} =
+      if config.performance_monitoring, do: start_performance_monitor(config), else: {:ok, nil}
+
     state = %__MODULE__{
       config: config,
       web_server: web_server,
@@ -172,45 +179,47 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       subscription_manager: nil,
       cache_manager: nil
     }
-    
-    Logger.info("[BlockchainExplorer] Started successfully on http://#{config.interface}:#{config.port}")
-    
+
+    Logger.info(
+      "[BlockchainExplorer] Started successfully on http://#{config.interface}:#{config.port}"
+    )
+
     {:ok, state}
   end
-  
+
   @impl GenServer
   def handle_call(:get_config, _from, state) do
     {:reply, state.config, state}
   end
-  
+
   @impl GenServer
   def handle_call({:get_latest_blocks, count}, _from, state) do
     # Generate sample block data (in real implementation, would fetch from blockchain)
     blocks = generate_sample_blocks(count)
     {:reply, blocks, state}
   end
-  
+
   @impl GenServer
   def handle_call({:get_transaction_details, tx_hash}, _from, state) do
     # Generate sample transaction with CRDT operations
     transaction = generate_sample_transaction(tx_hash)
     {:reply, transaction, state}
   end
-  
+
   @impl GenServer
   def handle_call({:get_account_info, address}, _from, state) do
     # Generate sample account info with multi-datacenter data
     account_info = generate_sample_account(address)
     {:reply, account_info, state}
   end
-  
+
   @impl GenServer
   def handle_call(:get_consensus_visualization, _from, state) do
     try do
       # Get real consensus data
       consensus_status = CRDTConsensusManager.get_consensus_status()
       consensus_metrics = CRDTConsensusManager.get_consensus_metrics()
-      
+
       visualization_data = %{
         consensus_status: consensus_status,
         consensus_metrics: consensus_metrics,
@@ -218,7 +227,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
         datacenter_topology: generate_datacenter_topology(),
         real_time_updates: state.config.real_time_updates
       }
-      
+
       {:reply, visualization_data, state}
     rescue
       e ->
@@ -226,7 +235,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
         {:reply, %{error: "Consensus data unavailable"}, state}
     end
   end
-  
+
   @impl GenServer
   def handle_call(:get_performance_metrics, _from, state) do
     metrics = %{
@@ -244,29 +253,29 @@ defmodule ExWire.Explorer.BlockchainExplorer do
         "eu-west-1": 120
       }
     }
-    
+
     {:reply, metrics, state}
   end
-  
+
   @impl GenServer
   def handle_call({:search, query, filters}, _from, state) do
     # Implement blockchain search with filters
     results = perform_search(query, filters)
     {:reply, results, state}
   end
-  
+
   @impl GenServer
   def handle_cast({:update_config, updates}, state) do
     new_config = Map.merge(state.config, updates)
     new_state = %{state | config: new_config}
-    
+
     Logger.info("[BlockchainExplorer] Configuration updated: #{inspect(updates)}")
-    
+
     {:noreply, new_state}
   end
-  
+
   # Private functions
-  
+
   defp start_web_server(config) do
     # Start web server (Cowboy/Plug-based)
     web_server_config = [
@@ -275,11 +284,11 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       static_files: true,
       compression: true
     ]
-    
+
     # Placeholder - would start actual web server
     Task.start_link(fn -> web_server_loop(web_server_config) end)
   end
-  
+
   defp start_api_server(config) do
     # Start REST API server
     api_config = [
@@ -287,72 +296,73 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       cors_enabled: true,
       rate_limiting: true
     ]
-    
+
     Task.start_link(fn -> api_server_loop(api_config) end)
   end
-  
+
   defp start_realtime_server(config) do
     # Start WebSocket server for real-time updates
     realtime_config = [
       port: config.port + 2,
       heartbeat_interval: 30_000
     ]
-    
+
     Task.start_link(fn -> realtime_server_loop(realtime_config) end)
   end
-  
+
   defp start_crdt_visualizer(config) do
     # Start CRDT visualization engine
     Task.start_link(fn -> crdt_visualizer_loop(config) end)
   end
-  
+
   defp start_performance_monitor(config) do
     # Start performance monitoring
     Task.start_link(fn -> performance_monitor_loop(config) end)
   end
-  
+
   defp web_server_loop(config) do
     Logger.debug("[BlockchainExplorer] Web server running on port #{config[:port]}")
     # Placeholder for actual web server implementation
     Process.sleep(60_000)
     web_server_loop(config)
   end
-  
+
   defp api_server_loop(config) do
     Logger.debug("[BlockchainExplorer] API server running on port #{config[:port]}")
     # Placeholder for actual API server implementation
     Process.sleep(60_000)
     api_server_loop(config)
   end
-  
+
   defp realtime_server_loop(config) do
     Logger.debug("[BlockchainExplorer] Realtime server running on port #{config[:port]}")
     # Placeholder for WebSocket server implementation
     Process.sleep(60_000)
     realtime_server_loop(config)
   end
-  
+
   defp crdt_visualizer_loop(config) do
     Logger.debug("[BlockchainExplorer] CRDT visualizer active")
     # Placeholder for CRDT visualization engine
     Process.sleep(30_000)
     crdt_visualizer_loop(config)
   end
-  
+
   defp performance_monitor_loop(config) do
     Logger.debug("[BlockchainExplorer] Performance monitor active")
     # Placeholder for performance monitoring
     Process.sleep(30_000)
     performance_monitor_loop(config)
   end
-  
+
   defp generate_sample_blocks(count) do
     current_time = System.system_time(:second)
-    
+
     for i <- 0..(count - 1) do
       block_number = 18_500_000 - i
-      block_time = current_time - (i * 12)  # 12 second blocks
-      
+      # 12 second blocks
+      block_time = current_time - i * 12
+
       %{
         number: block_number,
         hash: "0x" <> (:crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower)),
@@ -373,7 +383,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       }
     end
   end
-  
+
   defp generate_sample_transaction(tx_hash) do
     %{
       hash: tx_hash,
@@ -415,7 +425,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       }
     }
   end
-  
+
   defp generate_sample_account(address) do
     %{
       address: address,
@@ -442,7 +452,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       }
     }
   end
-  
+
   defp generate_execution_trace() do
     [
       %{
@@ -457,13 +467,14 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       }
     ]
   end
-  
+
   defp generate_crdt_operation_history() do
     current_time = System.system_time(:millisecond)
-    
+
     for i <- 0..49 do
-      timestamp = current_time - (i * 1000)  # 1 second intervals
-      
+      # 1 second intervals
+      timestamp = current_time - i * 1000
+
       %{
         timestamp: timestamp,
         operation_type: Enum.random(["AccountBalance", "TransactionPool", "StateTree"]),
@@ -475,7 +486,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       }
     end
   end
-  
+
   defp generate_datacenter_topology() do
     %{
       datacenters: [
@@ -526,7 +537,7 @@ defmodule ExWire.Explorer.BlockchainExplorer do
           timestamp: System.system_time(:millisecond) - 95
         },
         %{
-          from: "us-east-1", 
+          from: "us-east-1",
           to: "eu-west-1",
           operation: "crdt_sync",
           timestamp: System.system_time(:millisecond) - 90
@@ -534,24 +545,24 @@ defmodule ExWire.Explorer.BlockchainExplorer do
       ]
     }
   end
-  
+
   defp perform_search(query, filters) do
     # Implement search logic based on query and filters
     cond do
       String.length(query) == 66 and String.starts_with?(query, "0x") ->
         # Transaction hash
         [%{type: :transaction, hash: query, found: true}]
-      
+
       String.length(query) == 42 and String.starts_with?(query, "0x") ->
         # Address
         [%{type: :address, address: query, found: true}]
-      
+
       true ->
         case Integer.parse(query) do
           {number, ""} ->
             # Block number
             [%{type: :block, number: number, found: true}]
-          
+
           :error ->
             # Text search
             [%{type: :search_results, query: query, results: []}]

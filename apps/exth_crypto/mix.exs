@@ -33,7 +33,8 @@ defmodule ExthCrypto.Mixfile do
       {:libsecp256k1, "~> 0.1.10"},
       # {:keccakf1600, "~> 2.1", hex: :keccakf1600_orig},  # Temporarily disabled due to Erlang 27 compatibility issues
       {:binary, "~> 0.0.4"},
-      {:jason, "~> 1.4"}  # For HSM configuration JSON handling
+      # For HSM configuration JSON handling
+      {:jason, "~> 1.4"}
     ]
   end
 end

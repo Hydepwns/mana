@@ -1,6 +1,6 @@
 # Mana-Ethereum
 
-[![GitHub Actions](https://github.com/mana-ethereum/mana/workflows/CI/badge.svg)](https://github.com/mana-ethereum/mana/actions) [![CodeQL](https://github.com/mana-ethereum/mana/workflows/CodeQL/badge.svg)](https://github.com/mana-ethereum/mana/security/code-scanning)
+[![GitHub Actions](https://github.com/Hydepwns/mana/workflows/CI/badge.svg)](https://github.com/Hydepwns/mana/actions) [![CodeQL](https://github.com/Hydepwns/mana/workflows/CodeQL/badge.svg)](https://github.com/Hydepwns/mana/security/code-scanning)
 
 Distributed Ethereum client with multi-datacenter operation and universal Layer 2 support.
 
@@ -35,7 +35,7 @@ Elixir umbrella project with 8 applications:
 ## Installation
 
 ```bash
-git clone --recurse-submodules https://github.com/mana-ethereum/mana.git
+git clone --recurse-submodules https://github.com/Hydepwns/mana.git
 cd mana
 mix deps.get
 mix compile
