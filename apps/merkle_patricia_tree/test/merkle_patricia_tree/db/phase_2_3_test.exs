@@ -197,6 +197,8 @@ defmodule MerklePatriciaTree.DB.Phase23Test do
     end
   end
 
+  @describetag :skip
+  @describetag skip: "LoadStressTest module is in bench/ directory, not compiled with tests"
   describe "LoadStressTest" do
     test "generates realistic Ethereum state data" do
       state_data = LoadStressTest.generate_ethereum_state_data(100)

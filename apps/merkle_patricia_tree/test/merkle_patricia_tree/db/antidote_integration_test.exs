@@ -10,7 +10,7 @@ defmodule MerklePatriciaTree.DB.AntidoteIntegrationTest do
 
   alias MerklePatriciaTree.DB.Antidote
   alias MerklePatriciaTree.DB.AntidoteConnectionPool
-  alias MerklePatriciaTree.DB.AntiodoteCRDTs.{AccountBalance, TransactionPool, StateTree}
+  alias MerklePatriciaTree.DB.AntidoteCRDTs.{AccountBalance, TransactionPool, StateTree}
 
   @moduletag :antidote
   @moduletag :integration
