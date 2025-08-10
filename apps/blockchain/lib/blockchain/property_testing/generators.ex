@@ -6,6 +6,7 @@ defmodule Blockchain.PropertyTesting.Generators do
   data structures used in property-based tests.
   """
 
+  use ExUnitProperties
   import StreamData
 
   @doc """
