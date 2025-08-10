@@ -69,7 +69,7 @@ defmodule ExthCrypto.MAC do
       ...> |> ExthCrypto.MAC.update("data")
       ...> |> ExthCrypto.MAC.final()
       ...> |> ExthCrypto.Math.bin_to_hex
-      "3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7"
+      "8f54f1c2d0eb5771cd5bf67a6689fcd6eed9444d91a39e5ef32a9b4ae5ca14ff"
 
       iex> ExthCrypto.MAC.init(:fake, ["jedi"])
       ...> |> ExthCrypto.MAC.update(" ")
