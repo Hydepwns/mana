@@ -388,7 +388,7 @@ defmodule Blockchain.Compliance.Alerting do
       Enum.reduce(state.violation_rules, state, fn {rule_id, rule}, acc_state ->
         case execute_violation_check(rule) do
           {:violation, violation_details} ->
-            Logger.warn("Compliance violation detected: #{rule_id}")
+            Logger.warning("Compliance violation detected: #{rule_id}")
 
             alert_params = %{
               category: rule.category,
@@ -639,7 +639,7 @@ defmodule Blockchain.Compliance.Alerting do
 
     # Log notification results
     if Enum.any?(notification_results, fn {_, result} -> match?({:error, _}, result) end) do
-      Logger.warn(
+      Logger.warning(
         "Some notifications failed for alert #{alert.id}: #{inspect(notification_results)}"
       )
     end
@@ -808,7 +808,7 @@ defmodule Blockchain.Compliance.Alerting do
   defp send_regulatory_notification(alert, config) do
     # Regulatory notification for specific violations (e.g., GDPR 72-hour breach notification)
     if requires_regulatory_notification?(alert) do
-      Logger.warn("Regulatory notification required for alert #{alert.id}")
+      Logger.warning("Regulatory notification required for alert #{alert.id}")
 
       # In production, would format and submit to regulatory systems
       :ok

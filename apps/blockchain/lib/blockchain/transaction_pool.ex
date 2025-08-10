@@ -155,7 +155,7 @@ defmodule Blockchain.TransactionPool do
 
       {:error, reason} = error ->
         new_state = update_in(state, [:stats, :total_rejected], &(&1 + 1))
-        Logger.warn("Rejected transaction: #{inspect(reason)}")
+        Logger.warning("Rejected transaction: #{inspect(reason)}")
         {:reply, error, new_state}
     end
   end

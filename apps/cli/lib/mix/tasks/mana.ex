@@ -38,7 +38,7 @@ defmodule Mix.Tasks.Mana do
          warp: warp,
          debug: debug
        }} ->
-        :ok = Logger.warn("Starting mana chain #{Atom.to_string(chain_name)}...")
+        :ok = Logger.warning("Starting mana chain #{Atom.to_string(chain_name)}...")
 
         configure_debug(debug)
 

@@ -159,7 +159,7 @@ defmodule EthCommonTest.Helpers do
       # If we have any failures, fail
       fail_fun.(result_message)
     else
-      :ok = Logger.warn(result_message)
+      :ok = Logger.warning(result_message)
     end
   end
 

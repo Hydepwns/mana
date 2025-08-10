@@ -184,7 +184,7 @@ defmodule ExWire.Streaming.WebSocketStreamer do
   def handle_cast({:client_connected, client_id, socket, metadata}, state) do
     if map_size(state.active_connections) >= @max_connections do
       # Close connection if at capacity
-      Logger.warn("[WebSocketStreamer] Max connections reached, rejecting client #{client_id}")
+      Logger.warning("[WebSocketStreamer] Max connections reached, rejecting client #{client_id}")
       close_client_connection(socket)
       {:noreply, state}
     else
@@ -213,7 +213,7 @@ defmodule ExWire.Streaming.WebSocketStreamer do
   def handle_cast({:client_subscription, client_id, event_types, filters}, state) do
     case Map.get(state.active_connections, client_id) do
       nil ->
-        Logger.warn("[WebSocketStreamer] Subscription from unknown client #{client_id}")
+        Logger.warning("[WebSocketStreamer] Subscription from unknown client #{client_id}")
         {:noreply, state}
 
       client_connection ->
@@ -223,7 +223,7 @@ defmodule ExWire.Streaming.WebSocketStreamer do
         if length(valid_events) != length(event_types) do
           invalid_events = event_types -- valid_events
 
-          Logger.warn(
+          Logger.warning(
             "[WebSocketStreamer] Invalid event types from client #{client_id}: #{inspect(invalid_events)}"
           )
         end
@@ -423,7 +423,7 @@ defmodule ExWire.Streaming.WebSocketStreamer do
         Enum.each(filtered_subscribers, fn client_id ->
           case Map.get(state.active_connections, client_id) do
             nil ->
-              Logger.warn(
+              Logger.warning(
                 "[WebSocketStreamer] Subscriber #{client_id} not found in active connections"
               )
 

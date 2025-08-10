@@ -603,7 +603,7 @@ defmodule ExWire.Sync.FastSync do
           |> put_in([:request_retries, request_ref], retries + 1)
         else
           # Give up on this request
-          Logger.warn("Request timeout after 3 retries: #{inspect(type)}")
+          Logger.warning("Request timeout after 3 retries: #{inspect(type)}")
 
           state
           |> update_in([:active_requests], &Map.delete(&1, request_ref))

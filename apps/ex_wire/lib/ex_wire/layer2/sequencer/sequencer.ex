@@ -177,7 +177,7 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
         {:reply, {:ok, tx_hash}, %{state | mempool: new_mempool}}
 
       {:error, reason} = error ->
-        Logger.warn("Transaction rejected: #{inspect(reason)}")
+        Logger.warning("Transaction rejected: #{inspect(reason)}")
         {:reply, error, state}
     end
   end
@@ -248,7 +248,7 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
 
   @impl true
   def handle_call({:handle_reorg, old_block, new_block}, _from, state) do
-    Logger.warn("Handling reorg from block #{old_block} to #{new_block}")
+    Logger.warning("Handling reorg from block #{old_block} to #{new_block}")
 
     # Re-add transactions from invalidated batches to mempool
     # This would require tracking which transactions were in which blocks

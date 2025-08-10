@@ -302,7 +302,7 @@ defmodule Blockchain.State.VerkleAdapter do
   def generate_witness(%{mode: :mpt}, _addresses) do
     # MPT witness generation would be more complex
     # For now, return a placeholder
-    Logger.warn("MPT witness generation not yet implemented")
+    Logger.warning("MPT witness generation not yet implemented")
     # Return a map instead of Witness struct for MPT
     %{data: <<>>, size: 0, proof: <<>>}
   end
@@ -345,7 +345,7 @@ defmodule Blockchain.State.VerkleAdapter do
 
       %{state | mode: :verkle, verkle_tree: verkle_tree, migration: nil, mpt: nil}
     else
-      Logger.warn("Migration not complete: #{Migration.migration_progress(migration)}%")
+      Logger.warning("Migration not complete: #{Migration.migration_progress(migration)}%")
       state
     end
   end

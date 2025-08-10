@@ -1,0 +1,594 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>cover/Elixir.ExthCrypto.Hash.Keccak.html</title>
+<style>body {
+  font: 14px/1.6 "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #000;
+  border-top: 2px solid #ddd;
+  background-color: #fff;
+
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  width: 100%;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 0;
+  font-weight: 100;
+  font-size: 1.1em;
+  letter-spacing: 1px;
+}
+
+h1 code {
+  font-size: 0.96em;
+}
+
+code {
+  font: 12px monospace;
+}
+
+footer {
+  background: #eee;
+  width: 100%;
+  padding: 10px 0;
+  text-align: right;
+  border-top: 1px solid #ddd;
+  display: flex;
+  flex: 1;
+  order: 2;
+  justify-content: center;
+}
+
+table {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+  border: 1px solid #cbcbcb;
+  color: #000;
+  -webkit-border-radius: 3px;
+  -moz-border-radius: 3px;
+}
+table thead {
+  display: none;
+}
+table td.line,
+table td.line a,
+table td.hits {
+  width: 20px;
+  background: #eaeaea;
+  text-align: center;
+  text-decoration: none;
+  font-size: 11px;
+  padding: 0 10px;
+  color: #949494;
+}
+table td.hits {
+  width: 10px;
+  text-align: right;
+  padding: 2px 5px;
+  color: rgba(0, 0, 0, 0.6);
+  background-color: #f0f0f0;
+}
+tr.miss td.line,
+tr.miss td.line a,
+tr.miss td.hits {
+  background-color: #ffdce0;
+  border-color: #fdaeb7;
+}
+tr.miss td {
+  background-color: #ffeef0;
+}
+tr.hit td.line,
+tr.hit td.line a,
+tr.hit td.hits {
+  background-color: #cdffd8;
+  border-color: #bef5cb;
+}
+tr.hit td {
+  background-color: #e6ffed;
+}
+td.source {
+  padding-left: 15px;
+  line-height: 15px;
+  white-space: pre;
+  font: 12px monospace;
+}
+</style>
+</head>
+<body>
+<h1><code>cover/Elixir.ExthCrypto.Hash.Keccak.html</code></h1>
+<footer><p>File generated from <code>/Users/droo/Documents/CODE/mana/apps/exth_crypto/lib/exth_crypto/hash/keccak.ex</code> by <a href="http://erlang.org/doc/man/cover.html">cover</a> at 2025-08-11 at 00:11:56</p></footer>
+<table>
+<tbody>
+<tr>
+<td class="line" id="L1"><a href="#L1">1</a></td>
+<td class="hits"></td>
+<td class="source"><code>defmodule ExthCrypto.Hash.Keccak do</code></td>
+</tr>
+<tr>
+<td class="line" id="L2"><a href="#L2">2</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @moduledoc """</code></td>
+</tr>
+<tr>
+<td class="line" id="L3"><a href="#L3">3</a></td>
+<td class="hits"></td>
+<td class="source"><code>  Simple wrapper for Keccak function for Ethereum.</code></td>
+</tr>
+<tr>
+<td class="line" id="L4"><a href="#L4">4</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L5"><a href="#L5">5</a></td>
+<td class="hits"></td>
+<td class="source"><code>  Note: This module defines KECCAK as defined by Ethereum, which differs slightly</code></td>
+</tr>
+<tr>
+<td class="line" id="L6"><a href="#L6">6</a></td>
+<td class="hits"></td>
+<td class="source"><code>  than that assigned as the new SHA-3 variant. For SHA-3, a few constants have</code></td>
+</tr>
+<tr>
+<td class="line" id="L7"><a href="#L7">7</a></td>
+<td class="hits"></td>
+<td class="source"><code>  been changed prior to adoption by NIST, but after adoption by Ethereum.</code></td>
+</tr>
+<tr>
+<td class="line" id="L8"><a href="#L8">8</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L9"><a href="#L9">9</a></td>
+<td class="hits"></td>
+<td class="source"><code>  Using ExSha3 pure Elixir implementation for Erlang 27 compatibility.</code></td>
+</tr>
+<tr>
+<td class="line" id="L10"><a href="#L10">10</a></td>
+<td class="hits"></td>
+<td class="source"><code>  This provides proper Keccak-256/512 hashing without native dependencies.</code></td>
+</tr>
+<tr>
+<td class="line" id="L11"><a href="#L11">11</a></td>
+<td class="hits"></td>
+<td class="source"><code>  """</code></td>
+</tr>
+<tr>
+<td class="line" id="L12"><a href="#L12">12</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L13"><a href="#L13">13</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @type keccak_hash :: ExthCrypto.Hash.hash()</code></td>
+</tr>
+<tr>
+<td class="line" id="L14"><a href="#L14">14</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @type keccak_mac :: {atom(), binary()}</code></td>
+</tr>
+<tr>
+<td class="line" id="L15"><a href="#L15">15</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L16"><a href="#L16">16</a></td>
+<td class="hits"></td>
+<td class="source"><code>  # Use keccak_ex pure Elixir implementation</code></td>
+</tr>
+<tr>
+<td class="line" id="L17"><a href="#L17">17</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L18"><a href="#L18">18</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @doc """</code></td>
+</tr>
+<tr>
+<td class="line" id="L19"><a href="#L19">19</a></td>
+<td class="hits"></td>
+<td class="source"><code>  Returns the keccak sha256 of a given input.</code></td>
+</tr>
+<tr>
+<td class="line" id="L20"><a href="#L20">20</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L21"><a href="#L21">21</a></td>
+<td class="hits"></td>
+<td class="source"><code>  ## Examples</code></td>
+</tr>
+<tr>
+<td class="line" id="L22"><a href="#L22">22</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L23"><a href="#L23">23</a></td>
+<td class="hits"></td>
+<td class="source"><code>      iex&gt; ExthCrypto.Hash.Keccak.kec("hello world")</code></td>
+</tr>
+<tr>
+<td class="line" id="L24"><a href="#L24">24</a></td>
+<td class="hits"></td>
+<td class="source"><code>      &lt;&lt;71, 23, 50, 133, 168, 215, 52, 30, 94, 151, 47, 198, 119, 40, 99, 132, 248, 2,</code></td>
+</tr>
+<tr>
+<td class="line" id="L25"><a href="#L25">25</a></td>
+<td class="hits"></td>
+<td class="source"><code>        248, 239, 66, 165, 236, 95, 3, 187, 250, 37, 76, 176, 31, 173&gt;&gt;</code></td>
+</tr>
+<tr>
+<td class="line" id="L26"><a href="#L26">26</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L27"><a href="#L27">27</a></td>
+<td class="hits"></td>
+<td class="source"><code>      iex&gt; ExthCrypto.Hash.Keccak.kec(&lt;&lt;0x01, 0x02, 0x03&gt;&gt;)</code></td>
+</tr>
+<tr>
+<td class="line" id="L28"><a href="#L28">28</a></td>
+<td class="hits"></td>
+<td class="source"><code>      &lt;&lt;241, 136, 94, 218, 84, 183, 160, 83, 49, 140, 212, 30, 32, 147, 34, 13, 171, 21,</code></td>
+</tr>
+<tr>
+<td class="line" id="L29"><a href="#L29">29</a></td>
+<td class="hits"></td>
+<td class="source"><code>        214, 83, 129, 177, 21, 122, 54, 51, 168, 59, 253, 92, 146, 57&gt;&gt;</code></td>
+</tr>
+<tr>
+<td class="line" id="L30"><a href="#L30">30</a></td>
+<td class="hits"></td>
+<td class="source"><code>  """</code></td>
+</tr>
+<tr>
+<td class="line" id="L31"><a href="#L31">31</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @spec kec(binary()) :: keccak_hash</code></td>
+</tr>
+<tr>
+<td class="line" id="L32"><a href="#L32">32</a></td>
+<td class="hits"></td>
+<td class="source"><code>  def kec(data) do</code></td>
+</tr>
+<tr class="hit">
+<td class="line" id="L33"><a href="#L33">33</a></td>
+<td class="hits">923</td>
+<td class="source"><code>    ExSha3.keccak_256(data)</code></td>
+</tr>
+<tr>
+<td class="line" id="L34"><a href="#L34">34</a></td>
+<td class="hits"></td>
+<td class="source"><code>  end</code></td>
+</tr>
+<tr>
+<td class="line" id="L35"><a href="#L35">35</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L36"><a href="#L36">36</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @doc """</code></td>
+</tr>
+<tr>
+<td class="line" id="L37"><a href="#L37">37</a></td>
+<td class="hits"></td>
+<td class="source"><code>  Returns the keccak sha512 of a given input.</code></td>
+</tr>
+<tr>
+<td class="line" id="L38"><a href="#L38">38</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L39"><a href="#L39">39</a></td>
+<td class="hits"></td>
+<td class="source"><code>  ## Examples</code></td>
+</tr>
+<tr>
+<td class="line" id="L40"><a href="#L40">40</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L41"><a href="#L41">41</a></td>
+<td class="hits"></td>
+<td class="source"><code>      iex&gt; ExthCrypto.Hash.Keccak.kec512("hello world")</code></td>
+</tr>
+<tr>
+<td class="line" id="L42"><a href="#L42">42</a></td>
+<td class="hits"></td>
+<td class="source"><code>      &lt;&lt;62, 226, 180, 0, 71, 184, 6, 15, 104, 198, 114, 66, 23, 86, 96, 244, 23, 77, 10, 245, 192, 29, 71, 22, 142, 194, 14, 214, 25, 176, 183, 196, 33, 129, 244, 10, 161, 4, 111, 57, 226, 239, 158, 252, 105, 16, 120, 42, 153, 142, 0, 19, 209, 114, 69, 137, 87, 149, 127, 172, 148, 5, 182, 125&gt;&gt;</code></td>
+</tr>
+<tr>
+<td class="line" id="L43"><a href="#L43">43</a></td>
+<td class="hits"></td>
+<td class="source"><code>  """</code></td>
+</tr>
+<tr>
+<td class="line" id="L44"><a href="#L44">44</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @spec kec512(binary()) :: keccak_hash</code></td>
+</tr>
+<tr>
+<td class="line" id="L45"><a href="#L45">45</a></td>
+<td class="hits"></td>
+<td class="source"><code>  def kec512(data) do</code></td>
+</tr>
+<tr class="hit">
+<td class="line" id="L46"><a href="#L46">46</a></td>
+<td class="hits">1</td>
+<td class="source"><code>    ExSha3.keccak_512(data)</code></td>
+</tr>
+<tr>
+<td class="line" id="L47"><a href="#L47">47</a></td>
+<td class="hits"></td>
+<td class="source"><code>  end</code></td>
+</tr>
+<tr>
+<td class="line" id="L48"><a href="#L48">48</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L49"><a href="#L49">49</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @doc """</code></td>
+</tr>
+<tr>
+<td class="line" id="L50"><a href="#L50">50</a></td>
+<td class="hits"></td>
+<td class="source"><code>  Initializes a new Keccak mac stream.</code></td>
+</tr>
+<tr>
+<td class="line" id="L51"><a href="#L51">51</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L52"><a href="#L52">52</a></td>
+<td class="hits"></td>
+<td class="source"><code>  ## Examples</code></td>
+</tr>
+<tr>
+<td class="line" id="L53"><a href="#L53">53</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L54"><a href="#L54">54</a></td>
+<td class="hits"></td>
+<td class="source"><code>      iex&gt; keccak_mac = ExthCrypto.Hash.Keccak.init_mac()</code></td>
+</tr>
+<tr>
+<td class="line" id="L55"><a href="#L55">55</a></td>
+<td class="hits"></td>
+<td class="source"><code>      iex&gt; is_nil(keccak_mac)</code></td>
+</tr>
+<tr>
+<td class="line" id="L56"><a href="#L56">56</a></td>
+<td class="hits"></td>
+<td class="source"><code>      false</code></td>
+</tr>
+<tr>
+<td class="line" id="L57"><a href="#L57">57</a></td>
+<td class="hits"></td>
+<td class="source"><code>  """</code></td>
+</tr>
+<tr>
+<td class="line" id="L58"><a href="#L58">58</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @spec init_mac() :: keccak_mac</code></td>
+</tr>
+<tr class="hit">
+<td class="line" id="L59"><a href="#L59">59</a></td>
+<td class="hits">5</td>
+<td class="source"><code>  def init_mac() do</code></td>
+</tr>
+<tr>
+<td class="line" id="L60"><a href="#L60">60</a></td>
+<td class="hits"></td>
+<td class="source"><code>    # Simple implementation using keccak accumulation</code></td>
+</tr>
+<tr>
+<td class="line" id="L61"><a href="#L61">61</a></td>
+<td class="hits"></td>
+<td class="source"><code>    {:keccak256, &lt;&lt;&gt;&gt;}</code></td>
+</tr>
+<tr>
+<td class="line" id="L62"><a href="#L62">62</a></td>
+<td class="hits"></td>
+<td class="source"><code>  end</code></td>
+</tr>
+<tr>
+<td class="line" id="L63"><a href="#L63">63</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L64"><a href="#L64">64</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @doc """</code></td>
+</tr>
+<tr>
+<td class="line" id="L65"><a href="#L65">65</a></td>
+<td class="hits"></td>
+<td class="source"><code>  Updates a given Keccak mac stream with the given</code></td>
+</tr>
+<tr>
+<td class="line" id="L66"><a href="#L66">66</a></td>
+<td class="hits"></td>
+<td class="source"><code>  secret and data, returning a new mac stream.</code></td>
+</tr>
+<tr>
+<td class="line" id="L67"><a href="#L67">67</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L68"><a href="#L68">68</a></td>
+<td class="hits"></td>
+<td class="source"><code>  ## Examples</code></td>
+</tr>
+<tr>
+<td class="line" id="L69"><a href="#L69">69</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L70"><a href="#L70">70</a></td>
+<td class="hits"></td>
+<td class="source"><code>      iex&gt; keccak_mac = ExthCrypto.Hash.Keccak.init_mac()</code></td>
+</tr>
+<tr>
+<td class="line" id="L71"><a href="#L71">71</a></td>
+<td class="hits"></td>
+<td class="source"><code>      ...&gt; |&gt; ExthCrypto.Hash.Keccak.update_mac("data")</code></td>
+</tr>
+<tr>
+<td class="line" id="L72"><a href="#L72">72</a></td>
+<td class="hits"></td>
+<td class="source"><code>      iex&gt; is_nil(keccak_mac)</code></td>
+</tr>
+<tr>
+<td class="line" id="L73"><a href="#L73">73</a></td>
+<td class="hits"></td>
+<td class="source"><code>      false</code></td>
+</tr>
+<tr>
+<td class="line" id="L74"><a href="#L74">74</a></td>
+<td class="hits"></td>
+<td class="source"><code>  """</code></td>
+</tr>
+<tr>
+<td class="line" id="L75"><a href="#L75">75</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @spec update_mac(keccak_mac, binary()) :: keccak_mac</code></td>
+</tr>
+<tr class="hit">
+<td class="line" id="L76"><a href="#L76">76</a></td>
+<td class="hits">4</td>
+<td class="source"><code>  def update_mac({:keccak256, acc}, data) do</code></td>
+</tr>
+<tr>
+<td class="line" id="L77"><a href="#L77">77</a></td>
+<td class="hits"></td>
+<td class="source"><code>    {:keccak256, acc &lt;&gt; data}</code></td>
+</tr>
+<tr>
+<td class="line" id="L78"><a href="#L78">78</a></td>
+<td class="hits"></td>
+<td class="source"><code>  end</code></td>
+</tr>
+<tr>
+<td class="line" id="L79"><a href="#L79">79</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L80"><a href="#L80">80</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @doc """</code></td>
+</tr>
+<tr>
+<td class="line" id="L81"><a href="#L81">81</a></td>
+<td class="hits"></td>
+<td class="source"><code>  Finalizes a given Keccak mac stream to produce the current hash.</code></td>
+</tr>
+<tr>
+<td class="line" id="L82"><a href="#L82">82</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L83"><a href="#L83">83</a></td>
+<td class="hits"></td>
+<td class="source"><code>  ## Examples</code></td>
+</tr>
+<tr>
+<td class="line" id="L84"><a href="#L84">84</a></td>
+<td class="hits"></td>
+<td class="source"><code></code></td>
+</tr>
+<tr>
+<td class="line" id="L85"><a href="#L85">85</a></td>
+<td class="hits"></td>
+<td class="source"><code>      iex&gt; ExthCrypto.Hash.Keccak.init_mac()</code></td>
+</tr>
+<tr>
+<td class="line" id="L86"><a href="#L86">86</a></td>
+<td class="hits"></td>
+<td class="source"><code>      ...&gt; |&gt; ExthCrypto.Hash.Keccak.update_mac("data")</code></td>
+</tr>
+<tr>
+<td class="line" id="L87"><a href="#L87">87</a></td>
+<td class="hits"></td>
+<td class="source"><code>      ...&gt; |&gt; ExthCrypto.Hash.Keccak.final_mac()</code></td>
+</tr>
+<tr>
+<td class="line" id="L88"><a href="#L88">88</a></td>
+<td class="hits"></td>
+<td class="source"><code>      ...&gt; |&gt; ExthCrypto.Math.bin_to_hex</code></td>
+</tr>
+<tr>
+<td class="line" id="L89"><a href="#L89">89</a></td>
+<td class="hits"></td>
+<td class="source"><code>      "8f54f1c2d0eb5771cd5bf67a6689fcd6eed9444d91a39e5ef32a9b4ae5ca14ff"</code></td>
+</tr>
+<tr>
+<td class="line" id="L90"><a href="#L90">90</a></td>
+<td class="hits"></td>
+<td class="source"><code>  """</code></td>
+</tr>
+<tr>
+<td class="line" id="L91"><a href="#L91">91</a></td>
+<td class="hits"></td>
+<td class="source"><code>  @spec final_mac(keccak_mac) :: keccak_hash</code></td>
+</tr>
+<tr>
+<td class="line" id="L92"><a href="#L92">92</a></td>
+<td class="hits"></td>
+<td class="source"><code>  def final_mac({:keccak256, data}) do</code></td>
+</tr>
+<tr class="hit">
+<td class="line" id="L93"><a href="#L93">93</a></td>
+<td class="hits">2</td>
+<td class="source"><code>    ExSha3.keccak_256(data)</code></td>
+</tr>
+<tr>
+<td class="line" id="L94"><a href="#L94">94</a></td>
+<td class="hits"></td>
+<td class="source"><code>  end</code></td>
+</tr>
+<tr>
+<td class="line" id="L95"><a href="#L95">95</a></td>
+<td class="hits"></td>
+<td class="source"><code>end</code></td>
+</tr>
+</tbody>
+<thead>
+<tr>
+<th>Line</th>
+<th>Hits</th>
+<th>Source</th>
+</tr>
+</thead>
+</table>
+</body>
+</html>

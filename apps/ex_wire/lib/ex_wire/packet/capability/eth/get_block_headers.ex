@@ -137,7 +137,7 @@ defmodule ExWire.Packet.Capability.Eth.GetBlockHeaders do
 
         {:error, error} ->
           _ =
-            Logger.warn(fn ->
+            Logger.warning(fn ->
               "Error calling Sync.get_current_trie(): #{error}. Returning empty headers."
             end)
 

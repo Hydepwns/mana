@@ -315,7 +315,7 @@ defmodule ExWire.Eth2.PruningDashboard do
 
     # Log new alerts
     Enum.each(new_alerts, fn alert ->
-      Logger.warn("New pruning alert: #{alert.message} (severity: #{alert.severity})")
+      Logger.warning("New pruning alert: #{alert.message} (severity: #{alert.severity})")
     end)
 
     %{state | active_alerts: all_alerts}

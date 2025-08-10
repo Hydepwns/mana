@@ -38,7 +38,7 @@ defmodule Mix.Tasks.Sync do
          provider_info: provider_info
        }} ->
         :ok =
-          Logger.warn("Starting sync with #{Atom.to_string(chain_id)} via #{provider_info}...")
+          Logger.warning("Starting sync with #{Atom.to_string(chain_id)} via #{provider_info}...")
 
         # Kick off a sync
         CLI.sync(chain_id, provider, provider_args)

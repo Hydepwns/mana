@@ -392,7 +392,7 @@ defmodule Blockchain.Compliance.DataRetention do
 
     # Log any integrity issues
     if verification_results.issues_found > 0 do
-      Logger.warn("Storage integrity issues found: #{verification_results.issues_found}")
+      Logger.warning("Storage integrity issues found: #{verification_results.issues_found}")
 
       # Log compliance audit event
       AuditEngine.log_compliance_violation(%{

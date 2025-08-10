@@ -191,7 +191,7 @@ defmodule ExWire.Eth2.MEVBoost do
 
       {:reply, {:ok, best_bid}, state}
     else
-      Logger.warn("No valid bids received for slot #{slot}")
+      Logger.warning("No valid bids received for slot #{slot}")
       state = update_in(state.metrics.missed_slots, &(&1 + 1))
 
       if state.fallback_enabled do
@@ -430,7 +430,7 @@ defmodule ExWire.Eth2.MEVBoost do
         :healthy
 
       _ ->
-        Logger.warn("Relay #{relay.url} is unhealthy")
+        Logger.warning("Relay #{relay.url} is unhealthy")
         :unhealthy
     end
   catch

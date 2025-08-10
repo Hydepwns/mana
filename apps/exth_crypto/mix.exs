@@ -36,7 +36,9 @@ defmodule ExthCrypto.Mixfile do
       # {:keccakf1600, "~> 2.1", hex: :keccakf1600_orig},  # Temporarily disabled due to Erlang 27 compatibility issues
       {:binary, "~> 0.0.4"},
       # For HSM configuration JSON handling
-      {:jason, "~> 1.4"}
+      {:jason, "~> 1.4"},
+      # Property-based testing
+      {:stream_data, "~> 0.6", only: :test}
     ]
   end
 end

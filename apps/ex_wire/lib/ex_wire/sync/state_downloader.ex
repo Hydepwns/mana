@@ -285,7 +285,7 @@ defmodule ExWire.Sync.StateDownloader do
       |> Map.put(:node_status, new_status)
       |> put_in([:active_requests, request_ref], {nodes, peer})
     else
-      Logger.warn("No connected peers for state download")
+      Logger.warning("No connected peers for state download")
       state
     end
   end
@@ -332,7 +332,7 @@ defmodule ExWire.Sync.StateDownloader do
         {:ok, new_state, child_nodes}
 
       {:error, reason} ->
-        Logger.warn("Failed to store state node #{encode_hex(node_hash)}: #{inspect(reason)}")
+        Logger.warning("Failed to store state node #{encode_hex(node_hash)}: #{inspect(reason)}")
 
         new_state =
           state

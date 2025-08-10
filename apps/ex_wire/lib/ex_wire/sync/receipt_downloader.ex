@@ -294,11 +294,11 @@ defmodule ExWire.Sync.ReceiptDownloader do
         |> Map.put(:receipt_status, new_status)
         |> put_in([:active_requests, request_ref], {blocks, peer})
       else
-        Logger.warn("No valid block hashes for receipt request")
+        Logger.warning("No valid block hashes for receipt request")
         state
       end
     else
-      Logger.warn("No connected peers for receipt download")
+      Logger.warning("No connected peers for receipt download")
       state
     end
   end
@@ -314,7 +314,7 @@ defmodule ExWire.Sync.ReceiptDownloader do
           process_block_receipts(block_number, receipts, acc_state)
 
         {:error, reason} ->
-          Logger.warn("Could not match receipts to block: #{inspect(reason)}")
+          Logger.warning("Could not match receipts to block: #{inspect(reason)}")
           acc_state
       end
     end)
@@ -362,7 +362,7 @@ defmodule ExWire.Sync.ReceiptDownloader do
         |> update_in([:blocks_downloaded], &(&1 + 1))
 
       {:error, reason} ->
-        Logger.warn("Receipt validation failed for block #{block_number}: #{inspect(reason)}")
+        Logger.warning("Receipt validation failed for block #{block_number}: #{inspect(reason)}")
 
         # Re-queue the block for retry
         new_queue = :queue.in(block_number, state.receipt_queue)

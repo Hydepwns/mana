@@ -244,7 +244,7 @@ defmodule ExWire.P2P.Server do
     peer = Map.get(state, :peer, :unknown)
     is_outbound = Map.get(state, :is_outbound)
 
-    Logger.warn(fn ->
+    Logger.warning(fn ->
       "[Network] [#{peer} is_outbound: #{is_outbound}] Peer closed connection"
     end)
   end

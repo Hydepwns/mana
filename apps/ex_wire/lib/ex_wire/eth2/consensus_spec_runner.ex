@@ -119,7 +119,7 @@ defmodule ExWire.Eth2.ConsensusSpecRunner do
         run_test_suite(runner, fork, config, suite, suite_dir)
       end)
     else
-      Logger.warn("Test directory not found: #{test_dir}")
+      Logger.warning("Test directory not found: #{test_dir}")
       []
     end
   end

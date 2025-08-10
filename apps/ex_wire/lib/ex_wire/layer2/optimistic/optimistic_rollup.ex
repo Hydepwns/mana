@@ -174,7 +174,7 @@ defmodule ExWire.Layer2.Optimistic.OptimisticRollup do
             # Slash the sequencer/proposer
             slash_proposer(challenge)
 
-            Logger.warn("Fraud proof accepted for challenge #{challenge_id}")
+            Logger.warning("Fraud proof accepted for challenge #{challenge_id}")
 
             {:reply, {:ok, :accepted},
              %{state | challenges: new_challenges, fraud_proofs: new_fraud_proofs}}
@@ -259,7 +259,7 @@ defmodule ExWire.Layer2.Optimistic.OptimisticRollup do
         {:reply, {:ok, :defender_wins}, state}
 
       {:ok, :challenger_wins} ->
-        Logger.warn("Dispute #{dispute_id} resolved: challenger wins")
+        Logger.warning("Dispute #{dispute_id} resolved: challenger wins")
         # Trigger appropriate actions for successful challenge
         {:reply, {:ok, :challenger_wins}, state}
 
@@ -334,7 +334,7 @@ defmodule ExWire.Layer2.Optimistic.OptimisticRollup do
 
   defp rollback_state(rollup_id, batch_number) do
     # Rollback the rollup state to before the fraudulent batch
-    Logger.warn("Rolling back state for rollup #{rollup_id} to before batch #{batch_number}")
+    Logger.warning("Rolling back state for rollup #{rollup_id} to before batch #{batch_number}")
 
     # TODO: Implement actual state rollback
     # - Remove invalid batches
@@ -346,7 +346,7 @@ defmodule ExWire.Layer2.Optimistic.OptimisticRollup do
 
   defp slash_proposer(challenge) do
     # Slash the proposer who submitted the fraudulent state
-    Logger.warn("Slashing proposer for fraudulent batch #{challenge.batch_number}")
+    Logger.warning("Slashing proposer for fraudulent batch #{challenge.batch_number}")
 
     # TODO: Implement slashing logic
     # - Transfer bond to challenger

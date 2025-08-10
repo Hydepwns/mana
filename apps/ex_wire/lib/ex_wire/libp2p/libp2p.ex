@@ -258,7 +258,7 @@ defmodule ExWire.LibP2P do
   def handle_cast({:publish, topic, message}, state) do
     case Map.get(state.topics, topic) do
       nil ->
-        Logger.warn("Attempted to publish to unsubscribed topic: #{topic}")
+        Logger.warning("Attempted to publish to unsubscribed topic: #{topic}")
         {:noreply, state}
 
       full_topic ->
@@ -331,7 +331,7 @@ defmodule ExWire.LibP2P do
     # Handle RPC response
     case Map.get(state.streams, stream_id) do
       nil ->
-        Logger.warn("Received response for unknown stream: #{stream_id}")
+        Logger.warning("Received response for unknown stream: #{stream_id}")
 
       stream ->
         handle_rpc_response(stream, response, state)
@@ -517,7 +517,7 @@ defmodule ExWire.LibP2P do
   defp send_rpc_response(peer_id, request_id, response, state) do
     case Map.get(state.peers, peer_id) do
       nil ->
-        Logger.warn("Cannot send response to disconnected peer: #{inspect(peer_id)}")
+        Logger.warning("Cannot send response to disconnected peer: #{inspect(peer_id)}")
 
       peer ->
         Transport.send_response(

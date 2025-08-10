@@ -19,7 +19,8 @@ defmodule ExthCrypto.HSM.SigningService do
   require Logger
 
   alias ExthCrypto.HSM.KeyManager
-  alias ExthCrypto.{Signature, Key}
+  # Aliases would be used in full integration
+  # alias ExthCrypto.{Signature, Key}
   alias ExthCrypto.Hash.Keccak
   alias Blockchain.Transaction
 
@@ -213,7 +214,7 @@ defmodule ExthCrypto.HSM.SigningService do
   def handle_cast({:signing_complete, operation_id, result}, state) do
     case Map.pop(state.active_operations, operation_id) do
       {nil, _} ->
-        Logger.warn("Received completion for unknown operation: #{operation_id}")
+        Logger.warning("Received completion for unknown operation: #{operation_id}")
         {:noreply, state}
 
       {operation, new_operations} ->
@@ -551,7 +552,7 @@ defmodule ExthCrypto.HSM.SigningService do
       timestamp: DateTime.utc_now()
     }
 
-    Logger.warn("SIGNING_AUDIT: #{Jason.encode!(audit_data)}")
+    Logger.warning("SIGNING_AUDIT: #{Jason.encode!(audit_data)}")
   end
 
   defp format_address(<<>>), do: "contract_creation"

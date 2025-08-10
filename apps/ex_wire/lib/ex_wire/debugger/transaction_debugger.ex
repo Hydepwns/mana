@@ -379,7 +379,7 @@ defmodule ExWire.Debugger.TransactionDebugger do
   def handle_cast({:end_debug_session, session_id}, state) do
     case Map.get(state.active_sessions, session_id) do
       nil ->
-        Logger.warn("[TransactionDebugger] Attempted to end non-existent session #{session_id}")
+        Logger.warning("[TransactionDebugger] Attempted to end non-existent session #{session_id}")
         {:noreply, state}
 
       session ->

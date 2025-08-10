@@ -18,7 +18,9 @@ defmodule ExthCrypto.HSM.KeyManager do
   use GenServer
   require Logger
 
-  alias ExthCrypto.{Signature, Key}
+  # Alias would be used in full integration
+  # alias ExthCrypto.{Signature, Key}
+  alias ExthCrypto.Signature
   alias ExthCrypto.HSM.PKCS11Interface
   alias ExthCrypto.Hash.Keccak
 
@@ -288,7 +290,7 @@ defmodule ExthCrypto.HSM.KeyManager do
             end)
 
           {:error, reason} ->
-            Logger.warn("Failed to discover HSM keys: #{reason}")
+            Logger.warning("Failed to discover HSM keys: #{reason}")
             keys
         end
       else
@@ -344,7 +346,7 @@ defmodule ExthCrypto.HSM.KeyManager do
           end
 
         :hsm when not state.hsm_available ->
-          Logger.warn("HSM not available for key: #{key.id}")
+          Logger.warning("HSM not available for key: #{key.id}")
 
           if state.fallback_enabled && key.software_key do
             Logger.info("Using software fallback for HSM key: #{key.id}")
@@ -422,7 +424,7 @@ defmodule ExthCrypto.HSM.KeyManager do
 
         :hsm when not state.hsm_available ->
           if state.fallback_enabled do
-            Logger.warn("HSM requested but not available, falling back to software")
+            Logger.warning("HSM requested but not available, falling back to software")
             :software
           else
             :error
@@ -541,7 +543,7 @@ defmodule ExthCrypto.HSM.KeyManager do
       key ->
         case key.backend do
           :hsm ->
-            Logger.warn("Cannot delete HSM key #{key_id} - use HSM management tools")
+            Logger.warning("Cannot delete HSM key #{key_id} - use HSM management tools")
             {{:error, "HSM keys must be deleted using HSM management tools"}, state}
 
           :software ->

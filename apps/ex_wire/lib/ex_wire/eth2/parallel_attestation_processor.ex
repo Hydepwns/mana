@@ -138,7 +138,7 @@ defmodule ExWire.Eth2.ParallelAttestationProcessor do
 
     # Apply back-pressure if queue is too large
     if length(state.pending_attestations) > @max_pending_attestations do
-      Logger.warn("Attestation queue overflow, applying back-pressure")
+      Logger.warning("Attestation queue overflow, applying back-pressure")
       Process.sleep(10)
     end
 

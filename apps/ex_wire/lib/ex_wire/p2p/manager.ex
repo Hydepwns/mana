@@ -266,7 +266,7 @@ defmodule ExWire.P2P.Manager do
 
       {:invalid, reason} ->
         :ok =
-          Logger.warn(
+          Logger.warning(
             "[Network] [#{peer}] Failed to get handshake message when expecting ack - #{reason}"
           )
 
@@ -287,7 +287,7 @@ defmodule ExWire.P2P.Manager do
 
       {:invalid, reason} ->
         :ok =
-          Logger.warn(
+          Logger.warning(
             "[Network] Received unknown handshake message when expecting auth: #{reason}"
           )
 

@@ -468,7 +468,7 @@ defmodule ExWire.Eth2.PruningTestRunner do
       if File.exists?(test_file) do
         Code.load_file(test_file)
       else
-        Logger.warn("Test file not found: #{test_file}")
+        Logger.warning("Test file not found: #{test_file}")
       end
     end
 

@@ -139,7 +139,7 @@ defmodule ExWire.Layer2.Bridge.MessageQueue do
               failed: [failed_message | queue.failed]
           }
 
-          Logger.warn("Message #{message_id} failed after #{message.attempts} attempts")
+          Logger.warning("Message #{message_id} failed after #{message.attempts} attempts")
 
           {:ok, new_queue}
         end

@@ -16,7 +16,7 @@ defmodule Blockchain.Application do
             id = Debugger.break_on(address: breakpoint_address)
 
             :ok =
-              Logger.warn(
+              Logger.warning(
                 "Debugger has been enabled. Set breakpoint ##{id} on contract address 0x#{breakpoint_address_hex}."
               )
 

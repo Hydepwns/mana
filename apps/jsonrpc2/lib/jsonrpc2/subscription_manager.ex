@@ -178,7 +178,7 @@ defmodule JSONRPC2.SubscriptionManager do
         {:reply, {:ok, true}, new_state}
 
       %{ws_pid: other_pid} ->
-        Logger.warn(
+        Logger.warning(
           "Unauthorized unsubscribe attempt for #{subscription_id} from #{inspect(ws_pid)}, owned by #{inspect(other_pid)}"
         )
 

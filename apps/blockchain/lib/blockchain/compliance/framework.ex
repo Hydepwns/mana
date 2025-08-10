@@ -497,10 +497,10 @@ defmodule Blockchain.Compliance.Framework do
 
     # Log validation result
     if validation_result.status == :non_compliant do
-      Logger.warn("Compliance violation detected: #{control.id} - #{control.title}")
+      Logger.warning("Compliance violation detected: #{control.id} - #{control.title}")
 
       Enum.each(validation_result.violations, fn violation ->
-        Logger.warn("  Violation: #{violation.description}")
+        Logger.warning("  Violation: #{violation.description}")
       end)
     end
 

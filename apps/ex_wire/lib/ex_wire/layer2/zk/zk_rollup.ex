@@ -205,7 +205,7 @@ defmodule ExWire.Layer2.ZK.ZKRollup do
             updated_proof = %{proof_data | status: :rejected}
             new_pending_proofs = Map.put(state.pending_proofs, proof_id, updated_proof)
 
-            Logger.warn("Proof rejected: #{proof_id}")
+            Logger.warning("Proof rejected: #{proof_id}")
 
             {:reply, {:error, :invalid_proof}, %{state | pending_proofs: new_pending_proofs}}
 
@@ -279,7 +279,7 @@ defmodule ExWire.Layer2.ZK.ZKRollup do
         if result do
           Logger.info("Async proof verification successful: #{proof_id}")
         else
-          Logger.warn("Async proof verification failed: #{proof_id}")
+          Logger.warning("Async proof verification failed: #{proof_id}")
         end
 
         {:noreply, %{state | pending_proofs: new_pending_proofs}}

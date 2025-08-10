@@ -230,7 +230,7 @@ defmodule ExWire.Layer2.NetworkInterface do
           YamlElixir.read_from_string!(content)
 
         {:error, _} ->
-          Logger.warn("Config file not found: #{config_file}, using defaults")
+          Logger.warning("Config file not found: #{config_file}, using defaults")
           default_config(network_name)
       end
 

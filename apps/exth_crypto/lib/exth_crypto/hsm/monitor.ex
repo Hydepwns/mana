@@ -764,7 +764,7 @@ defmodule ExthCrypto.HSM.Monitor do
 
   defp calculate_trend(_, _), do: :insufficient_data
 
-  defp calculate_ops_per_second(total_operations) do
+  defp calculate_ops_per_second(_total_operations) do
     # This would be calculated based on a time window in a real implementation
     # For now, return a simulated value
     :rand.uniform() * 100
@@ -787,7 +787,7 @@ defmodule ExthCrypto.HSM.Monitor do
         )
 
       :warning ->
-        Logger.warn(
+        Logger.warning(
           "HSM_ALERT [WARNING] #{alert.component}: #{alert.message} - #{inspect(alert.details)}"
         )
 

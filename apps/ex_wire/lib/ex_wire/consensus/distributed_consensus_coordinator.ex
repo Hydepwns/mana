@@ -397,7 +397,7 @@ defmodule ExWire.Consensus.DistributedConsensusCoordinator do
   def handle_cast({:sync_with_replica, datacenter}, state) do
     case Map.get(state.replicas, datacenter) do
       nil ->
-        Logger.warn(
+        Logger.warning(
           "[DistributedConsensus] Attempted to sync with unknown replica: #{datacenter}"
         )
 
@@ -416,7 +416,7 @@ defmodule ExWire.Consensus.DistributedConsensusCoordinator do
         {:noreply, state}
 
       replica ->
-        Logger.warn("[DistributedConsensus] Partition #{event} for datacenter #{datacenter}")
+        Logger.warning("[DistributedConsensus] Partition #{event} for datacenter #{datacenter}")
 
         new_status =
           case event do

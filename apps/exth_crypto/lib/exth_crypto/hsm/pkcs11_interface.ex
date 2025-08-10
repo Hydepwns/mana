@@ -17,7 +17,8 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
   use GenServer
   require Logger
 
-  alias ExthCrypto.HSM.PKCS11Interface.{Session, KeyManager, Operations}
+  # Unused aliases removed - would be used in full NIF implementation
+  # alias ExthCrypto.HSM.PKCS11Interface.{Session, KeyManager, Operations}
 
   @type handle :: reference()
   @type slot_id :: non_neg_integer()
@@ -264,7 +265,7 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
     {:reply, result, state}
   end
 
-  def handle_call({:generate_key_pair, key_type, label}, _from, state) do
+  def handle_call({:generate_key_pair, _key_type, label}, _from, state) do
     result = generate_ec_key_pair(state.session, label)
     {:reply, result, state}
   end
@@ -367,19 +368,19 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
     end
   end
 
-  defp initialize(handle) do
+  defp initialize(_handle) do
     Logger.debug("Initializing PKCS#11 library")
     # C_Initialize call would go here
     :ok
   end
 
-  defp open_session(handle, slot_id, read_write) do
+  defp open_session(_handle, slot_id, _read_write) do
     Logger.debug("Opening PKCS#11 session on slot #{slot_id}")
     # C_OpenSession call would go here
     {:ok, make_ref()}
   end
 
-  defp login(session, pin) do
+  defp login(_session, pin) do
     Logger.debug("Logging into HSM")
     # C_Login call would go here
     if pin && String.length(pin) > 0 do
@@ -389,29 +390,29 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
     end
   end
 
-  defp logout(session) do
+  defp logout(_session) do
     Logger.debug("Logging out of HSM")
     # C_Logout call would go here
     :ok
   end
 
-  defp close_session(session) do
+  defp close_session(_session) do
     Logger.debug("Closing PKCS#11 session")
     # C_CloseSession call would go here
     :ok
   end
 
-  defp finalize(handle) do
+  defp finalize(_handle) do
     Logger.debug("Finalizing PKCS#11 library")
     # C_Finalize call would go here
     :ok
   end
 
-  defp find_objects(session, filters) do
+  defp find_objects(_session, filters) do
     Logger.debug("Finding objects with filters: #{inspect(filters)}")
 
     # Build template based on filters
-    template = build_template(filters)
+    _template = build_template(filters)
 
     # Simulated object discovery
     # In real implementation: C_FindObjectsInit, C_FindObjects, C_FindObjectsFinal
@@ -446,11 +447,11 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
     {:ok, filtered_keys}
   end
 
-  defp generate_ec_key_pair(session, label) do
+  defp generate_ec_key_pair(_session, label) do
     Logger.info("Generating EC secp256k1 key pair with label: #{label}")
 
     # Public key template
-    public_template = [
+    _public_template = [
       # CKA_CLASS
       {0x00000000, @object_classes.public_key},
       # CKA_KEY_TYPE  
@@ -466,7 +467,7 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
     ]
 
     # Private key template  
-    private_template = [
+    _private_template = [
       # CKA_CLASS
       {0x00000000, @object_classes.private_key},
       # CKA_KEY_TYPE
@@ -494,11 +495,11 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
     {:ok, {private_key_handle, public_key_handle}}
   end
 
-  defp sign_data(session, data, private_key_handle) do
+  defp sign_data(_session, _data, private_key_handle) do
     Logger.debug("Signing data with private key: #{inspect(private_key_handle)}")
 
     # Initialize signing operation
-    mechanism = %{mechanism: @mechanisms.ecdsa_sha256, parameter: nil}
+    _mechanism = %{mechanism: @mechanisms.ecdsa_sha256, parameter: nil}
 
     # In real implementation: 
     # C_SignInit(session, mechanism, private_key_handle)
@@ -585,7 +586,7 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
     {:ok, simulated_signature}
   end
 
-  defp get_corresponding_public_key(session, private_key_handle) do
+  defp get_corresponding_public_key(_session, private_key_handle) do
     Logger.debug("Getting public key for private key: #{inspect(private_key_handle)}")
 
     # Find the corresponding public key by label
@@ -686,7 +687,7 @@ defmodule ExthCrypto.HSM.PKCS11Interface do
   """
   def health_check() do
     try do
-      with {:ok, session} <- get_session(),
+      with {:ok, _session} <- get_session(),
            {:ok, keys} <- find_keys(%{key_type: :ec_secp256k1}) do
         %{
           status: :healthy,

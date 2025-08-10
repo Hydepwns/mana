@@ -273,7 +273,7 @@ defmodule ExWire.Consensus.GeographicRouter do
   def handle_cast({:update_datacenter_status, datacenter_id, updates}, state) do
     case Map.get(state.datacenters, datacenter_id) do
       nil ->
-        Logger.warn("[GeographicRouter] Attempted to update unknown datacenter: #{datacenter_id}")
+        Logger.warning("[GeographicRouter] Attempted to update unknown datacenter: #{datacenter_id}")
         {:noreply, state}
 
       datacenter_info ->
@@ -413,7 +413,7 @@ defmodule ExWire.Consensus.GeographicRouter do
 
           {:error, reason} ->
             # Fallback to default location
-            Logger.warn(
+            Logger.warning(
               "[GeographicRouter] Geolocation failed for #{client_ip}: #{inspect(reason)}"
             )
 

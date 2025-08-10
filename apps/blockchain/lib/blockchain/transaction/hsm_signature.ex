@@ -90,7 +90,7 @@ defmodule Blockchain.Transaction.HSMSignature do
 
           {:error, _reason} ->
             # Fallback to original implementation
-            Logger.warn("HSM signing failed, falling back to software")
+            Logger.warning("HSM signing failed, falling back to software")
             Signature.sign_hash(hash, private_key, chain_id)
         end
 
@@ -180,7 +180,7 @@ defmodule Blockchain.Transaction.HSMSignature do
             signed_tx
 
           {:error, reason} ->
-            Logger.warn("HSM transaction signing failed, falling back to software: #{reason}")
+            Logger.warning("HSM transaction signing failed, falling back to software: #{reason}")
             Signature.sign_transaction(tx, private_key, chain_id)
         end
 
@@ -429,15 +429,15 @@ defmodule Blockchain.Transaction.HSMSignature do
         # Instead, we generate a new HSM key and return instructions
         case generate_hsm_key(label, role) do
           {:ok, key_id} ->
-            Logger.warn(
+            Logger.warning(
               "HSM key generated. Original private key cannot be imported for security reasons."
             )
 
-            Logger.warn(
+            Logger.warning(
               "You will need to manually update any addresses/accounts to use the new HSM key."
             )
 
-            Logger.warn("New HSM key ID: #{key_id}")
+            Logger.warning("New HSM key ID: #{key_id}")
             {:ok, key_id}
 
           {:error, reason} ->

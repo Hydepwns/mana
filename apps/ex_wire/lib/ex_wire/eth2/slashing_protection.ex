@@ -145,7 +145,7 @@ defmodule ExWire.Eth2.SlashingProtection do
         end)
 
     if not safe do
-      Logger.warn("Slashing protection: Unsafe block proposal for slot #{slot}")
+      Logger.warning("Slashing protection: Unsafe block proposal for slot #{slot}")
     end
 
     {:reply, safe, state}
@@ -199,7 +199,7 @@ defmodule ExWire.Eth2.SlashingProtection do
     safe = not double_vote and not surround_vote
 
     if not safe do
-      Logger.warn("Slashing protection: Unsafe attestation for target epoch #{target_epoch}")
+      Logger.warning("Slashing protection: Unsafe attestation for target epoch #{target_epoch}")
     end
 
     {:reply, safe, state}

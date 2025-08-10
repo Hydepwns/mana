@@ -477,7 +477,7 @@ defmodule ExWire.Consensus.CRDTConsensusManager do
 
   @impl GenServer
   def handle_cast({:handle_partition_event, replica_id, event}, state) do
-    Logger.warn("[CRDTConsensus] Partition #{event} for replica #{replica_id}")
+    Logger.warning("[CRDTConsensus] Partition #{event} for replica #{replica_id}")
 
     # Update partition state
     new_partition_state = Map.put(state.partition_state, replica_id, event)

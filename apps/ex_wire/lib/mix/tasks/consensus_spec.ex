@@ -221,7 +221,7 @@ defmodule Mix.Tasks.ConsensusSpec do
         generate_junit_report(results, output_dir)
 
       _ ->
-        Logger.warn("Unknown report format: #{report_format}")
+        Logger.warning("Unknown report format: #{report_format}")
     end
   end
 
