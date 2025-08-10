@@ -86,7 +86,7 @@ defmodule ExthCrypto.Math do
       <<0x01, 0x02, 0x03>>
 
       iex> ExthCrypto.Math.pad(<<1, 2, 3>>, 0)
-      ** (ArgumentError) argument error
+      ** (ArgumentError) construction of binary failed: segment 1 of type 'integer': expected a non-negative integer as size but got: -24
 
       iex> ExthCrypto.Math.pad(<<>>, 0)
       <<>>

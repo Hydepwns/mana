@@ -5,9 +5,10 @@ defmodule MerklePatriciaTree.CachingTrieTest do
   alias MerklePatriciaTree.Trie
 
   setup do
+    # Use ETS for testing instead of RocksDB (which isn't available in CI)
     disk_trie =
-      (~c"/tmp/" ++ to_charlist(MerklePatriciaTree.Test.random_string(20)))
-      |> MerklePatriciaTree.DB.RocksDB.init()
+      MerklePatriciaTree.Test.random_string(20)
+      |> MerklePatriciaTree.DB.ETS.init()
       |> MerklePatriciaTree.Trie.new()
 
     {:ok, %{disk_trie: disk_trie}}

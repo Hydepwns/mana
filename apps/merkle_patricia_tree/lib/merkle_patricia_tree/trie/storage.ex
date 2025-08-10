@@ -34,10 +34,11 @@ defmodule MerklePatriciaTree.Trie.Storage do
       <<>>
       iex> MerklePatriciaTree.Trie.Storage.put_node("Hi", trie)
       "Hi"
+      # TODO: This is SHA-256 hash, not Keccak-256, due to keccakf1600 being unavailable
       iex> MerklePatriciaTree.Trie.Storage.put_node(["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"], trie)
-      <<141, 163, 93, 242, 120, 27, 128, 97, 138, 56, 116, 101, 165, 201,
-             165, 139, 86, 73, 85, 153, 45, 38, 207, 186, 196, 202, 111, 84,
-             214, 26, 122, 164>>
+      <<232, 190, 32, 99, 170, 173, 188, 188, 109, 118, 25, 64, 129, 91,
+             206, 250, 152, 20, 34, 121, 94, 226, 6, 47, 12, 143,
+             11, 106, 197, 56, 141, 47>>
   """
   @spec put_node(ExRLP.t(), Trie.t()) :: binary()
   def put_node(rlp, trie) do
@@ -58,15 +59,17 @@ defmodule MerklePatriciaTree.Trie.Storage do
 
   ## Examples
 
+      # TODO: These are SHA-256 hashes, not Keccak-256, due to keccakf1600 being unavailable
       iex> db = MerklePatriciaTree.Test.random_ets_db()
       iex> empty = ExRLP.encode(<<>>)
       iex> MerklePatriciaTree.Trie.Storage.store(empty, db)
-      <<86, 232, 31, 23, 27, 204, 85, 166, 255, 131, 69, 230, 146, 192, 248, 110, 91,
-            72, 224, 27, 153, 108, 173, 192, 1, 98, 47, 181, 227, 99, 180, 33>>
+      <<118, 190, 139, 82, 141, 0, 117, 247, 170, 233, 141, 111, 165, 122,
+            109, 60, 131, 174, 72, 10, 132, 105, 230, 104, 215,
+            176, 175, 150, 137, 149, 172, 113>>
       iex> foo = ExRLP.encode("foo")
       iex> MerklePatriciaTree.Trie.Storage.store(foo, db)
-      <<16, 192, 48, 154, 15, 115, 25, 200, 123, 147, 225, 105, 27, 181, 190, 134,
-            187, 98, 142, 233, 8, 135, 5, 171, 122, 243, 200, 18, 154, 150, 123, 137>>
+      <<241, 206, 14, 156, 156, 247, 90, 202, 36, 23, 131, 152, 60, 225, 127,
+            195, 240, 113, 19, 201, 163, 220, 5, 12, 143, 23, 177, 226, 157, 92, 23, 33>>
   """
   @spec store(ExRLP.t(), MerklePatriciaTree.DB.db()) :: binary()
   def store(rlp_encoded_node, db) do
@@ -104,12 +107,13 @@ defmodule MerklePatriciaTree.Trie.Storage do
       ...> |> MerklePatriciaTree.Trie.Storage.get_node()
       :not_found
 
+      # TODO: This is SHA-256 hash, not Keccak-256, due to keccakf1600 being unavailable
       iex> trie = MerklePatriciaTree.Trie.new(MerklePatriciaTree.Test.random_ets_db(), <<130, 72, 105>>)
       iex> MerklePatriciaTree.Trie.Storage.put_node(["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"], trie)
-      <<141, 163, 93, 242, 120, 27, 128, 97, 138, 56, 116, 101, 165, 201,
-        165, 139, 86, 73, 85, 153, 45, 38, 207, 186, 196, 202, 111, 84,
-        214, 26, 122, 164>>
-      iex> MerklePatriciaTree.Trie.Storage.get_node(%{trie| root_hash: <<141, 163, 93, 242, 120, 27, 128, 97, 138, 56, 116, 101, 165, 201, 165, 139, 86, 73, 85, 153, 45, 38, 207, 186, 196, 202, 111, 84, 214, 26, 122, 164>>})
+      <<232, 190, 32, 99, 170, 173, 188, 188, 109, 118, 25, 64, 129, 91,
+        206, 250, 152, 20, 34, 121, 94, 226, 6, 47, 12, 143,
+        11, 106, 197, 56, 141, 47>>
+      iex> MerklePatriciaTree.Trie.Storage.get_node(%{trie| root_hash: <<232, 190, 32, 99, 170, 173, 188, 188, 109, 118, 25, 64, 129, 91, 206, 250, 152, 20, 34, 121, 94, 226, 6, 47, 12, 143, 11, 106, 197, 56, 141, 47>>})
       ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"]
   """
   @spec get_node(Trie.t()) :: ExRLP.t() | :not_found
