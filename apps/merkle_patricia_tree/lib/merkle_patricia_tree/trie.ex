@@ -49,10 +49,10 @@ defmodule MerklePatriciaTree.Trie do
       iex> MerklePatriciaTree.Trie.new(MerklePatriciaTree.Test.random_ets_db(:trie_test_2), <<1, 2, 3>>)
       %MerklePatriciaTree.Trie{db: {MerklePatriciaTree.DB.ETS, :trie_test_2}, root_hash: <<241, 136, 94, 218, 84, 183, 160, 83, 49, 140, 212, 30, 32, 147, 34, 13, 171, 21, 214, 83, 129, 177, 21, 122, 54, 51, 168, 59, 253, 92, 146, 57>>}
       iex> name = '/tmp/' ++ to_charlist(MerklePatriciaTree.Test.random_string(20))
-      iex> trie = MerklePatriciaTree.Trie.new(MerklePatriciaTree.DB.Antidote.init(name), <<1, 2, 3>>)
-      iex> trie = MerklePatriciaTree.Trie.put(trie, "name", "bob")
-      iex> MerklePatriciaTree.Trie.get(trie, "name")
-      {:ok, "bob"}
+      iex> trie = MerklePatriciaTree.Trie.new(MerklePatriciaTree.DB.Antidote.init(name))
+      iex> trie = MerklePatriciaTree.Trie.update_key(trie, "name", "bob")
+      iex> MerklePatriciaTree.Trie.get_key(trie, "name")
+      "bob"
 
   ## Storage
 
