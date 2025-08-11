@@ -13,7 +13,7 @@ defmodule VerkleTree do
   """
 
   alias MerklePatriciaTree.DB
-  alias VerkleTree.{Node, Crypto, Witness, StateExpiry}
+  alias VerkleTree.{Node, Witness, StateExpiry}
 
   defstruct db: nil, root_commitment: nil
 
@@ -27,7 +27,7 @@ defmodule VerkleTree do
           root_commitment: root_commitment
         }
 
-  @verkle_node_width 256
+  # @verkle_node_width 256
   @empty_commitment <<0::256>>
 
   @doc """

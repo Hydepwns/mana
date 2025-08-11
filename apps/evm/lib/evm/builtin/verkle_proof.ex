@@ -32,7 +32,6 @@ defmodule EVM.Builtin.VerkleProof do
   """
 
   alias VerkleTree.Witness
-  alias VerkleTree.Crypto
 
   require Logger
 

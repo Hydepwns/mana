@@ -35,7 +35,7 @@ defmodule Blockchain.Compliance.Reporting do
   use GenServer
   require Logger
 
-  alias Blockchain.Compliance.{Framework, AuditEngine, DataRetention}
+  alias Blockchain.Compliance.Framework
 
   @type report_type ::
           :sox_302
@@ -456,7 +456,7 @@ defmodule Blockchain.Compliance.Reporting do
               content: content,
               metadata: %{
                 template_version: "1.0",
-                generator: "Mana-Ethereum Compliance System",
+                generator: "axol-io Compliance System",
                 options: options
               },
               status: :completed,
@@ -556,8 +556,8 @@ defmodule Blockchain.Compliance.Reporting do
     pci_data = %{
       assessment_period: %{start: period_start, end: period_end},
       merchant_info: %{
-        company_name: "Mana-Ethereum Node Operator",
-        dba_name: "Mana-Ethereum",
+        company_name: "axol-io Node Operator",
+        dba_name: "axol-io",
         merchant_level: 4,
         card_data_environment: "Yes"
       },
@@ -743,10 +743,10 @@ defmodule Blockchain.Compliance.Reporting do
 
   defp generate_company_information(_compliance_data, _options) do
     %{
-      company_name: "Mana-Ethereum Foundation",
+      company_name: "axol.io foundation",
       address: "123 Blockchain Avenue, Crypto City, CC 12345",
       contact_person: "Chief Compliance Officer",
-      email: "compliance@mana-ethereum.org",
+      email: "legal@axol-io.org",
       phone: "+1-555-ETHEREUM",
       business_description: "Decentralized Ethereum client infrastructure provider"
     }
@@ -761,7 +761,7 @@ defmodule Blockchain.Compliance.Reporting do
     }
   end
 
-  defp generate_report_summary(compliance_data) do
+  defp generate_report_summary(_compliance_data) do
     %{
       overall_compliance_rating: "Satisfactory",
       critical_issues: 0,

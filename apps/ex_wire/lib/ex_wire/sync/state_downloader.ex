@@ -17,8 +17,8 @@ defmodule ExWire.Sync.StateDownloader do
   use GenServer
   require Logger
 
-  alias MerklePatriciaTree.{Trie, TrieStorage, DB}
-  alias ExWire.{PeerSupervisor, Packet}
+  alias MerklePatriciaTree.{Trie, DB}
+  alias ExWire.PeerSupervisor
   alias ExWire.Struct.Peer
 
   alias ExWire.Packet.Capability.Eth.{
@@ -334,7 +334,7 @@ defmodule ExWire.Sync.StateDownloader do
       {:error, reason} ->
         Logger.warning("Failed to store state node #{encode_hex(node_hash)}: #{inspect(reason)}")
 
-        new_state =
+        _new_state =
           state
           |> update_in([:failed_nodes], &MapSet.put(&1, node_hash))
           |> update_in([:nodes_failed], &(&1 + 1))

@@ -12,8 +12,8 @@ defmodule ExWire.Layer2.Optimistic.OptimisticRollup do
   use GenServer
   require Logger
 
-  alias ExWire.Layer2.{Rollup, Batch}
-  alias ExWire.Layer2.Optimistic.{FraudProof, ChallengeManager, WithdrawalManager}
+  alias ExWire.Layer2.Rollup
+  alias ExWire.Layer2.Optimistic.FraudProof
 
   @type challenge_status :: :none | :pending | :proven | :expired
 
@@ -184,7 +184,7 @@ defmodule ExWire.Layer2.Optimistic.OptimisticRollup do
             Logger.info("Fraud proof rejected for challenge #{challenge_id}")
             {:reply, {:ok, :rejected}, state}
 
-          {:error, reason} = error ->
+          {:error, _reason} = error ->
             {:reply, error, state}
         end
     end
@@ -243,7 +243,7 @@ defmodule ExWire.Layer2.Optimistic.OptimisticRollup do
 
               {:reply, {:ok, updated_withdrawal}, %{state | withdrawals: new_withdrawals}}
 
-            {:error, reason} = error ->
+            {:error, _reason} = error ->
               {:reply, error, state}
           end
         end

@@ -94,10 +94,10 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
   # Security thresholds
   @min_password_length 12
-  @max_failed_attempts 5
+  # @max_failed_attempts 5
   # 1 hour
-  @session_timeout 3600
-  @max_concurrent_sessions 10
+  # @session_timeout 3600
+  # @max_concurrent_sessions 10
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -421,7 +421,7 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
     # Check for potential SQL injection vulnerabilities
     if has_sql_injection_risk() do
-      vulnerabilities = [
+      _vulnerabilities = [
         %{
           id: generate_vulnerability_id(),
           type: :sql_injection,
@@ -438,7 +438,7 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
     # Check for XSS vulnerabilities
     if has_xss_risk() do
-      vulnerabilities = [
+      _vulnerabilities = [
         %{
           id: generate_vulnerability_id(),
           type: :xss,
@@ -462,7 +462,7 @@ defmodule MerklePatriciaTree.Security.SecurityAuditor do
 
     # Check for weak password policies
     if has_weak_password_policy() do
-      vulnerabilities = [
+      _vulnerabilities = [
         %{
           id: generate_vulnerability_id(),
           type: :weak_authentication,

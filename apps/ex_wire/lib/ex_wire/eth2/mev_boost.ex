@@ -7,7 +7,7 @@ defmodule ExWire.Eth2.MEVBoost do
   use GenServer
   require Logger
 
-  alias ExWire.Eth2.{BeaconBlock, ExecutionPayload}
+  alias ExWire.Eth2.ExecutionPayload
 
   defstruct [
     :relay_urls,

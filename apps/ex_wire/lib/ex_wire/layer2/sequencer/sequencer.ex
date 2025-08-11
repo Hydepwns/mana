@@ -13,7 +13,7 @@ defmodule ExWire.Layer2.Sequencer.Sequencer do
   use GenServer
   require Logger
 
-  alias ExWire.Layer2.{Rollup, Batch}
+  alias ExWire.Layer2.Rollup
   alias ExWire.Layer2.Sequencer.{OrderingPolicy, MEVProtection, BatchBuilder}
 
   @type ordering_mode :: :fifo | :priority_fee | :fair | :mev_auction

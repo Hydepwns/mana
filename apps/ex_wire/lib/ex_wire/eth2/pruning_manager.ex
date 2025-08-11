@@ -37,7 +37,6 @@ defmodule ExWire.Eth2.PruningManager do
     BeaconChain,
     ForkChoiceOptimized,
     StateStore,
-    BeaconState,
     PruningMetrics
   }
 

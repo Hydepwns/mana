@@ -175,7 +175,7 @@ defmodule ExWire.Eth2.PruningTestRunner do
   @doc """
   Quick validation for CI environments
   """
-  def run_ci_validation(opts \\ []) do
+  def run_ci_validation(_opts \\ []) do
     Logger.info("Running CI validation (reduced scope)")
 
     # Run essential tests only for CI
@@ -209,7 +209,7 @@ defmodule ExWire.Eth2.PruningTestRunner do
   @doc """
   Validate production readiness
   """
-  def validate_production_readiness(opts \\ []) do
+  def validate_production_readiness(_opts \\ []) do
     Logger.info("Validating production readiness")
 
     # Generate production-scale test dataset
@@ -466,7 +466,7 @@ defmodule ExWire.Eth2.PruningTestRunner do
     # Load test files
     for test_file <- test_files do
       if File.exists?(test_file) do
-        Code.load_file(test_file)
+        Code.require_file(test_file, ".")
       else
         Logger.warning("Test file not found: #{test_file}")
       end

@@ -45,28 +45,28 @@ defmodule ExWire.Eth2.SlashingProtection do
   @doc """
   Initialize slashing protection for a validator
   """
-  def init_validator(db, pubkey) do
+  def init_validator(_db, pubkey) do
     GenServer.call(__MODULE__, {:init_validator, pubkey})
   end
 
   @doc """
   Check if a block proposal is safe
   """
-  def check_block_proposal(db, pubkey, slot) do
+  def check_block_proposal(_db, pubkey, slot) do
     GenServer.call(__MODULE__, {:check_block, pubkey, slot})
   end
 
   @doc """
   Record a block proposal
   """
-  def record_block_proposal(db, pubkey, slot, signing_root \\ nil) do
+  def record_block_proposal(_db, pubkey, slot, signing_root \\ nil) do
     GenServer.call(__MODULE__, {:record_block, pubkey, slot, signing_root})
   end
 
   @doc """
   Check if an attestation is safe
   """
-  def check_attestation(db, pubkey, attestation_data) do
+  def check_attestation(_db, pubkey, attestation_data) do
     GenServer.call(__MODULE__, {:check_attestation, pubkey, attestation_data})
   end
 

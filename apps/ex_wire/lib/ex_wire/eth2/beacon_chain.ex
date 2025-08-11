@@ -15,7 +15,6 @@ defmodule ExWire.Eth2.BeaconChain do
     ForkChoice,
     StateTransition,
     ValidatorRegistry,
-    Attestation,
     SyncCommittee,
     BlobVerification,
     BlobSidecar,

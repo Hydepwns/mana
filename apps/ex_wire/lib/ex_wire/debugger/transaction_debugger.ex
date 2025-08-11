@@ -39,9 +39,7 @@ defmodule ExWire.Debugger.TransactionDebugger do
   require Logger
 
   alias EVM.{MachineState, ExecEnv}
-  alias Blockchain.{Transaction, Account}
-  alias ExWire.Consensus.CRDTConsensusManager
-  alias MerklePatriciaTree.DB.AntiodoteCRDTs.{AccountBalance, StateTree}
+  alias Blockchain.Transaction
 
   @type debug_session :: %{
           session_id: String.t(),
@@ -760,7 +758,7 @@ defmodule ExWire.Debugger.TransactionDebugger do
     }
   end
 
-  defp step_vm_execution(vm_state, exec_env) do
+  defp step_vm_execution(vm_state, _exec_env) do
     # Placeholder for actual EVM step execution
     {:ok, vm_state,
      %{

@@ -358,7 +358,7 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
     gc_time = (gc_end - gc_start) / 1000
 
     # Update stats
-    optimizer = update_gc_stats(optimizer, gc_time)
+    _optimizer = update_gc_stats(optimizer, gc_time)
 
     Logger.debug("Garbage collection completed in #{gc_time}ms")
   end
@@ -395,7 +395,7 @@ defmodule MerklePatriciaTree.DB.MemoryOptimizer do
     %{optimizer | stats: stats}
   end
 
-  defp update_gc_stats(optimizer, gc_time) do
+  defp update_gc_stats(optimizer, _gc_time) do
     stats = %{optimizer.stats | gc_cycles: optimizer.stats.gc_cycles + 1}
     %{optimizer | stats: stats}
   end

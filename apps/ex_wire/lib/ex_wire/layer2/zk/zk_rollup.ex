@@ -18,8 +18,8 @@ defmodule ExWire.Layer2.ZK.ZKRollup do
   use GenServer
   require Logger
 
-  alias ExWire.Layer2.{Rollup, Batch}
-  alias ExWire.Layer2.ZK.{ProofVerifier, CircuitManager, StateTree}
+  alias ExWire.Layer2.Rollup
+  alias ExWire.Layer2.ZK.{ProofVerifier, StateTree}
 
   @type proof_system :: :groth16 | :plonk | :stark | :fflonk | :halo2
   @type proof_status :: :pending | :verified | :rejected
@@ -197,7 +197,7 @@ defmodule ExWire.Layer2.ZK.ZKRollup do
                      state_tree: new_state_tree
                  }}
 
-              {:error, reason} = error ->
+              {:error, _reason} = error ->
                 {:reply, error, state}
             end
 
@@ -209,7 +209,7 @@ defmodule ExWire.Layer2.ZK.ZKRollup do
 
             {:reply, {:error, :invalid_proof}, %{state | pending_proofs: new_pending_proofs}}
 
-          {:error, reason} = error ->
+          {:error, _reason} = error ->
             {:reply, error, state}
         end
     end
@@ -230,7 +230,7 @@ defmodule ExWire.Layer2.ZK.ZKRollup do
           Logger.info("Aggregated #{length(proof_ids)} proofs")
           {:reply, {:ok, aggregated_proof}, state}
 
-        {:error, reason} = error ->
+        {:error, _reason} = error ->
           {:reply, error, state}
       end
     end
@@ -249,7 +249,7 @@ defmodule ExWire.Layer2.ZK.ZKRollup do
         Logger.debug("Updated account state for #{Base.encode16(account_address)}")
         {:reply, :ok, %{state | state_tree: new_state_tree}}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end

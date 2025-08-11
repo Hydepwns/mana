@@ -8,7 +8,6 @@ defmodule Blockchain.Transaction.Blob do
   """
 
   alias Blockchain.Transaction
-  alias ExthCrypto.Hash.Keccak
   alias ExWire.Crypto.KZG
 
   # Transaction type identifier for blob transactions
@@ -327,11 +326,69 @@ defmodule Blockchain.Transaction.Blob do
   end
 
   defp unzip_blob_data(blob_data_list) do
+    # Manually unzip the 3-tuples since Enum.unzip3 doesn't exist
     {blobs, commitments, proofs} =
       blob_data_list
-      |> Enum.map(fn {blob, commitment, proof} -> {blob, commitment, proof} end)
-      |> Enum.unzip3()
+      |> Enum.reduce({[], [], []}, fn {blob, commitment, proof}, {bs, cs, ps} ->
+        {[blob | bs], [commitment | cs], [proof | ps]}
+      end)
+      |> then(fn {bs, cs, ps} -> {Enum.reverse(bs), Enum.reverse(cs), Enum.reverse(ps)} end)
 
     {blobs, commitments, proofs}
+  end
+
+  @doc """
+  Computes the hash of a blob transaction.
+  """
+  @spec hash(t()) :: binary()
+  def hash(blob_tx) do
+    blob_tx
+    |> serialize()
+    |> ExRLP.encode()
+    |> ExthCrypto.Hash.Keccak.kec()
+  end
+
+  @doc """
+  Recovers the sender address from a blob transaction.
+  """
+  @spec sender(t()) :: {:ok, EVM.address()} | {:error, term()}
+  def sender(blob_tx) do
+    # Reconstruct the signing data
+    signing_data = [
+      blob_tx.chain_id,
+      blob_tx.nonce,
+      blob_tx.max_priority_fee_per_gas,
+      blob_tx.max_fee_per_gas,
+      blob_tx.gas_limit,
+      blob_tx.to,
+      blob_tx.value,
+      blob_tx.data,
+      blob_tx.access_list,
+      blob_tx.max_fee_per_blob_gas,
+      blob_tx.blob_versioned_hashes
+    ]
+    
+    message_hash = 
+      signing_data
+      |> ExRLP.encode()
+      |> ExthCrypto.Hash.Keccak.kec()
+    
+    # Recover public key from signature
+    case Blockchain.Transaction.Signature.get_public_key(
+      message_hash,
+      blob_tx.v,
+      blob_tx.r,
+      blob_tx.s
+    ) do
+      {:ok, public_key} ->
+        address = 
+          public_key
+          |> ExthCrypto.Hash.Keccak.kec()
+          |> Binary.take(-20)
+        {:ok, address}
+        
+      error ->
+        error
+    end
   end
 end

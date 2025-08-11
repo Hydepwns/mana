@@ -8,8 +8,6 @@ defmodule ExWire.Enterprise.ComplianceReporter do
   require Logger
 
   alias ExWire.Enterprise.AuditLogger
-  alias ExWire.Transaction
-  alias ExWire.BlockChain
 
   defstruct [
     :reports,

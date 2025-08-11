@@ -34,7 +34,7 @@ defmodule ExWire.Sync.SnapshotGenerator do
   alias ExWire.Packet.Capability.Par.SnapshotManifest.Manifest
   alias ExWire.Packet.Capability.Par.SnapshotData.{BlockChunk, StateChunk}
   alias MerklePatriciaTree.{Trie, TrieStorage}
-  alias Blockchain.{Account, Block}
+  alias Blockchain.Account
 
   @type snapshot_request :: %{
           block_number: non_neg_integer(),

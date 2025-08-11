@@ -50,6 +50,20 @@ defmodule VerkleTree.Migration do
   end
 
   @doc """
+  Initializes a new migration context with an existing verkle tree.
+  """
+  @spec new(Trie.t(), VerkleTree.t(), DB.db()) :: t()
+  def new(existing_mpt, existing_verkle, db) do
+    %__MODULE__{
+      mpt: existing_mpt,
+      verkle: existing_verkle,
+      db: db,
+      migration_progress: 0,
+      total_keys: estimate_mpt_size(existing_mpt)
+    }
+  end
+
+  @doc """
   Handles a state access during the transition period.
 
   This implements the EIP-6800 behavior:
@@ -208,6 +222,48 @@ defmodule VerkleTree.Migration do
       [] -> {:ok, []}
       keys -> {:error, keys}
     end
+  end
+
+  @doc """
+  Get the root hash of the verkle tree in the migration state.
+  """
+  @spec get_root(t()) :: binary()
+  def get_root(migration_state) do
+    VerkleTree.get_root(migration_state.verkle)
+  end
+
+  @doc """
+  Put a key-value pair directly into the verkle tree.
+  Convenience function that wraps put_with_migration.
+  """
+  @spec put(t(), binary(), binary()) :: t()
+  def put(migration_state, key, value) do
+    put_with_migration(migration_state, key, value)
+  end
+
+  @doc """
+  Remove a key directly from both trees.
+  Convenience function that wraps remove_with_migration.
+  """
+  @spec remove(t(), binary()) :: t()
+  def remove(migration_state, key) do
+    remove_with_migration(migration_state, key)
+  end
+
+  @doc """
+  Generate a witness for a key in the verkle tree.
+  """
+  @spec generate_witness(t(), binary()) :: {:ok, binary()} | {:error, term()}
+  def generate_witness(migration_state, key) do
+    VerkleTree.generate_witness(migration_state.verkle, key)
+  end
+
+  @doc """
+  Get the verkle tree from the migration state.
+  """
+  @spec get_verkle_tree(t()) :: VerkleTree.t()
+  def get_verkle_tree(migration_state) do
+    migration_state.verkle
   end
 
   # Private helper functions

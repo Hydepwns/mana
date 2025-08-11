@@ -739,4 +739,28 @@ defmodule Blockchain.Account do
   def empty_trie do
     @empty_trie
   end
+
+  @doc """
+  Alias for serialize/1 - encodes an account for storage.
+  """
+  @spec encode(t) :: ExRLP.t()
+  def encode(account), do: serialize(account)
+
+  @doc """
+  Alias for deserialize/1 - decodes an account from storage.
+  """
+  @spec decode(ExRLP.t()) :: t
+  def decode(rlp), do: deserialize(rlp)
+
+  @doc """
+  Creates a new empty account.
+  """
+  @spec new() :: t
+  def new(), do: %__MODULE__{}
+
+  @doc """
+  Returns the empty code hash constant.
+  """
+  @spec empty_code_hash() :: binary()
+  def empty_code_hash(), do: @empty_keccak
 end

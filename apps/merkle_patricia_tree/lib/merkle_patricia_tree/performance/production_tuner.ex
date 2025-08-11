@@ -429,7 +429,7 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
 
     # CPU optimization recommendations
     if analysis.cpu_bottleneck do
-      recommendations = [
+      _recommendations = [
         %{
           id: generate_recommendation_id(),
           type: :cpu_optimization,
@@ -449,7 +449,7 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
 
     # Memory optimization recommendations
     if analysis.memory_bottleneck do
-      recommendations = [
+      _recommendations = [
         %{
           id: generate_recommendation_id(),
           type: :memory_optimization,
@@ -469,7 +469,7 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
 
     # Latency optimization recommendations
     if analysis.latency_bottleneck do
-      recommendations = [
+      _recommendations = [
         %{
           id: generate_recommendation_id(),
           type: :latency_optimization,
@@ -823,22 +823,22 @@ defmodule MerklePatriciaTree.Performance.ProductionTuner do
 
   # Improvement calculation functions (simplified)
 
-  defp calculate_cpu_improvement(state) do
+  defp calculate_cpu_improvement(_state) do
     # Simplified CPU improvement calculation
     :rand.uniform(20)
   end
 
-  defp calculate_memory_improvement(state) do
+  defp calculate_memory_improvement(_state) do
     # Simplified memory improvement calculation
     :rand.uniform(25)
   end
 
-  defp calculate_latency_improvement(state) do
+  defp calculate_latency_improvement(_state) do
     # Simplified latency improvement calculation
     :rand.uniform(30)
   end
 
-  defp calculate_throughput_improvement(state) do
+  defp calculate_throughput_improvement(_state) do
     # Simplified throughput improvement calculation
     :rand.uniform(35)
   end

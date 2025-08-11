@@ -54,7 +54,6 @@ defmodule ExWire.Consensus.CRDTConsensusManager do
 
   alias MerklePatriciaTree.DB.AntiodoteCRDTs.{AccountBalance, TransactionPool, StateTree}
   alias Blockchain.Transaction
-  alias ExWire.Packet.Capability.Eth
 
   @type consensus_state :: :initializing | :active | :degraded | :recovering
   @type operation_result :: :success | :conflict_resolved | :deferred | :failed
@@ -596,7 +595,7 @@ defmodule ExWire.Consensus.CRDTConsensusManager do
     end
   end
 
-  defp configure_initial_replicas(replicas, coordinator, geographic_router, active_replicator) do
+  defp configure_initial_replicas(replicas, _coordinator, _geographic_router, _active_replicator) do
     Logger.info("[CRDTConsensus] Configuring initial replicas: #{inspect(replicas)}")
 
     # Add replicas to all components
@@ -644,7 +643,7 @@ defmodule ExWire.Consensus.CRDTConsensusManager do
     end
   end
 
-  defp check_partition_recovery(state) do
+  defp check_partition_recovery(_state) do
     # Check if partitioned replicas have recovered
     Logger.debug("[CRDTConsensus] Checking partition recovery")
     :ok

@@ -7,8 +7,6 @@ defmodule JSONRPC2.SpecHandler.LogsFilter do
 
   alias Blockchain.{Block, Transaction}
   alias Blockchain.Transaction.Receipt
-  alias Block.Header
-  alias EVM.LogEntry
   alias ExthCrypto.Hash.Keccak
 
   @type filter_params :: %{

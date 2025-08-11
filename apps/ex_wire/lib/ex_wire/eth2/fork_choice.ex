@@ -7,7 +7,7 @@ defmodule ExWire.Eth2.ForkChoice do
   require Logger
   import Bitwise
 
-  alias ExWire.Eth2.{BeaconState, BeaconBlock, Attestation, Checkpoint}
+  alias ExWire.Eth2.Checkpoint
 
   defstruct [
     :justified_checkpoint,

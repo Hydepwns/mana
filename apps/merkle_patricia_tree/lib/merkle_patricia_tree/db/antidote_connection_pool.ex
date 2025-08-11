@@ -27,8 +27,8 @@ defmodule MerklePatriciaTree.DB.AntidoteConnectionPool do
   # 30 seconds
   @default_health_check_interval 30_000
   @connection_timeout 5_000
-  @max_retries 3
-  @retry_delay 1_000
+  # @max_retries 3
+  # @retry_delay 1_000
 
   # Circuit breaker settings
   # failures before opening
@@ -85,6 +85,41 @@ defmodule MerklePatriciaTree.DB.AntidoteConnectionPool do
   """
   def status do
     GenServer.call(__MODULE__, :status)
+  end
+
+  @doc """
+  Starts a connection pool with the given configuration.
+  """
+  def start_pool(pool_name, opts \\ []) do
+    # For now, delegate to start_link with a name
+    name = {:via, Registry, {MerklePatriciaTree.Registry, {__MODULE__, pool_name}}}
+    GenServer.start_link(__MODULE__, opts, name: name)
+  end
+
+  @doc """
+  Stops a connection pool.
+  """
+  def stop_pool(pool_name) do
+    name = {:via, Registry, {MerklePatriciaTree.Registry, {__MODULE__, pool_name}}}
+    GenServer.stop(name)
+  end
+
+  @doc """
+  Performs a read operation using the connection pool.
+  """
+  def read(key, opts \\ []) do
+    with_connection(fn conn ->
+      MerklePatriciaTree.DB.AntidoteClient.get(conn, opts[:bucket] || "default", key)
+    end)
+  end
+
+  @doc """
+  Performs a write operation using the connection pool.
+  """
+  def write(key, value, opts \\ []) do
+    with_connection(fn conn ->
+      MerklePatriciaTree.DB.AntidoteClient.put!(conn, opts[:bucket] || "default", key, value)
+    end)
   end
 
   ## GenServer Callbacks

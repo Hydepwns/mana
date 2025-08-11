@@ -187,16 +187,32 @@ defmodule Blockchain.Monitoring.PrometheusMetrics do
 
   defp initialize_default_metrics(table) do
     # Initialize blockchain metrics
-    :ets.insert(table, {{"mana_blockchain_height", :gauge, %{}}, 0})
-    :ets.insert(table, {{"mana_blocks_processed_total", :counter, %{}}, 0})
+    Enum.each(@blockchain_metrics, fn metric ->
+      case metric do
+        "mana_blockchain_height" -> :ets.insert(table, {{metric, :gauge, %{}}, 0})
+        "mana_blocks_processed_total" -> :ets.insert(table, {{metric, :counter, %{}}, 0})
+        _ -> :ets.insert(table, {{metric, :gauge, %{}}, 0})
+      end
+    end)
 
     # Initialize P2P metrics
-    :ets.insert(table, {{"mana_p2p_peers_connected", :gauge, %{"protocol" => "eth"}}, 0})
-    :ets.insert(table, {{"mana_p2p_peers_connected", :gauge, %{"protocol" => "libp2p"}}, 0})
-    :ets.insert(table, {{"mana_p2p_messages_total", :counter, %{"direction" => "inbound"}}, 0})
-    :ets.insert(table, {{"mana_p2p_messages_total", :counter, %{"direction" => "outbound"}}, 0})
+    Enum.each(@p2p_metrics, fn metric ->
+      case metric do
+        "mana_p2p_peers_connected" -> 
+          :ets.insert(table, {{metric, :gauge, %{"protocol" => "eth"}}, 0})
+          :ets.insert(table, {{metric, :gauge, %{"protocol" => "libp2p"}}, 0})
+        "mana_p2p_messages_total" ->
+          :ets.insert(table, {{metric, :counter, %{"direction" => "inbound"}}, 0})
+          :ets.insert(table, {{metric, :counter, %{"direction" => "outbound"}}, 0})
+        _ -> :ets.insert(table, {{metric, :gauge, %{}}, 0})
+      end
+    end)
 
     # Initialize system metrics
+    Enum.each(@system_metrics, fn metric ->
+      :ets.insert(table, {{metric, :gauge, %{}}, 0})
+    end)
+    
     update_system_metrics_in_table(table)
   end
 

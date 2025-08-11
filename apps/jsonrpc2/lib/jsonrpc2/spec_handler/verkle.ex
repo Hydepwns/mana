@@ -15,7 +15,6 @@ defmodule JSONRPC2.SpecHandler.Verkle do
   """
 
   alias Blockchain.State.VerkleAdapter
-  alias VerkleTree.Witness
   alias JSONRPC2.Bridge.Sync
   alias MerklePatriciaTree.DB
 

@@ -305,12 +305,12 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
       nil ->
         {:error, "Node not available"}
 
-      pool when length(pool) > 0 ->
+      [_ | _] = pool ->
         # Simple round-robin from pool
         connection = Enum.random(pool)
         {:ok, connection}
 
-      _empty_pool ->
+      [] ->
         {:error, "Connection pool is empty"}
     end
   end
@@ -437,7 +437,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
             Map.put(acc, state_root, value)
 
           {:branch, children} ->
-            Enum.reduce(children, acc, fn {key, child_root}, child_acc ->
+            Enum.reduce(children, acc, fn {_key, child_root}, child_acc ->
               load_state_recursive(client, bucket, child_root, tx_id, child_acc)
             end)
         end
@@ -517,7 +517,7 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
 
     if current_size > max_size do
       # Remove oldest entries (simple LRU implementation)
-      entries_to_remove = current_size - max_size
+      _entries_to_remove = current_size - max_size
       :ets.select_delete(cache, [{{:_, :_, :_}, [], [true]}])
     end
   end
@@ -537,22 +537,22 @@ defmodule MerklePatriciaTree.DB.AntidoteOptimized do
     end)
   end
 
-  defp get_cache_hits(cache) do
+  defp get_cache_hits(_cache) do
     # Simplified cache hit tracking
     0
   end
 
-  defp get_cache_misses(cache) do
+  defp get_cache_misses(_cache) do
     # Simplified cache miss tracking
     0
   end
 
-  defp get_avg_latency(client) do
+  defp get_avg_latency(_client) do
     # Simplified latency tracking
     1.0
   end
 
-  defp get_active_transactions(client) do
+  defp get_active_transactions(_client) do
     # Simplified active transaction tracking
     0
   end

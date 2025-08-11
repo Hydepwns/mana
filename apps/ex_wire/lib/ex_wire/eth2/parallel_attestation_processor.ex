@@ -18,7 +18,7 @@ defmodule ExWire.Eth2.ParallelAttestationProcessor do
   require Logger
   import Bitwise
 
-  alias ExWire.Eth2.{BeaconState, Attestation}
+  alias ExWire.Eth2.Attestation
   alias ExWire.Crypto.BLS
 
   # Configuration

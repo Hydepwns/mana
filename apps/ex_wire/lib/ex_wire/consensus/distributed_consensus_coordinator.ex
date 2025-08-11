@@ -53,8 +53,6 @@ defmodule ExWire.Consensus.DistributedConsensusCoordinator do
   use GenServer
   require Logger
 
-  alias ExWire.Sync.SnapshotGenerator
-  alias MerklePatriciaTree.DB.AntiodoteCRDTs.{AccountBalance, TransactionPool, StateTree}
   alias MerklePatriciaTree.DB.AntidoteConnectionPool
 
   @type datacenter_id :: String.t()
@@ -610,7 +608,7 @@ defmodule ExWire.Consensus.DistributedConsensusCoordinator do
     end
   end
 
-  defp execute_distributed_transaction(transaction, datacenter, replica, state) do
+  defp execute_distributed_transaction(_transaction, datacenter, _replica, _state) do
     # Execute transaction using CRDT operations
     Logger.debug("[DistributedConsensus] Executing transaction on #{datacenter}")
 
@@ -619,7 +617,7 @@ defmodule ExWire.Consensus.DistributedConsensusCoordinator do
     {:ok, %{datacenter: datacenter, transaction_hash: generate_tx_hash()}}
   end
 
-  defp execute_distributed_read(operation, datacenter, replica, state) do
+  defp execute_distributed_read(_operation, datacenter, _replica, _state) do
     # Execute read operation
     Logger.debug("[DistributedConsensus] Executing read on #{datacenter}")
 
@@ -628,7 +626,7 @@ defmodule ExWire.Consensus.DistributedConsensusCoordinator do
     {:ok, %{datacenter: datacenter, result: "read_result"}}
   end
 
-  defp perform_crdt_sync(datacenter, replica, state) do
+  defp perform_crdt_sync(datacenter, _replica, _state) do
     Logger.debug("[DistributedConsensus] Performing CRDT sync with #{datacenter}")
 
     # This would implement actual CRDT synchronization

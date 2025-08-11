@@ -10,7 +10,6 @@ defmodule Blockchain.Performance.KZGBenchmarks do
   """
 
   alias ExWire.Crypto.KZG
-  alias Blockchain.Transaction.Blob
 
   @doc """
   Run comprehensive KZG benchmarks.
@@ -22,7 +21,7 @@ defmodule Blockchain.Performance.KZGBenchmarks do
     :ok = KZG.init_trusted_setup()
 
     # Generate test data once
-    {blob_data, test_cases} = generate_benchmark_data()
+    {_blob_data, test_cases} = generate_benchmark_data()
 
     # Run all benchmarks
     results = %{
@@ -217,7 +216,7 @@ defmodule Blockchain.Performance.KZGBenchmarks do
         {memory_before, _} = Process.info(self(), :memory)
 
         # Perform operations
-        verification_data =
+        _verification_data =
           Enum.map(blobs, fn blob ->
             commitment = KZG.blob_to_kzg_commitment(blob)
             proof = KZG.compute_blob_kzg_proof(blob, commitment)
@@ -271,7 +270,7 @@ defmodule Blockchain.Performance.KZGBenchmarks do
     }
 
     # Run our benchmarks
-    {blob_data, test_cases} = generate_benchmark_data()
+    {_blob_data, test_cases} = generate_benchmark_data()
     single_blob = test_cases["single_blob"]
 
     commitment_perf = benchmark_commitment_generation(%{"test" => single_blob})["test"]

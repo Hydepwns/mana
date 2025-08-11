@@ -116,6 +116,14 @@ defmodule ExWire.PeerSupervisor do
     |> Enum.count()
   end
 
+  @doc """
+  Returns a list of connected peer PIDs.
+  """
+  @spec connected_peers() :: list(pid())
+  def connected_peers() do
+    find_children(:all)
+  end
+
   @impl true
   def init(start_nodes: peer_enode_urls, connection_observer: connection_observer) do
     _ =

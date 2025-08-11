@@ -44,9 +44,6 @@ defmodule ExWire.CLI.InteractiveCLI do
     ContextManager
   }
 
-  alias ExWire.Consensus.CRDTConsensusManager
-  alias Blockchain.{Block, Transaction}
-
   @type cli_state :: %{
           # :mainnet | :testnet | :dev | :multi_dc
           context: atom(),
@@ -618,7 +615,7 @@ defmodule ExWire.CLI.Formatter do
   end
 
   defp format_wei(wei) when is_integer(wei) do
-    Float.to_string(wei / 1_000_000_000_000_000_000, decimals: 6)
+    :erlang.float_to_binary(wei / 1_000_000_000_000_000_000, decimals: 6)
   end
 
   defp format_timestamp(timestamp) when is_integer(timestamp) do

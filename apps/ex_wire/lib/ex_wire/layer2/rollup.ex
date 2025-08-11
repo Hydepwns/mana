@@ -114,7 +114,7 @@ defmodule ExWire.Layer2.Rollup do
       {:ok, new_state, batch_number} ->
         {:reply, {:ok, batch_number}, new_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -135,7 +135,7 @@ defmodule ExWire.Layer2.Rollup do
           {:ok, false} ->
             {:reply, {:ok, false}, state}
 
-          {:error, reason} = error ->
+          {:error, _reason} = error ->
             {:reply, error, state}
         end
     end
@@ -160,7 +160,7 @@ defmodule ExWire.Layer2.Rollup do
       {:ok, new_state} ->
         {:reply, :ok, new_state}
 
-      {:error, reason} = error ->
+      {:error, _reason} = error ->
         {:reply, error, state}
     end
   end
@@ -238,7 +238,7 @@ defmodule ExWire.Layer2.Rollup do
 
       {:ok, new_state, batch_number}
     else
-      {:error, reason} = error -> error
+      {:error, _reason} = error -> error
     end
   end
 

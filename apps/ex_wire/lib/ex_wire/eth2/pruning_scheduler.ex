@@ -21,7 +21,6 @@ defmodule ExWire.Eth2.PruningScheduler do
 
   alias ExWire.Eth2.{
     PruningManager,
-    PruningConfig,
     BeaconChain
   }
 

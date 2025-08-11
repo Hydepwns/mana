@@ -199,14 +199,12 @@ defmodule JSONRPC2.Server.Handler do
           standard_error_response(:method_not_found, %{method: method, params: params}, id)
 
         other_e ->
-          stacktrace = System.stacktrace()
-          :ok = log_error(module, method, params, :error, other_e, stacktrace)
-          Kernel.reraise(other_e, stacktrace)
+          :ok = log_error(module, method, params, :error, other_e, __STACKTRACE__)
+          Kernel.reraise(other_e, __STACKTRACE__)
       end
   catch
     kind, payload ->
-      stacktrace = System.stacktrace()
-      :ok = log_error(module, method, params, kind, payload, stacktrace)
+      :ok = log_error(module, method, params, kind, payload, __STACKTRACE__)
 
       standard_error_response(:internal_error, id)
   end

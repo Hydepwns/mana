@@ -14,7 +14,7 @@ defmodule Blockchain.Mixfile do
         maintainers: ["Geoffrey Hayes", "Ayrat Badykov", "Mason Forest"],
         licenses: ["MIT", "Apache 2"],
         links: %{
-          "GitHub" => "https://github.com/mana-ethereum/mana/tree/master/apps/blockchain"
+          "GitHub" => "https://github.com/axol-io/mana/tree/master/apps/blockchain"
         }
       ],
       build_embedded: Mix.env() == :prod,

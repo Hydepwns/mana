@@ -22,6 +22,11 @@ defmodule ExWire.CLI.Commands do
     bold: "\e[1m",
     dim: "\e[2m"
   }
+
+  @doc """
+  Returns the color constants map for CLI formatting.
+  """
+  def colors, do: @colors
 end
 
 defmodule ExWire.CLI.Commands.Help do

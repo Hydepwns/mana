@@ -7,7 +7,6 @@ defmodule ExWire.Enterprise.HSMIntegration do
   use GenServer
   require Logger
 
-  alias ExWire.Crypto
   alias ExWire.Enterprise.AuditLogger
 
   defstruct [

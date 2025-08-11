@@ -8,6 +8,7 @@ defmodule ExWire.Packet.Capability.Par.SnapshotManifest do
   ```
   """
   import Exth, only: [maybe_decode_unsigned: 1]
+  require Logger
 
   @behaviour ExWire.Packet
 

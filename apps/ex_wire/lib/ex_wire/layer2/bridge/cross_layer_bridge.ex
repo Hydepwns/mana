@@ -13,7 +13,7 @@ defmodule ExWire.Layer2.Bridge.CrossLayerBridge do
   use GenServer
   require Logger
 
-  alias ExWire.Layer2.Bridge.{MessageQueue, AssetManager, EventRelay}
+  alias ExWire.Layer2.Bridge.{MessageQueue, EventRelay}
 
   @type layer :: :l1 | :l2
   @type message_status :: :pending | :relayed | :confirmed | :failed
@@ -341,7 +341,7 @@ defmodule ExWire.Layer2.Bridge.CrossLayerBridge do
           {:ok, proof} ->
             {:reply, {:ok, proof}, state}
 
-          {:error, reason} = error ->
+          {:error, _reason} = error ->
             {:reply, error, state}
         end
     end
@@ -481,13 +481,13 @@ defmodule ExWire.Layer2.Bridge.CrossLayerBridge do
     end
   end
 
-  defp send_to_l1(message, l1_contract) do
+  defp send_to_l1(_message, l1_contract) do
     # TODO: Send transaction to L1
     Logger.debug("Sending message to L1 contract #{Base.encode16(l1_contract)}")
     {:ok, :crypto.strong_rand_bytes(32)}
   end
 
-  defp send_to_l2(message, l2_contract) do
+  defp send_to_l2(_message, l2_contract) do
     # TODO: Send transaction to L2
     Logger.debug("Sending message to L2 contract #{Base.encode16(l2_contract)}")
     {:ok, :crypto.strong_rand_bytes(32)}

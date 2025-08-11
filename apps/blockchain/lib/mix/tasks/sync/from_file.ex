@@ -14,8 +14,7 @@ defmodule Mix.Tasks.Sync.FromFile do
   use Mix.Task
   require Logger
   alias Blockchain.{Block, Blocktree, Chain, Genesis}
-  alias Blockchain.Blocktree.State
-  alias MerklePatriciaTree.{CachingTrie, DB.Antidote, Trie}
+  alias MerklePatriciaTree.{DB.Antidote, Trie}
 
   def run(args) do
     {db, chain} = setup()

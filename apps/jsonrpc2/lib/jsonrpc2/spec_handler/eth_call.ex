@@ -3,7 +3,6 @@ defmodule JSONRPC2.SpecHandler.EthCall do
   Handles the eth_call JSON-RPC method for executing contract calls without creating a transaction.
   """
 
-  alias Blockchain.Account
   alias Blockchain.Contract.MessageCall
   alias Blockchain.Transaction
   alias EVM

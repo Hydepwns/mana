@@ -23,12 +23,12 @@ Note: The base branch requires [all commits to be signed](https://help.github.co
 
 
 ### Issues
-Creating and discussing [Issues](https://github.com/mana-ethereum/mana/issues) provides significant value to the project. If you find a bug you can report it in an Issue.
+Creating and discussing [Issues](https://github.com/axol-io/mana/issues) provides significant value to the project. If you find a bug you can report it in an Issue.
 
 ### Pull Requests (PR)
 
 Before submitting a PR:
-1. Add a test for the new or updated functionality. For tests that are simple and would make sense in documentation add a doctest. For more complicated tests add a regular test. If you're not sure which type to add ask in [Gitter](https://gitter.im/mana-ethereum/mana).
+1. Add a test for the new or updated functionality. For tests that are simple and would make sense in documentation add a doctest. For more complicated tests add a regular test. If you're not sure which type to add ask in [Gitter](https://gitter.im/axol-io/mana).
 2. Run `mix format` to format your code.
 3. Run `mix credo` and fix any errors and warnings.
 

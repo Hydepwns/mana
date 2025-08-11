@@ -250,7 +250,7 @@ groups:
         for: 5m
         annotations:
           summary: "High replication lag on {{ $labels.node }}"
-      
+
       - alert: NodeDown
         expr: up{job="antidote"} == 0
         for: 1m
@@ -516,9 +516,9 @@ Expected performance with 3-node cluster:
 ## Support & Resources
 
 - **Documentation**: [AntidoteDB Docs](https://antidotedb.eu/docs/)
-- **GitHub Issues**: [mana-ethereum/issues](https://github.com/mana-ethereum/mana/issues)
+- **GitHub Issues**: [axol-io/issues](https://github.com/axol-io/mana/issues)
 - **Community Chat**: Discord/Telegram
-- **Emergency Support**: ops@mana-ethereum.org
+- **Emergency Support**: hello@axol-io.org
 
 ## Appendix: Scripts
 

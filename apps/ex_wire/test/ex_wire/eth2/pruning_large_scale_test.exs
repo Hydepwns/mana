@@ -792,15 +792,7 @@ defmodule ExWire.Eth2.PruningLargeScaleTest do
 
     # Trace parent chain
     current_root = finalized_root
-    chain_length = 0
-
-    while current_root != <<0::256>> and chain_length < 10000 do
-      block_info = Map.get(pruned_store.blocks, current_root)
-      assert block_info != nil, "Chain block should be present: #{inspect(current_root)}"
-
-      current_root = block_info.block.parent_root
-      chain_length = chain_length + 1
-    end
+    chain_length = verify_chain_loop(pruned_store, current_root, 0)
 
     assert chain_length > 0, "Should trace back through canonical chain"
   end
@@ -892,6 +884,18 @@ defmodule ExWire.Eth2.PruningLargeScaleTest do
           # Other strategies should have basic timing info
           assert Map.has_key?(result, :elapsed_us), "Strategy should report timing"
       end
+    end
+  end
+
+  defp verify_chain_loop(_pruned_store, <<0::256>>, chain_length), do: chain_length
+  defp verify_chain_loop(_pruned_store, _current_root, chain_length) when chain_length >= 10000, do: chain_length
+  defp verify_chain_loop(pruned_store, current_root, chain_length) do
+    block_info = Map.get(pruned_store.blocks, current_root)
+    
+    if block_info == nil do
+      chain_length
+    else
+      verify_chain_loop(pruned_store, block_info.block.parent_root, chain_length + 1)
     end
   end
 

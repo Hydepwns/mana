@@ -11,8 +11,6 @@ defmodule ExWire.Eth2.CheckpointSync do
   require Logger
 
   alias ExWire.Eth2.{
-    BeaconState,
-    BeaconBlock,
     BeaconChain,
     StateStore,
     ForkChoice

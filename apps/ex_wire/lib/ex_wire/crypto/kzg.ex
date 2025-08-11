@@ -13,6 +13,8 @@ defmodule ExWire.Crypto.KZG do
   use Rustler,
     otp_app: :ex_wire,
     crate: "kzg_nif"
+  
+  require Logger
 
   # EIP-4844 Constants
   @bytes_per_field_element 32
@@ -41,52 +43,66 @@ defmodule ExWire.Crypto.KZG do
   This must be called before any KZG operations.
   """
   @spec load_trusted_setup_from_bytes(binary(), binary()) :: :ok | {:error, term()}
-  def load_trusted_setup_from_bytes(_g1_bytes, _g2_bytes), do: :erlang.nif_error(:not_loaded)
+  def load_trusted_setup_from_bytes(_g1_bytes, _g2_bytes) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 
   @doc """
   Check if trusted setup is loaded.
   """
   @spec is_setup_loaded() :: boolean()
-  def is_setup_loaded(), do: :erlang.nif_error(:not_loaded)
+  def is_setup_loaded() do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 
   @doc """
   Compute a KZG commitment from blob data.
   """
   @spec blob_to_kzg_commitment(blob_data()) :: commitment()
-  def blob_to_kzg_commitment(_blob), do: :erlang.nif_error(:not_loaded)
+  def blob_to_kzg_commitment(_blob) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 
   @doc """
   Compute a KZG proof for a given evaluation point.
   """
   @spec compute_kzg_proof(blob_data(), field_element()) :: proof()
-  def compute_kzg_proof(_blob, _z_bytes), do: :erlang.nif_error(:not_loaded)
+  def compute_kzg_proof(_blob, _z_bytes) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 
   @doc """
   Compute a KZG proof for blob verification.
   """
   @spec compute_blob_kzg_proof(blob_data(), commitment()) :: proof()
-  def compute_blob_kzg_proof(_blob, _commitment), do: :erlang.nif_error(:not_loaded)
+  def compute_blob_kzg_proof(_blob, _commitment) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 
   @doc """
   Verify a KZG proof.
   """
   @spec verify_kzg_proof(commitment(), field_element(), field_element(), proof()) :: boolean()
-  def verify_kzg_proof(_commitment, _z_bytes, _y_bytes, _proof),
-    do: :erlang.nif_error(:not_loaded)
+  def verify_kzg_proof(_commitment, _z_bytes, _y_bytes, _proof) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 
   @doc """
   Verify a blob KZG proof.
   """
   @spec verify_blob_kzg_proof(blob_data(), commitment(), proof()) :: boolean()
-  def verify_blob_kzg_proof(_blob, _commitment, _proof), do: :erlang.nif_error(:not_loaded)
+  def verify_blob_kzg_proof(_blob, _commitment, _proof) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 
   @doc """
   Verify multiple blob KZG proofs in batch.
   """
   @spec verify_blob_kzg_proof_batch(list(blob_data()), list(commitment()), list(proof())) ::
           boolean()
-  def verify_blob_kzg_proof_batch(_blobs, _commitments, _proofs),
-    do: :erlang.nif_error(:not_loaded)
+  def verify_blob_kzg_proof_batch(_blobs, _commitments, _proofs) do
+    :erlang.nif_error(:nif_not_loaded)
+  end
 
   # Elixir wrapper functions with validation
 

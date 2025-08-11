@@ -9,7 +9,6 @@ defmodule ExWire.Enterprise.PrivateTransactions do
   require Logger
 
   alias Blockchain.Transaction
-  alias ExWire.Crypto
   alias ExWire.Enterprise.{AuditLogger, HSMIntegration}
 
   defstruct [

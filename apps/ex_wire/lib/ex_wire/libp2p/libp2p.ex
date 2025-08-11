@@ -384,7 +384,7 @@ defmodule ExWire.LibP2P do
   defp compute_node_id(private_key) do
     # Derive public key and compute node ID
     {:ok, public_key} = ExthCrypto.Signature.get_public_key(private_key)
-    ExthCrypto.Hash.keccak(public_key)
+    ExthCrypto.Hash.kec(public_key)
   end
 
   defp build_enr(node_id, config) do
@@ -418,7 +418,7 @@ defmodule ExWire.LibP2P do
   defp compute_fork_digest(config) do
     # Compute fork digest from fork version and genesis validators root
     fork_data = config.fork_version <> config.genesis_validators_root
-    hash = ExthCrypto.Hash.keccak(fork_data)
+    hash = ExthCrypto.Hash.kec(fork_data)
     binary_part(hash, 0, 4)
   end
 
@@ -529,7 +529,7 @@ defmodule ExWire.LibP2P do
     end
   end
 
-  defp handle_rpc_request(@status_protocol, request, state) do
+  defp handle_rpc_request(@status_protocol, _request, state) do
     # Handle status request
     %{
       fork_digest: state.fork_digest,

@@ -18,8 +18,7 @@ defmodule ExWire.Eth2.ConsensusSpecRunner do
 
   require Logger
 
-  alias ExWire.Eth2.{BeaconState, BeaconBlock, Attestation, ForkChoiceOptimized}
-  alias ExWire.Eth2.{Types, ConsensusSpecTests}
+  alias ExWire.Eth2.ConsensusSpecTests
 
   @consensus_tests_url "https://github.com/ethereum/consensus-spec-tests"
   @test_data_dir "test/fixtures/consensus_spec_tests"

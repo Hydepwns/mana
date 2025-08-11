@@ -21,7 +21,7 @@ defmodule ExWire.Kademlia.XorDistance do
   def distance(id1, id2) do
     id1_integer = id1 |> :binary.decode_unsigned()
     id2_integer = id2 |> :binary.decode_unsigned()
-    xor_result = id1_integer ^^^ id2_integer
+    xor_result = bxor(id1_integer, id2_integer)
 
     xor_result
     |> :binary.encode_unsigned()

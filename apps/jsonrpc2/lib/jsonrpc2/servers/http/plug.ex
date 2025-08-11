@@ -28,7 +28,7 @@ defmodule JSONRPC2.Servers.HTTP.Plug do
       ]
   """
 
-  use Plug.Builder
+  use Plug.Builder, copy_opts_to_assign: true
 
   def init(opts) when is_list(opts) do
     handler = Keyword.fetch!(opts, :handler)

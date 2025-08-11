@@ -39,7 +39,6 @@ defmodule ExWire.Consensus.ActiveActiveReplicator do
 
   alias MerklePatriciaTree.DB.AntiodoteCRDTs.{AccountBalance, TransactionPool, StateTree}
   alias MerklePatriciaTree.DB.AntidoteConnectionPool
-  alias ExWire.Consensus.{DistributedConsensusCoordinator, GeographicRouter}
 
   @type replica_group :: String.t()
   @type replication_mode :: :sync | :async | :hybrid
@@ -614,7 +613,7 @@ defmodule ExWire.Consensus.ActiveActiveReplicator do
     end
   end
 
-  defp perform_group_sync(group_name, datacenters, state) do
+  defp perform_group_sync(group_name, datacenters, _state) do
     Logger.debug("[ActiveActiveReplicator] Syncing replica group #{group_name}")
 
     # Perform CRDT synchronization between all datacenters in group
@@ -622,14 +621,14 @@ defmodule ExWire.Consensus.ActiveActiveReplicator do
     :ok
   end
 
-  defp perform_background_sync(state) do
+  defp perform_background_sync(_state) do
     Logger.debug("[ActiveActiveReplicator] Performing background sync")
 
     # Background CRDT synchronization
     :ok
   end
 
-  defp collect_replication_metrics(state) do
+  defp collect_replication_metrics(_state) do
     Logger.debug("[ActiveActiveReplicator] Collecting replication metrics")
 
     # Collect and report metrics

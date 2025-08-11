@@ -7,7 +7,6 @@ defmodule ExWire.Eth2.PruningStrategies do
   """
 
   require Logger
-  alias ExWire.Eth2.{ForkChoiceOptimized, BeaconState}
 
   @doc """
   Enhanced fork choice pruning with detailed block analysis.
@@ -185,7 +184,7 @@ defmodule ExWire.Eth2.PruningStrategies do
   3. Archive ancient blocks to cold storage
   4. Remove blocks that are definitely not needed
   """
-  def prune_block_storage(block_store, finalized_slot, config, opts \\ []) do
+  def prune_block_storage(block_store, finalized_slot, config, _opts \\ []) do
     Logger.info("Starting block storage pruning for finalized slot #{finalized_slot}")
 
     archive_mode = Map.get(config, :archive_mode, false)
@@ -464,7 +463,7 @@ defmodule ExWire.Eth2.PruningStrategies do
     initial_count = count_attestations(attestation_pool)
 
     pruned_pool =
-      Map.map(attestation_pool, fn {slot, attestations} ->
+      Map.new(attestation_pool, fn {slot, attestations} ->
         {slot,
          Enum.filter(attestations, fn attestation ->
            MapSet.member?(canonical_blocks, attestation.data.beacon_block_root)

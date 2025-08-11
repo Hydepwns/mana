@@ -33,16 +33,9 @@ defmodule ExWire.Explorer.BlockchainExplorer do
   use GenServer
   require Logger
 
-  alias ExWire.Explorer.{
-    WebInterface,
-    APIServer,
-    RealtimeUpdates,
-    CRDTVisualizer,
-    PerformanceMonitor
-  }
+  # All explorer module aliases were unused and have been removed
 
   alias ExWire.Consensus.CRDTConsensusManager
-  alias Blockchain.{Block, Transaction}
 
   @type explorer_config :: %{
           port: non_neg_integer(),

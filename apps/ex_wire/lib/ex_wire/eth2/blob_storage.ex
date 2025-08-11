@@ -13,7 +13,7 @@ defmodule ExWire.Eth2.BlobStorage do
   use GenServer
   require Logger
 
-  alias ExWire.Eth2.{BlobSidecar, BlobMetrics}
+  alias ExWire.Eth2.BlobMetrics
 
   # Number of blobs to cache in memory
   @default_cache_size 1000

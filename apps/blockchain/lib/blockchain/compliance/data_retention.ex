@@ -30,7 +30,7 @@ defmodule Blockchain.Compliance.DataRetention do
   use GenServer
   require Logger
 
-  alias Blockchain.Compliance.{AuditEngine, Framework}
+  alias Blockchain.Compliance.AuditEngine
   alias ExthCrypto.HSM.KeyManager
 
   @type retention_policy :: %{

@@ -40,7 +40,7 @@ defmodule Blockchain.Compliance.Alerting do
   use GenServer
   require Logger
 
-  alias Blockchain.Compliance.{Framework, AuditEngine, DataRetention}
+  alias Blockchain.Compliance.{Framework, AuditEngine}
 
   @type alert_severity :: :info | :low | :medium | :high | :critical | :emergency
   @type alert_category ::
@@ -723,8 +723,8 @@ defmodule Blockchain.Compliance.Alerting do
       "Sending email notification for alert #{alert.id} to #{inspect(config.recipients)}"
     )
 
-    subject = "[#{String.upcase(to_string(alert.severity))}] #{alert.title}"
-    body = format_alert_for_email(alert)
+    _subject = "[#{String.upcase(to_string(alert.severity))}] #{alert.title}"
+    _body = format_alert_for_email(alert)
 
     # Simulate email sending - in production would use actual email service
     :ok
@@ -734,13 +734,13 @@ defmodule Blockchain.Compliance.Alerting do
     # SMS notification implementation  
     Logger.info("Sending SMS notification for alert #{alert.id} to #{inspect(config.recipients)}")
 
-    message = format_alert_for_sms(alert)
+    _message = format_alert_for_sms(alert)
 
     # Simulate SMS sending - in production would use SMS service
     :ok
   end
 
-  defp send_dashboard_notification(alert, config) do
+  defp send_dashboard_notification(alert, _config) do
     # Dashboard notification implementation
     Logger.info("Sending dashboard notification for alert #{alert.id}")
 
@@ -763,13 +763,13 @@ defmodule Blockchain.Compliance.Alerting do
     end
   end
 
-  defp send_teams_notification(alert, config) do
+  defp send_teams_notification(alert, _config) do
     # Microsoft Teams notification implementation
     Logger.info("Sending Teams notification for alert #{alert.id}")
     :ok
   end
 
-  defp send_siem_notification(alert, config) do
+  defp send_siem_notification(alert, _config) do
     # SIEM integration
     Logger.info("Sending SIEM event for alert #{alert.id}")
 
@@ -788,7 +788,7 @@ defmodule Blockchain.Compliance.Alerting do
     :ok
   end
 
-  defp create_ticket(alert, config) do
+  defp create_ticket(alert, _config) do
     # Ticketing system integration (ServiceNow, Jira, etc.)
     Logger.info("Creating ticket for alert #{alert.id}")
 

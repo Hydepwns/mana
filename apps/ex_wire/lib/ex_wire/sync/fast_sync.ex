@@ -19,9 +19,9 @@ defmodule ExWire.Sync.FastSync do
 
   alias Blockchain.{Blocktree, Chain}
   alias Block.Header
-  alias ExWire.{PeerSupervisor, Packet}
+  alias ExWire.PeerSupervisor
   alias ExWire.Struct.{BlockQueue, Peer}
-  alias MerklePatriciaTree.{Trie, TrieStorage, DB}
+  alias MerklePatriciaTree.{Trie, DB}
 
   alias ExWire.Packet.Capability.Eth.{
     BlockBodies,

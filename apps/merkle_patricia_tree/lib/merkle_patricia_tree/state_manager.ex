@@ -12,7 +12,7 @@ defmodule MerklePatriciaTree.StateManager do
   use GenServer
   require Logger
 
-  alias MerklePatriciaTree.{DB, Trie, TrieStorage}
+  alias MerklePatriciaTree.DB
   alias MerklePatriciaTree.StateManager.{PruningPolicy, ReferenceCounter, GarbageCollector}
 
   @typedoc "State manager configuration"

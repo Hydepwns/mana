@@ -419,7 +419,7 @@ defmodule Blockchain.Monitoring.MetricsEndpoint do
       - GET /health   - Health status check
       - GET /ready    - Readiness check
 
-      For more information, see: https://github.com/mana-ethereum/mana
+      For more information, see: https://github.com/axol-io/mana
       """
 
       req =

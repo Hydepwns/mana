@@ -138,6 +138,19 @@ defmodule MerklePatriciaTree.DB.Antidote do
   end
 
   @doc """
+  Stores a key in the database (non-bang version for compatibility).
+  Returns {:ok, :ok} on success or {:error, reason} on failure.
+  """
+  def put(db_ref, key, value) do
+    try do
+      put!(db_ref, key, value)
+      {:ok, :ok}
+    rescue
+      e -> {:error, Exception.message(e)}
+    end
+  end
+
+  @doc """
   Removes all objects with key from the database.
   """
   @impl true

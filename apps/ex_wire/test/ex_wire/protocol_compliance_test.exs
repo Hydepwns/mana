@@ -34,7 +34,7 @@ defmodule ExWire.ProtocolComplianceTest do
       # Create Hello message
       hello = %Hello{
         p2p_version: 5,
-        client_id: "Mana-Ethereum/#{Mix.Project.config()[:version]}/Elixir",
+        client_id: "axol-io/#{Mix.Project.config()[:version]}/Elixir",
         caps: [{"eth", 66}, {"eth", 67}],
         listen_port: 30303,
         node_id: :crypto.strong_rand_bytes(64)

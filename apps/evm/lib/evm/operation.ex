@@ -18,8 +18,6 @@ defmodule EVM.Operation do
   alias EVM.Operation.Metadata.StopAndArithmetic, as: StopAndArithmeticMetadata
   alias EVM.Operation.Metadata.System, as: SystemMetadata
 
-  import Bitwise
-
   require Logger
 
   @type operation :: atom()

@@ -7,7 +7,6 @@ defmodule ExWire.Enterprise.MultisigWallet do
   use GenServer
   require Logger
 
-  alias ExWire.Crypto
   alias ExWire.Transaction
   alias ExWire.Enterprise.AuditLogger
 

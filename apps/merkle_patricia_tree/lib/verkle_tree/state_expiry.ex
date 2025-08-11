@@ -29,7 +29,7 @@ defmodule VerkleTree.StateExpiry do
   """
 
   alias VerkleTree
-  alias VerkleTree.{Node, Witness, Crypto}
+  alias VerkleTree.Crypto
   alias MerklePatriciaTree.DB
 
   require Logger
@@ -216,7 +216,7 @@ defmodule VerkleTree.StateExpiry do
   @doc """
   Verifies a resurrection proof for expired state.
   """
-  def verify_resurrection_proof(tree, key, proof) do
+  def verify_resurrection_proof(tree, _key, proof) do
     # Verify the cryptographic proof
     case verify_verkle_proof(proof.proof, tree.root_commitment, proof.path) do
       true ->
@@ -317,7 +317,7 @@ defmodule VerkleTree.StateExpiry do
     update_tree_with_node(tree, node)
   end
 
-  defp traverse_and_clean(tree, current_epoch, active_epochs, expired_count \\ 0) do
+  defp traverse_and_clean(tree, _current_epoch, _active_epochs, expired_count \\ 0) do
     # This would traverse the entire tree and remove expired nodes
     # For now, simplified implementation
 
@@ -343,7 +343,7 @@ defmodule VerkleTree.StateExpiry do
     Crypto.generate_proof(path_data, [node.commitment], node.commitment)
   end
 
-  defp verify_verkle_proof(proof, root, path) do
+  defp verify_verkle_proof(proof, root, _path) do
     # Verify the verkle proof
     # Simplified implementation
     byte_size(proof) > 0 and byte_size(root) == 32

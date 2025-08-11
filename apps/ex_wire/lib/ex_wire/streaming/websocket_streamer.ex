@@ -32,7 +32,6 @@ defmodule ExWire.Streaming.WebSocketStreamer do
 
   alias ExWire.Consensus.CRDTConsensusManager
   alias ExWire.Explorer.BlockchainExplorer
-  alias Blockchain.{Block, Transaction}
 
   @type client_connection :: %{
           client_id: String.t(),

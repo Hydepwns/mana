@@ -7,8 +7,6 @@ defmodule ExWire.Eth2.StateStore do
   use GenServer
   require Logger
 
-  alias ExWire.Eth2.BeaconState
-
   defstruct [
     # Recent states in memory
     :hot_states,

@@ -28,7 +28,7 @@ See the [progress/](progress/) directory for detailed development history and ph
 ## Quick Start
 
 1. **Installation**: Follow the setup guide in the main [README](../README.md)
-2. **Configuration**: Start with [CONFIGURATION.md](CONFIGURATION.md) 
+2. **Configuration**: Start with [CONFIGURATION.md](CONFIGURATION.md)
 3. **Layer 2 Integration**: See [progress/PHASE_7_LAYER2.md](progress/PHASE_7_LAYER2.md)
 4. **Production Deployment**: Review [LAYER2_SECURITY_AUDIT.md](LAYER2_SECURITY_AUDIT.md)
 
@@ -38,7 +38,7 @@ See the [progress/](progress/) directory for detailed development history and ph
 
 Mana-Ethereum is now production-ready with:
 - Universal Layer 2 support (Optimistic & ZK rollups)
-- Advanced verkle tree implementation  
+- Advanced verkle tree implementation
 - Distributed consensus with Byzantine fault tolerance
 - Enterprise-grade features with HSM support
 - Comprehensive security audit preparation
@@ -88,7 +88,7 @@ Mana-Ethereum is built as an Elixir umbrella project with 8 main applications:
 
 ## Community
 
-- **GitHub**: [github.com/mana-ethereum/mana](https://github.com/mana-ethereum/mana)
+- **GitHub**: [github.com/axol-io/mana](https://github.com/axol-io/mana)
 - **Discord**: Join our development community
 - **Documentation**: Comprehensive guides and APIs
 - **Testing**: Community testing program available

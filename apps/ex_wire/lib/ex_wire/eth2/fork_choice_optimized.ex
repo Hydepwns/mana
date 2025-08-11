@@ -12,7 +12,7 @@ defmodule ExWire.Eth2.ForkChoiceOptimized do
   require Logger
   import Bitwise
 
-  alias ExWire.Eth2.{BeaconState, BeaconBlock, Attestation, Checkpoint}
+  alias ExWire.Eth2.{BeaconState, BeaconBlock, Attestation, AttestationData, Checkpoint}
 
   defstruct [
     :justified_checkpoint,
@@ -93,11 +93,11 @@ defmodule ExWire.Eth2.ForkChoiceOptimized do
   @doc """
   Process a new block with optimized weight updates
   """
-  def on_block(store, block, block_root, state) do
+  def on_block(store, %BeaconBlock{slot: slot} = block, block_root, %BeaconState{} = state) do
     # Validate block timing
     current_slot = get_current_slot(store)
 
-    if block.slot > current_slot do
+    if slot > current_slot do
       {:error, :future_block}
     else
       # Add block to store with caching
@@ -119,17 +119,27 @@ defmodule ExWire.Eth2.ForkChoiceOptimized do
   @doc """
   Process attestation with batching for efficiency
   """
-  def on_attestation(store, attestation) do
-    # Add to pending buffer for batch processing
-    store = %{store | pending_attestations: [attestation | store.pending_attestations]}
+  def on_attestation(store, %Attestation{data: %AttestationData{slot: slot}} = attestation) do
+    # Validate attestation slot
+    current_slot = get_current_slot(store)
+    
+    # Allow attestations from the previous two epochs
+    oldest_valid_slot = max(0, current_slot - 64)  # 32 slots per epoch * 2 epochs
+    
+    if slot >= oldest_valid_slot and slot <= current_slot do
+      # Add to pending buffer for batch processing
+      store = %{store | pending_attestations: [attestation | store.pending_attestations]}
 
-    # Process batch if buffer is full or timeout reached
-    if length(store.pending_attestations) >= @cache_invalidation_batch_size do
-      process_pending_attestations(store)
+      # Process batch if buffer is full or timeout reached
+      if length(store.pending_attestations) >= @cache_invalidation_batch_size do
+        process_pending_attestations(store)
+      else
+        # Schedule batch processing
+        maybe_schedule_batch_processing(store)
+        {:ok, store}
+      end
     else
-      # Schedule batch processing
-      maybe_schedule_batch_processing(store)
-      store
+      {:error, :attestation_too_old}
     end
   end
 

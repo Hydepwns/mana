@@ -13,9 +13,6 @@ defmodule Blockchain.TransactionPool do
   use GenServer
   require Logger
 
-  alias Blockchain.Transaction
-  alias Blockchain.Transaction.Signature
-  alias Blockchain.Account
   alias ExthCrypto.Hash.Keccak
 
   @max_pool_size 5000

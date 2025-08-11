@@ -37,7 +37,7 @@ defmodule Blockchain.Compliance.AuditEngine do
   use GenServer
   require Logger
 
-  alias Blockchain.Compliance.{DataRetention, Alerting}
+  alias Blockchain.Compliance.Alerting
   alias ExthCrypto.Hash.Keccak
 
   @type event_category ::

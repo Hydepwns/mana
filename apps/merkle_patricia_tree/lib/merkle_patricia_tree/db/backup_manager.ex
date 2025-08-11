@@ -347,7 +347,7 @@ defmodule MerklePatriciaTree.DB.BackupManager do
     :ok
   end
 
-  defp create_antidote_snapshot(client) do
+  defp create_antidote_snapshot(_client) do
     # Create a consistent snapshot using AntidoteDB's snapshot capabilities
     # This would use AntidoteDB's native snapshot mechanism
     {:ok,

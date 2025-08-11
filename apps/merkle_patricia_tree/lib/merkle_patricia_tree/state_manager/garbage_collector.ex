@@ -300,12 +300,12 @@ defmodule MerklePatriciaTree.StateManager.GarbageCollector do
     {deleted_count, total_bytes}
   end
 
-  defp find_cold_nodes(db, cutoff_time) do
+  defp find_cold_nodes(db, _cutoff_time) do
     # This is a simplified implementation
     # In production, would maintain access timestamps for nodes
 
     case db do
-      {:ets, table} ->
+      {:ets, _table} ->
         # For ETS, we don't have access time tracking
         # Return empty list for now
         []
@@ -346,11 +346,9 @@ defmodule MerklePatriciaTree.StateManager.GarbageCollector do
     end
   end
 
-  defp max_urgency(:critical, _), do: :critical
-  defp max_urgency(_, :critical), do: :critical
-  defp max_urgency(:high, _), do: :high
-  defp max_urgency(_, :high), do: :high
-  defp max_urgency(:medium, _), do: :medium
-  defp max_urgency(_, :medium), do: :medium
-  defp max_urgency(:low, :low), do: :low
+  defp max_urgency(a, b) do
+    urgencies = [:low, :medium, :high, :critical]
+    max(Enum.find_index(urgencies, &(&1 == a)) || 0, Enum.find_index(urgencies, &(&1 == b)) || 0)
+    |> then(&Enum.at(urgencies, &1))
+  end
 end

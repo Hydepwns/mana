@@ -384,70 +384,85 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
     new_alerts = []
 
     # Check memory usage
-    if (metrics.memory_usage || 0) > @memory_threshold do
-      alert =
-        create_alert(
-          "memory_usage",
-          :critical,
-          "High memory usage",
-          metrics.memory_usage,
-          @memory_threshold
-        )
+    new_alerts =
+      if (metrics.memory_usage || 0) > @memory_threshold do
+        alert =
+          create_alert(
+            "memory_usage",
+            :critical,
+            "High memory usage",
+            metrics.memory_usage,
+            @memory_threshold
+          )
 
-      new_alerts = [alert | new_alerts]
-    end
+        [alert | new_alerts]
+      else
+        new_alerts
+      end
 
     # Check CPU usage
-    if (metrics.cpu_usage || 0) > @cpu_threshold do
-      alert =
-        create_alert("cpu_usage", :warning, "High CPU usage", metrics.cpu_usage, @cpu_threshold)
+    new_alerts =
+      if (metrics.cpu_usage || 0) > @cpu_threshold do
+        alert =
+          create_alert("cpu_usage", :warning, "High CPU usage", metrics.cpu_usage, @cpu_threshold)
 
-      new_alerts = [alert | new_alerts]
-    end
+        [alert | new_alerts]
+      else
+        new_alerts
+      end
 
     # Check disk usage
-    if (metrics.disk_usage || 0) > @disk_threshold do
-      alert =
-        create_alert(
-          "disk_usage",
-          :warning,
-          "High disk usage",
-          metrics.disk_usage,
-          @disk_threshold
-        )
+    new_alerts =
+      if (metrics.disk_usage || 0) > @disk_threshold do
+        alert =
+          create_alert(
+            "disk_usage",
+            :warning,
+            "High disk usage",
+            metrics.disk_usage,
+            @disk_threshold
+          )
 
-      new_alerts = [alert | new_alerts]
-    end
+        [alert | new_alerts]
+      else
+        new_alerts
+      end
 
     # Check error rate
     error_rate = get_error_rate(performance)
 
-    if error_rate > @error_rate_threshold do
-      alert =
-        create_alert(
-          "error_rate",
-          :critical,
-          "High error rate",
-          error_rate,
-          @error_rate_threshold
-        )
+    new_alerts =
+      if error_rate > @error_rate_threshold do
+        alert =
+          create_alert(
+            "error_rate",
+            :critical,
+            "High error rate",
+            error_rate,
+            @error_rate_threshold
+          )
 
-      new_alerts = [alert | new_alerts]
-    end
+        [alert | new_alerts]
+      else
+        new_alerts
+      end
 
     # Check latency
-    if (performance.avg_latency || 0) > @latency_threshold do
-      alert =
-        create_alert(
-          "latency",
-          :warning,
-          "High latency",
-          performance.avg_latency,
-          @latency_threshold
-        )
+    new_alerts =
+      if (performance.avg_latency || 0) > @latency_threshold do
+        alert =
+          create_alert(
+            "latency",
+            :warning,
+            "High latency",
+            performance.avg_latency,
+            @latency_threshold
+          )
 
-      new_alerts = [alert | new_alerts]
-    end
+        [alert | new_alerts]
+      else
+        new_alerts
+      end
 
     # Combine new alerts with existing ones (limit to last 100)
     all_alerts = new_alerts ++ current_alerts
@@ -509,7 +524,7 @@ defmodule MerklePatriciaTree.Monitoring.ProductionMonitor do
     """
   end
 
-  defp generate_grafana_dashboard(state) do
+  defp generate_grafana_dashboard(_state) do
     # Generate Grafana dashboard configuration
     %{
       title: "Mana-Ethereum Production Dashboard",

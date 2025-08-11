@@ -10,7 +10,7 @@ defmodule ExWire.Eth2.PruningDashboard do
   use GenServer
   require Logger
 
-  alias ExWire.Eth2.{PruningMetrics, PruningManager, PruningScheduler, PruningConfig}
+  alias ExWire.Eth2.{PruningMetrics, PruningManager, PruningScheduler}
 
   defstruct [
     :http_server,

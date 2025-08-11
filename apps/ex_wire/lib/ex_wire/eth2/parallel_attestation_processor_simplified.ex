@@ -10,7 +10,7 @@ defmodule ExWire.Eth2.ParallelAttestationProcessorSimplified do
   require Logger
   import Bitwise
 
-  alias ExWire.Eth2.{BeaconState, Attestation}
+  alias ExWire.Eth2.Attestation
 
   # Configuration
   @max_parallel_workers System.schedulers_online() * 2

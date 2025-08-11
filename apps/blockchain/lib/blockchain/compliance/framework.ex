@@ -26,8 +26,6 @@ defmodule Blockchain.Compliance.Framework do
   require Logger
   use GenServer
 
-  alias Blockchain.Compliance.{AuditEngine, Reporting, DataRetention, Alerting}
-
   @type compliance_standard ::
           :sox
           | :pci_dss

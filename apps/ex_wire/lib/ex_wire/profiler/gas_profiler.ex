@@ -35,7 +35,7 @@ defmodule ExWire.Profiler.GasProfiler do
   require Logger
 
   alias EVM.Gas
-  alias Blockchain.{Transaction, Contract}
+  alias Blockchain.Contract
   alias ExWire.Consensus.CRDTConsensusManager
   alias ExWire.Debugger.TransactionDebugger
 
@@ -634,7 +634,7 @@ defmodule ExWire.Profiler.GasProfiler do
     base_cost + data_cost + execution_cost
   end
 
-  defp estimate_crdt_overhead(call_data, opts) do
+  defp estimate_crdt_overhead(call_data, _opts) do
     # Estimate CRDT overhead based on operation type
     base_crdt_overhead = @crdt_base_cost
 
