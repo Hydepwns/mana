@@ -22,3 +22,6 @@ config :logger,
 config :logger, :debug_log,
   path: "./log/debug.log",
   level: :debug
+
+# Import production hardening configuration
+import_config "production_hardening.exs"

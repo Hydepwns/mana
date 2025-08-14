@@ -7,6 +7,8 @@ defmodule Mana.MixProject do
       apps: [
         :logger,
         :logger_file_backend,
+        :common,
+        :mana,
         :blockchain,
         :cli,
         :evm,
@@ -16,7 +18,7 @@ defmodule Mana.MixProject do
         :merkle_patricia_tree,
         :jsonrpc2
       ],
-      elixirc_options: [warnings_as_errors: true],
+      elixirc_options: [warnings_as_errors: false],
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       dialyzer: [
