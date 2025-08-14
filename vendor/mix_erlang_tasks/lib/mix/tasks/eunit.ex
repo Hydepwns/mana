@@ -1,6 +1,9 @@
 defmodule Mix.Tasks.Eunit do
   use Mix.Task
 
+  # Suppress undefined function warning - :eunit module availability is checked at runtime
+  @compile {:no_warn_undefined, {:eunit, :test, 2}}
+
   @shortdoc "Run the project's EUnit test suite"
 
   @moduledoc """
@@ -29,7 +32,13 @@ defmodule Mix.Tasks.Eunit do
     MixErlangTasks.Util.compile_files(Path.wildcard("etest/**/*_tests.erl"), ebin_test)
 
     options = if Keyword.get(opts, :verbose, false), do: [:verbose], else: []
-    :eunit.test {:application, Mix.Project.config[:app]}, options
+    
+    # Check if :eunit module is available
+    if Code.ensure_loaded?(:eunit) do
+      :eunit.test {:application, Mix.Project.config[:app]}, options
+    else
+      Mix.raise "EUnit (:eunit) module not available. Please ensure :eunit is included in your dependencies."
+    end
   end
 
   defp format_compile_opts(opts) do

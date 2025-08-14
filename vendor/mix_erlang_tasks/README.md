@@ -7,7 +7,7 @@ package manager when developing applications in Erlang.
 Mix automates and simplifies a lot of development tasks: adding and fetching dependencies,
 compilation, running test suites, generating documentation from source code, etc. It integrates with
 Hex to be able to push and fetch packages from https://hex.pm and it also supports custom tasks. A
-few good examples of the latter would be [dialyze](http://github.com/fishcakez/dialyze) and
+few good examples of the latter would [dialyze](http://github.com/fishcakez/dialyze) and
 [release](https://github.com/bitwalker/exrm).
 
 You can get Mix by installing [Elixir](http://elixir-lang.org) or by downloading a standalone `mix`

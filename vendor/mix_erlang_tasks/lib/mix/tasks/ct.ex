@@ -1,6 +1,9 @@
 defmodule Mix.Tasks.Ct do
   use Mix.Task
 
+  # Suppress undefined function warning - :ct module availability is checked at runtime
+  @compile {:no_warn_undefined, {:ct, :run_test, 1}}
+
   @shortdoc "Run the project's Common Test suite"
 
   @moduledoc """
@@ -27,10 +30,15 @@ defmodule Mix.Tasks.Ct do
     logdir = Keyword.get(opts, :log_dir, "ctest/logs")
     File.mkdir_p!(logdir)
 
-    :ct.run_test [
-      {:dir, String.to_charlist(ebin_dir)},
-      {:logdir, String.to_charlist(logdir)},
-      {:auto_compile, false}
-    ]
+    # Check if :ct module is available (part of common_test application)
+    if Code.ensure_loaded?(:ct) do
+      :ct.run_test [
+        {:dir, String.to_charlist(ebin_dir)},
+        {:logdir, String.to_charlist(logdir)},
+        {:auto_compile, false}
+      ]
+    else
+      Mix.raise "Common Test (:ct) module not available. Please ensure :common_test is included in your dependencies."
+    end
   end
 end
