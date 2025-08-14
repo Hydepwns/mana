@@ -196,22 +196,16 @@ defmodule MerklePatriciaTree.DB.Migration.ETSToAntidote do
       Enum.reduce_while(chunks, stats, fn batch, acc ->
         batch_result = process_batch(batch, ets_ref, antidote_ref, dry_run, verbose)
 
-        new_stats =
-          case batch_result do
-            {:ok, batch_stats} ->
-              %{
-                acc
-                | processed: acc.processed + batch_stats.count,
-                  succeeded: acc.succeeded + batch_stats.succeeded,
-                  failed: acc.failed + batch_stats.failed,
-                  skipped: acc.skipped + batch_stats.skipped
-              }
-
-            {:error, reason} ->
-              Logger.error("Batch processing failed: #{inspect(reason)}")
-              save_checkpoint(checkpoint_file, acc.processed)
-              {:halt, {:error, reason, acc}}
-          end
+        # Since process_batch always returns {:ok, stats}, we can simplify this
+        {:ok, batch_stats} = batch_result
+        
+        new_stats = %{
+          acc
+          | processed: acc.processed + batch_stats.count,
+            succeeded: acc.succeeded + batch_stats.succeeded,
+            failed: acc.failed + batch_stats.failed,
+            skipped: acc.skipped + batch_stats.skipped
+        }
 
         # Progress reporting
         if rem(new_stats.processed, 1000) == 0 do
@@ -249,13 +243,14 @@ defmodule MerklePatriciaTree.DB.Migration.ETSToAntidote do
               if verbose, do: Logger.debug("Would migrate: #{inspect(key)}")
               {:ok, key}
             else
-              case Antidote.put(antidote_ref, key, value) do
-                :ok ->
-                  if verbose, do: Logger.debug("Migrated: #{inspect(key)}")
-                  {:ok, key}
-
-                {:error, reason} ->
-                  Logger.error("Failed to migrate key #{inspect(key)}: #{inspect(reason)}")
+              # Use put! which always returns :ok or raises
+              try do
+                Antidote.put!(antidote_ref, key, value)
+                if verbose, do: Logger.debug("Migrated: #{inspect(key)}")
+                {:ok, key}
+              rescue
+                error ->
+                  Logger.error("Failed to migrate key #{inspect(key)}: #{inspect(error)}")
                   {:error, key}
               end
             end

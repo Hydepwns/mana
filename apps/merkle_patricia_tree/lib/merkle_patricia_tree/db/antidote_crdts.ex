@@ -247,8 +247,8 @@ defmodule MerklePatriciaTree.DB.AntiodoteCRDTs do
       # Merge transactions, filtering out tombstoned ones
       merged_transactions =
         Map.merge(a.transactions, b.transactions, fn _tx_hash,
-                                                     {_, a_id, a_time} = a_entry,
-                                                     {_, b_id, b_time} = b_entry ->
+                                                     {_, _a_id, a_time} = a_entry,
+                                                     {_, _b_id, b_time} = b_entry ->
           # Keep the entry with the latest timestamp
           if a_time >= b_time, do: a_entry, else: b_entry
         end)

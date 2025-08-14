@@ -688,7 +688,7 @@ defmodule MerklePatriciaTree.DB.AntidoteClient do
     end
   end
 
-  defp list_keys_internal(client, bucket, tx_id) do
+  defp list_keys_internal(client, _bucket, _tx_id) do
     # In a real AntidoteDB implementation, this would use a specific protocol message
     # For now, we'll implement a placeholder that would need to be replaced
     # with actual AntidoteDB protocol support

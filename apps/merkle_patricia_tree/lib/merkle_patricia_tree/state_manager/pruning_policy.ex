@@ -196,7 +196,7 @@ defmodule MerklePatriciaTree.StateManager.PruningPolicy do
     end
   end
 
-  defp get_blocks_before(db, cutoff_block) do
+  defp get_blocks_before(_db, cutoff_block) do
     for i <- 1..max(0, cutoff_block - 1) do
       %{number: i, hash: :crypto.hash(:sha256, <<i::64>>)}
     end
