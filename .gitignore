@@ -33,3 +33,8 @@ apps/merkle_patricia_tree/log/
 logs/
 CI_RECOVERY_PLAN.md
 apps/ex_wire/native/*/target/
+
+# Rust build artifacts
+**/target/
+**/Cargo.lock
+**/*.pdb
