@@ -1,6 +1,3 @@
-use ark_ec::Group;
-use ark_ff::{Field, PrimeField};
-use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use blake3;
 use std::sync::RwLock;
 use thiserror::Error;
@@ -101,7 +98,7 @@ pub fn update_root_commitment(
 }
 
 /// Load the trusted setup for verkle commitments
-pub fn load_setup(setup_data: &[u8]) -> Result<(), CommitmentError> {
+pub fn load_setup(_setup_data: &[u8]) -> Result<(), CommitmentError> {
     // In production: Parse the actual ceremony data
     // For now: Create a mock setup
     let setup = TrustedSetup {

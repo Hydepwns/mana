@@ -194,36 +194,39 @@ defmodule VerkleTree.Witness do
     {value, commitments}
   end
 
-  defp collect_path_commitments(tree, key, current_commitment) do
-    # Placeholder implementation
-    # In practice, this would traverse the tree and collect all commitments
-    # along the path to the key
-    case DB.get(tree.db, current_commitment) do
-      {:ok, encoded_node} ->
-        node = Node.decode(encoded_node)
-
-        case node do
-          :empty ->
-            []
-
-          {:leaf, commitment, _value} ->
-            [commitment]
-
-          {:internal, children} ->
-            <<child_index, rest::binary>> = key
-            child_commitment = Enum.at(children, child_index)
-
-            if child_commitment == <<0::256>> do
-              [current_commitment]
-            else
-              [current_commitment | collect_path_commitments(tree, rest, child_commitment)]
-            end
-        end
-
-      :not_found ->
-        []
-    end
-  end
+  # Unused helper function - commented out to avoid warnings
+  # This may be needed in future witness generation implementations
+  
+  # defp collect_path_commitments(tree, key, current_commitment) do
+  #   # Placeholder implementation
+  #   # In practice, this would traverse the tree and collect all commitments
+  #   # along the path to the key
+  #   case DB.get(tree.db, current_commitment) do
+  #     {:ok, encoded_node} ->
+  #       node = Node.decode(encoded_node)
+  #
+  #       case node do
+  #         :empty ->
+  #           []
+  #
+  #         {:leaf, commitment, _value} ->
+  #           [commitment]
+  #
+  #         {:internal, children} ->
+  #           <<child_index, rest::binary>> = key
+  #           child_commitment = Enum.at(children, child_index)
+  #
+  #           if child_commitment == <<0::256>> do
+  #             [current_commitment]
+  #           else
+  #             [current_commitment | collect_path_commitments(tree, rest, child_commitment)]
+  #           end
+  #       end
+  #
+  #     :not_found ->
+  #       []
+  #   end
+  # end
 
   defp normalize_kvs(key_value_pairs) do
     key_value_pairs

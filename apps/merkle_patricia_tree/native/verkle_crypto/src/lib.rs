@@ -1,6 +1,5 @@
 use rustler::{Encoder, Env, Error, NifResult, Term};
 use rustler::types::binary::{Binary, OwnedBinary};
-use rustler::resource::ResourceArc;
 use std::sync::Mutex;
 
 mod commitment;
@@ -9,12 +8,12 @@ mod batch;
 mod curve;
 
 use commitment::{VerkleCommitment, compute_commitment};
-use proof::{VerkleProof, generate_proof, verify_proof};
+use proof::{generate_proof, verify_proof};
 use batch::{batch_verify_proofs, batch_compute_commitments};
 
 // Resource wrapper for commitment state
 struct CommitmentState {
-    commitment: Mutex<VerkleCommitment>,
+    _commitment: Mutex<VerkleCommitment>,
 }
 
 // Define the NIF module

@@ -229,7 +229,7 @@ defmodule VerkleTree.Migration do
   """
   @spec get_root(t()) :: binary()
   def get_root(migration_state) do
-    VerkleTree.get_root(migration_state.verkle)
+    migration_state.verkle.root_commitment
   end
 
   @doc """
@@ -294,7 +294,7 @@ defmodule VerkleTree.Migration do
     end
   end
 
-  defp estimate_mpt_size(mpt) do
+  defp estimate_mpt_size(_mpt) do
     # Placeholder: In practice, you'd need to traverse the MPT to count keys
     # This could be expensive, so you might want to cache this value
     # or estimate based on other metrics

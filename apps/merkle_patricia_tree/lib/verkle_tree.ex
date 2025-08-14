@@ -197,20 +197,23 @@ defmodule VerkleTree do
     |> normalize_key()
   end
 
-  defp fetch_node(tree) do
-    case DB.get(tree.db, tree.root_commitment) do
-      {:ok, encoded_node} ->
-        Node.decode(encoded_node)
-
-      :not_found ->
-        Node.empty()
-    end
-  end
-
-  defp update_root_commitment(node, tree) do
-    commitment = Node.compute_commitment(node)
-    %{tree | root_commitment: commitment}
-  end
+  # Unused helper functions - commented out to avoid warnings
+  # These may be needed in future implementations
+  
+  # defp fetch_node(tree) do
+  #   case DB.get(tree.db, tree.root_commitment) do
+  #     {:ok, encoded_node} ->
+  #       Node.decode(encoded_node)
+  #
+  #     :not_found ->
+  #       Node.empty()
+  #   end
+  # end
+  #
+  # defp update_root_commitment(node, tree) do
+  #   commitment = Node.compute_commitment(node)
+  #   %{tree | root_commitment: commitment}
+  # end
 
   defp compute_new_root_commitment(tree, key, value) do
     # Simplified implementation: hash the current state
